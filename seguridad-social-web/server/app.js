@@ -307,23 +307,32 @@ app.post('/verification/offer', async (req, res) => {
 });
 
 /**
- * @route POST /verification/offer2creds
- * @description Endpoint para una verificación que requiere dos credenciales (alta).
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * @route POST /verification/offer3creds
+ * @description Endpoint para una verificación que requiere tres credenciales:
+ * CustomIdentityCredential, PassportCredential y EmployerRegistrationCredential
+ * para proceder con la emisión de la credencial de Alta.
  */
-app.post('/verification/offer2creds', async (req, res) => {
+app.post('/verification/offer3creds', async (req, res) => {
     if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
         return res.status(500).json({ error: 'Faltan variables de entorno' });
     }
 
     const stateId = uuidv4();
     const requestBody = {
-        vp_policies: ["signature", "expired"],
-        vc_policies: ["signature", "expired"],
+        vp_policies: [
+            { "policy": "minimum-credentials", "args": 3 },
+            { "policy": "maximum-credentials", "args": 100 }
+        ],
+        vc_policies: [
+            "signature",
+            "expired",
+            "not-before",
+            "revoked_status_list"
+        ],
         request_credentials: [
             { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
-            { "type": "PassportCh", "format": "jwt_vc_json" }
+            { "type": "PassportCredential", "format": "jwt_vc_json" },
+            { "type": "EmployerRegistrationCredential", "format": "jwt_vc_json" }
         ]
     };
 
@@ -345,16 +354,15 @@ app.post('/verification/offer2creds', async (req, res) => {
         };
         res.status(200).json({ verificationUrl: response.data, state: stateId });
     } catch (error) {
-        console.error('Error en /verification/offer2creds:', error);
+        console.error('Error en /verification/offer3creds:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 /**
  * @route POST /verification/statusCallbackAlta/:stateId
- * @description Callback para procesar el resultado de la verificación de alta.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
+ * @description Callback para procesar el resultado de la verificación de alta con 3 credenciales.
+ * Ahora se requieren las 3 credenciales: Identidad, Pasaporte y Registro del Empleador.
  */
 app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
     const { stateId } = req.params;
@@ -377,20 +385,78 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
 
         const vpDecoded = jwt.decode(vpToken);
         const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
-        if (credentialsJwt.length < 2) {
+
+        if (credentialsJwt.length < 3) {
             sessions[stateId].status = 'failed';
-            return res.status(400).json({ error: 'Faltan credenciales' });
+            return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
         }
 
-        // Comprobar revocación
+        const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
+        const hasIdentity = decodedCreds.some(c => c?.vc?.type?.includes('CustomIdentityCredential'));
+        const hasPassport = decodedCreds.some(c => c?.vc?.type?.includes('PassportCredential'));
+        const hasEmployer = decodedCreds.some(c => c?.vc?.type?.includes('EmployerRegistrationCredential'));
+
+        if (!hasIdentity || !hasPassport || !hasEmployer) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'Faltan una o más de las credenciales requeridas (Identidad, Pasaporte, Empleador)' });
+        }
+
+        // Verificar revocación
         const revoked = await checkCredentialsRevocation(credentialsJwt);
         if (revoked) {
             sessions[stateId].status = 'failed';
             return res.status(400).json({ error: 'Una de las credenciales está revocada' });
         }
 
-        // Extraer datos del usuario
-        const { idData } = extractUserDataForAlta(credentialsJwt);
+        // Extraer credenciales
+        const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
+        const passportCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('PassportCredential'));
+        const employerCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('EmployerRegistrationCredential'));
+
+        if (!identityCredDecoded) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'No se encontró la credencial de identidad (requerida)' });
+        }
+
+        // Datos de usuario (identidad)
+        const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
+
+        // Extraer dirección completa del pasaporte (si tiene)
+        let fullAddress = '';
+        if (passportCredDecoded && passportCredDecoded.vc.credentialSubject) {
+            // Aquí asumimos que hay datos suficientes para formar una dirección
+            // Por ejemplo, si el pasaporte no contiene una dirección tan detallada,
+            // se podría combinar con la identidad. Ajustar según el esquema real.
+            const ps = passportCredDecoded.vc.credentialSubject;
+            // Si el pasaporte no trae dirección, podemos usar la de idData.currentAddress
+            if (idData.currentAddress && idData.currentAddress.length > 0) {
+                fullAddress = idData.currentAddress.join(', ');
+            } else {
+                // Sin dirección en Identity, inventamos o usamos pasaporte si tuviera:
+                // Ajustar según la info real del pasaporte:
+                fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
+            }
+        } else {
+            // Si no hay pasaporte o no tiene dirección, usamos la de identidad:
+            if (idData.currentAddress && idData.currentAddress.length > 0) {
+                fullAddress = idData.currentAddress.join(', ');
+            } else {
+                fullAddress = "Calle Ejemplo 123, Madrid";
+            }
+        }
+
+        // Datos del empleador
+        if (!employerCredDecoded || !employerCredDecoded.vc || !employerCredDecoded.vc.credentialSubject) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
+        }
+
+        const employerSubject = employerCredDecoded.vc.credentialSubject;
+        const employerName = employerSubject.employerName || "Empresa de Servicios S.A.";
+        const contributionAccountCode = employerSubject.employerContributionAccountCode || "0111-2222-33-4444444444";
+        const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
+        const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
+
         const user = await findOrCreateOrUpdateUser(idData);
         user.hasAltaCredential = true;
         user.altaIssueDate = new Date();
@@ -399,6 +465,16 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
         const token = "ejemplo-de-token-alta";
         sessions[stateId].user = user;
         sessions[stateId].token = token;
+
+        // Guardamos también datos del empleador y la dirección completa del usuario en la sesión para usarlos en la emisión
+        sessions[stateId].employerData = {
+            employerName,
+            contributionAccountCode,
+            socialSecurityRegime,
+            collectiveAgreements
+        };
+
+        sessions[stateId].userAddress = fullAddress;
     }
 
     res.status(200).send('Status callback alta processed successfully');
@@ -421,6 +497,75 @@ app.post('/issuance/offer', async (req, res) => {
         return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
     }
 
+    const employerData = sessions[stateId].employerData || {
+        employerName: "Empresa de Servicios S.A.",
+        contributionAccountCode: "0111-2222-33-4444444444",
+        socialSecurityRegime: "Régimen General",
+        collectiveAgreements: [
+            "Convenio Colectivo de Empresas de Servicios Generales",
+            "Convenio Colectivo Sectorial"
+        ]
+    };
+
+    const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
+
+    // Datos del trabajador
+    const apellidos = user.familyName || "Perez";
+    const nombre = user.firstName || "Mario";
+    const dni = user.documentNumber || "12345678A";
+    const nss = user.nss || "123456789012";
+    const domicilio = userAddress; // dirección completa obtenida del paso anterior
+    const fechaInicioActividad = "2024-12-08"; // puede ser fija o dinámica
+    const grupoCotizacion = "Grupo 4";
+    const tipoContrato = "Indefinido tiempo completo";
+    const coeficienteJornada = "100%";
+    const ocupacion = "Administrativo";
+    const codigoCuentaCotizacion = employerData.contributionAccountCode;
+
+    const revocationId = uuidv4();
+
+    // Construimos la credencial final de Alta según el ejemplo proporcionado
+    const altaCredential = {
+        "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://www.w3.org/ns/credentials/examples/v2"
+        ],
+        "id": `urn:uuid:${revocationId}`,
+        "type": ["VerifiableCredential", "SocialSecurityRegistrationCredential"],
+        "issuer": {
+            "id": "did:web:tesoreria.seguridadsocial.gob.es",
+            "name": "Tesorería General de la Seguridad Social - España",
+            "description": "Entidad emisora de la credencial de alta en la Seguridad Social"
+        },
+        "name": "Credencial de Alta en la Seguridad Social",
+        "description": "Credencial verificable de alta en el régimen de la Seguridad Social del trabajador",
+        "validFrom": "2024-12-08T10:19:28Z",
+        "expirationDate": "2025-12-08T10:19:28Z",
+        "category": "SocialSecurityEnrollment",
+        "credentialSubject": {
+            "id": "did:web:trabajador.example.com",
+            "employer": {
+                "employerName": employerData.employerName,
+                "contributionAccountCode": employerData.contributionAccountCode,
+                "socialSecurityRegime": employerData.socialSecurityRegime,
+                "collectiveAgreements": employerData.collectiveAgreements
+            },
+            "worker": {
+                "apellidos": apellidos,
+                "nombre": nombre,
+                "dni": dni,
+                "nss": nss,
+                "domicilio": domicilio,
+                "fechaInicioActividad": fechaInicioActividad,
+                "grupoCotizacion": grupoCotizacion,
+                "tipoContrato": tipoContrato,
+                "coeficienteJornada": coeficienteJornada,
+                "ocupacion": ocupacion,
+                "codigoCuentaCotizacion": codigoCuentaCotizacion
+            }
+        }
+    };
+
     const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
     const issuerKey = {
         "type": "jwk",
@@ -432,39 +577,25 @@ app.post('/issuance/offer', async (req, res) => {
             "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
         }
     };
+
+    // Como ya no usamos "AltaSeguridadSocialCredential", cambiamos credentialConfigurationId 
+    // si es necesario. Aquí asumimos que "CustomIdentityCredential_jwt_vc_json" 
+    // puede seguir usándose, o configuramos uno para "SocialSecurityRegistrationCredential".
     const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
-
-    const altaData = {
-        fullName: user.firstName + ' ' + user.familyName,
-        dni: user.documentNumber,
-        address: user.currentAddress,
-        issueDate: user.altaIssueDate.toISOString(),
-        credentialType: "Alta_Seguridad_Social"
-    };
-
-    const revocationId = uuidv4();
 
     const issuanceRequestBody = {
         issuerKey: issuerKey,
         issuerDid: issuerDid,
         credentialConfigurationId,
-        credentialData: {
-            "@context": ["https://www.w3.org/2018/credentials/v1"],
-            "type": ["VerifiableCredential", "AltaSeguridadSocialCredential"],
-            "issuer": { "id": issuerDid },
-            "issuanceDate": altaData.issueDate,
-            "id": `urn:uuid:${revocationId}`,
-            "credentialSubject": {
-                "id": "did:web:5a4b7b0ff4db.ngrok.app",
-                "fullName": altaData.fullName,
-                "dni": altaData.dni,
-                "address": altaData.address,
-                "tipoDeAlta": altaData.credentialType
-            }
-        },
+        credentialData: altaCredential,
         "mapping": {
-            "issuer": { "id": "<issuerDid>" },
-            "credentialSubject": { "id": "<subjectDid>" },
+            "id": "<uuid>",
+            "issuer": {
+                "id": "<issuerDid>"
+            },
+            "credentialSubject": {
+                "id": "<subjectDid>"
+            },
             "issuanceDate": "<timestamp>",
             "expirationDate": "<timestamp-in:365d>"
         },
@@ -489,7 +620,7 @@ app.post('/issuance/offer', async (req, res) => {
 
         sessions[stateId].user = dbUser;
         sessions[stateId].issuanceOfferUrl = issuedCredentialJwt;
-        sessions[stateId].issuanceStatus = 'offered'; // Estado inicial al ofrecer la credencial
+        sessions[stateId].issuanceStatus = 'offered';
 
         res.status(200).json({ issuanceOfferUrl: issuedCredentialJwt, state: stateId });
     } catch (error) {

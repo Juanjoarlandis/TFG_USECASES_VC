@@ -1,3 +1,4 @@
+// src/pages/Alta/Alta.js
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -13,18 +14,16 @@ const Alta = () => {
     const [issuanceOfferUrl, setIssuanceOfferUrl] = useState('');
     const [issuanceQrVisible, setIssuanceQrVisible] = useState(false);
 
-    // Estados para el temporizador y expiración del QR de verificación
     const [timeLeft, setTimeLeft] = useState(180);
     const [qrExpired, setQrExpired] = useState(false);
 
-    // Nuevo estado para saber si la credencial ya fue aceptada
     const [issuanceAccepted, setIssuanceAccepted] = useState(false);
-
     const navigate = useNavigate();
 
-    const startTwoCredsVerification = async () => {
+    const startThreeCredsVerification = async () => {
         try {
-            const response = await axios.post('http://localhost:3001/verification/offer2creds', {});
+            // Cambiamos el endpoint de 2 a 3 credenciales
+            const response = await axios.post('http://localhost:3001/verification/offer3creds', {});
             setVerificationUrl(response.data.verificationUrl);
             setSessionId(response.data.state);
             setQrVisible(true);
@@ -57,7 +56,6 @@ const Alta = () => {
         }
     }, [sessionId, qrVisible, qrExpired, issuanceQrVisible]);
 
-    // Polling estado de verificación
     useEffect(() => {
         let interval;
         if (sessionId && qrVisible && !qrExpired && !issuanceQrVisible) {
@@ -66,7 +64,6 @@ const Alta = () => {
         return () => clearInterval(interval);
     }, [sessionId, qrVisible, qrExpired, issuanceQrVisible, checkStatus]);
 
-    // Temporizador QR de verificación
     useEffect(() => {
         if (qrVisible && !qrExpired && !issuanceQrVisible) {
             const timer = setInterval(() => {
@@ -90,17 +87,15 @@ const Alta = () => {
         setSessionId('');
         setIssuanceOfferUrl('');
         setIssuanceQrVisible(false);
-        startTwoCredsVerification();
+        startThreeCredsVerification();
     };
 
-    // Nuevo polling para la emisión aceptada
     const checkIssuanceStatus = useCallback(async () => {
         if (!sessionId || !issuanceQrVisible || issuanceAccepted) return;
         try {
             const res = await axios.get(`http://localhost:3001/issuance/session/${sessionId}`);
             const { issuanceStatus } = res.data;
             if (issuanceStatus === 'accepted') {
-                // Credencial aceptada
                 setIssuanceAccepted(true);
                 toast.success('¡Credencial aceptada! Redirigiendo al dashboard...');
                 setTimeout(() => {
@@ -153,23 +148,22 @@ const Alta = () => {
                 Proceso de Alta
             </h2>
             <p className="font-body text-lg md:text-xl mb-6 text-justify max-w-xl leading-relaxed z-10 relative">
-                Para darse de alta en la Seguridad Social necesita presentar dos credenciales:
+                Para darse de alta en la Seguridad Social necesita presentar <strong>3 credenciales</strong>:
                 <br /><br />
                 <strong>- Credencial de Identidad</strong><br />
-                <strong>- Prueba de Residencia</strong>
-                <br /><br />
-                Una vez validadas, procederemos a la emisión de su credencial de Alta en la Seguridad Social.
+                <strong>- Credencial de Pasaporte</strong><br />
+                <strong>- Credencial de Registro Laboral del Empleador</strong><br /><br />
+                Una vez validadas estas 3 credenciales, procederemos a la emisión de su credencial de Alta en la Seguridad Social.
             </p>
 
-            {/* Verificación QR */}
             {!qrVisible && !issuanceQrVisible && !issuanceAccepted && (
                 <motion.button
-                    onClick={startTwoCredsVerification}
+                    onClick={startThreeCredsVerification}
                     className="px-7 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition font-body text-lg font-semibold focus:outline-none z-10 relative"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
-                    Iniciar verificación para el alta
+                    Iniciar verificación (3 Credenciales)
                 </motion.button>
             )}
 
@@ -187,7 +181,7 @@ const Alta = () => {
                     {!qrExpired && (
                         <>
                             <p className="font-body mb-4 text-neutralDark text-base">
-                                <FaQrcode className="inline-block mr-1 text-primary" /> Escanea este código QR con tu wallet y presenta las 2 credenciales requeridas:
+                                <FaQrcode className="inline-block mr-1 text-primary" /> Escanee este código QR con su wallet y presente las 3 credenciales requeridas:
                             </p>
                             <div className="hover:scale-105 transition-transform duration-200 ease-in-out">
                                 <QRCodeCanvas value={verificationUrl} size={256} className="mb-4" />
@@ -214,7 +208,6 @@ const Alta = () => {
                 </motion.div>
             )}
 
-            {/* Emisión de credencial */}
             {issuanceQrVisible && !issuanceAccepted && (
                 <motion.div
                     className="flex flex-col items-center mt-6 p-6 rounded-xl shadow-lg z-10 relative"
@@ -261,5 +254,3 @@ const Alta = () => {
 };
 
 export default Alta;
-
-
