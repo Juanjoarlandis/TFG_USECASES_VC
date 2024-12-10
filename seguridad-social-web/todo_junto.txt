@@ -1,0 +1,1925 @@
+--- seguridad-social-web/package.json ---
+{
+  "name": "seguridad-social-web",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.4.0",
+    "@testing-library/react": "^16.1.0",
+    "axios": "^1.7.9",
+    "cra-template": "1.2.0",
+    "framer-motion": "^11.13.1",
+    "i18next": "^24.0.5",
+    "jwt-decode": "^4.0.0",
+    "qrcode.react": "^4.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.1.3",
+    "react-redux": "^9.1.2",
+    "react-router-dom": "^7.0.2",
+    "react-scripts": "5.0.1",
+    "react-toastify": "^10.0.6",
+    "web-vitals": "^4.2.4",
+    "zod": "^3.23.8"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16"
+  }
+}
+
+
+--- seguridad-social-web/.gitignore ---
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+
+--- seguridad-social-web/README.md ---
+# Getting Started with Create React App
+
+This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Available Scripts
+
+In the project directory, you can run:
+
+### `npm start`
+
+Runs the app in the development mode.\
+Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+
+The page will reload when you make changes.\
+You may also see any lint errors in the console.
+
+### `npm test`
+
+Launches the test runner in the interactive watch mode.\
+See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+
+### `npm run build`
+
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
+
+The build is minified and the filenames include the hashes.\
+Your app is ready to be deployed!
+
+See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+
+### `npm run eject`
+
+**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+
+If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+
+Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+
+You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+
+## Learn More
+
+You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+
+To learn React, check out the [React documentation](https://reactjs.org/).
+
+### Code Splitting
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+
+### Analyzing the Bundle Size
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+
+### Making a Progressive Web App
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+
+### Advanced Configuration
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+
+### Deployment
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+
+### `npm run build` fails to minify
+
+This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+
+--- seguridad-social-web/postcss.config.js ---
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+
+
+--- seguridad-social-web/tailwind.config.js ---
+// tailwind.config.js
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+  content: [
+    "./src/**/*.{js,jsx,ts,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        azulOscuro: '#003366',
+        azulMedio: '#0055a5',
+        azulClaro: '#e0e0e0',
+        primary: '#004080',       // Asegúrate de incluir esto
+        secondary: '#FFD700',
+        blanco: '#ffffff',
+        grisOscuro: '#333333',
+        neutralLight: '#f1f1f1',    // Añade esta línea
+        neutralDark: '#333333',     // Añade esta línea si no existe
+      },
+      fontFamily: {
+        headings: ['Merriweather', 'serif'],
+        body: ['Roboto', 'sans-serif'],
+      },
+    },
+  },
+  plugins: [],
+}
+
+
+--- seguridad-social-web/public/index.html ---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seguridad Social</title>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
+
+
+--- seguridad-social-web/public/robots.txt ---
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Disallow:
+
+
+--- seguridad-social-web/public/manifest.json ---
+{
+  "short_name": "React App",
+  "name": "Create React App Sample",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+
+
+--- seguridad-social-web/server/package.json ---
+{
+  "name": "verifier-backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": {
+    "axios": "^1.7.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "mongoose": "^8.8.4",
+    "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "start": "node app.js"
+  }
+}
+
+
+--- seguridad-social-web/server/.env ---
+PORT=3001
+WALTID_VERIFIER_URL=http://localhost:7003
+VERIFIER_COORD_PUBLIC_URL=http://host.docker.internal:3001
+WALTID_ISSUER_URL=http://localhost:7002
+ISSUER_DID=did:web:93f6ae0f35b1.ngrok.app
+MONGO_URI=mongodb://localhost:27017/seguridadSocial
+
+ISSUER_KEY_JWK={
+            "kty": "OKP",
+            "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
+            "crv": "Ed25519",
+            "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+            "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+        } 
+CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
+
+
+--- seguridad-social-web/server/app.js ---
+// backend (app.js)
+
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
+const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Conexión MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Conectado a MongoDB'))
+    .catch(err => console.error('Error conectando a MongoDB:', err));
+
+// Modelos
+const UserSchema = new mongoose.Schema({
+    firstName: String,
+    familyName: String,
+    documentNumber: { type: String, unique: true },
+    currentAddress: [String],
+    hasAltaCredential: { type: Boolean, default: false },
+    altaIssueDate: { type: Date, default: null },
+    altaCredentialJti: { type: String, default: null } // Guardar el identificador único de la credencial de alta
+});
+const User = mongoose.model('User', UserSchema);
+
+const RevokedCredentialSchema = new mongoose.Schema({
+    credentialId: { type: String, unique: true }
+});
+const RevokedCredential = mongoose.model('RevokedCredential', RevokedCredentialSchema);
+
+const sessions = {}; // Sesiones en memoria
+
+// Logging requests
+app.use((req, res, next) => {
+    console.log(`\n[${new Date().toISOString()}] Request: ${req.method} ${req.originalUrl}`);
+    console.log('Headers:', req.headers);
+    console.log('Body:', Object.keys(req.body).length > 0 ? JSON.stringify(req.body, null, 2) : '{}');
+    next();
+});
+
+async function findOrCreateOrUpdateUser(userData) {
+    let user = await User.findOne({ documentNumber: userData.documentNumber });
+    if (!user) {
+        user = new User({
+            firstName: userData.firstName,
+            familyName: userData.familyName,
+            documentNumber: userData.documentNumber,
+            currentAddress: userData.currentAddress || [],
+            hasAltaCredential: false,
+            altaIssueDate: null,
+            altaCredentialJti: null
+        });
+    } else {
+        user.firstName = userData.firstName;
+        user.familyName = userData.familyName;
+        user.currentAddress = userData.currentAddress || user.currentAddress;
+    }
+    await user.save();
+    return user;
+}
+
+// Decodifica una credencial JWT completa
+function decodeVC(jwtCredential) {
+    return jwt.decode(jwtCredential);
+}
+
+function extractUserDataFromDecodedCredentialSubject(cs) {
+    let firstName = '';
+    let familyName = '';
+    let documentNumber = '';
+    let currentAddress = [];
+
+    if (cs.identity) {
+        documentNumber = cs.identity.identifier || '';
+        const fullName = cs.identity.name || '';
+        const nameParts = fullName.split(' ');
+        firstName = nameParts[0] || '';
+        familyName = nameParts.slice(1).join(' ') || '';
+    }
+
+    if (cs.address && Array.isArray(cs.address)) {
+        currentAddress = cs.address;
+    }
+
+    return { firstName, familyName, documentNumber, currentAddress };
+}
+
+function extractUserDataForAlta(credentialsJwtArray) {
+    const decodedCreds = credentialsJwtArray.map(jwtCred => jwt.decode(jwtCred));
+    const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
+    if (!identityCredDecoded) {
+        throw new Error('No se encontró la credencial de identidad');
+    }
+
+    const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
+
+    const residenceCredDecoded = decodedCreds.find(c =>
+        c.vc && (c.vc.type.includes('PassportCh') || c.vc.type.includes('ProofOfResidenceCredential'))
+    );
+
+    if (residenceCredDecoded && residenceCredDecoded.vc.credentialSubject && Array.isArray(residenceCredDecoded.vc.credentialSubject.address)) {
+        idData.currentAddress = residenceCredDecoded.vc.credentialSubject.address;
+    }
+
+    return { idData };
+}
+
+async function isCredentialRevoked(credentialId) {
+    const revoked = await RevokedCredential.findOne({ credentialId });
+    return !!revoked;
+}
+
+// Verifica si las credenciales presentadas están revocadas
+async function checkCredentialsRevocation(credentialsJwtArray) {
+    for (let jwtCred of credentialsJwtArray) {
+        const vcDecoded = decodeVC(jwtCred);
+        if (!vcDecoded) {
+            // Sin decodificación no podemos continuar
+            return true;
+        }
+        // Prioriza jti, si no existe, usa vc.id
+        let credId = vcDecoded.jti || (vcDecoded.vc && vcDecoded.vc.id ? vcDecoded.vc.id : null);
+        if (!credId) {
+            // Si no hay ningún identificador único, no podemos verificar revocación
+            return true;
+        }
+        const revoked = await isCredentialRevoked(credId);
+        if (revoked) return true;
+    }
+    return false;
+}
+
+const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, WALTID_ISSUER_URL } = process.env;
+
+// Endpoint verificación simple
+app.post('/verification/offer', async (req, res) => {
+    if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+        return res.status(500).json({ error: 'Faltan variables de entorno' });
+    }
+
+    const stateId = uuidv4();
+    const requestBody = req.body;
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            'authorizeBaseUrl': 'openid4vp://authorize',
+            'responseMode': 'direct_post',
+            'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallback/${stateId}`
+        };
+
+        const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+        sessions[stateId] = {
+            status: 'pending',
+            verificationUrl: response.data,
+            verificationResult: null
+        };
+        res.status(200).json({ verificationUrl: response.data, state: stateId });
+    } catch (error) {
+        console.error('Error en /verification/offer:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Endpoint verificación 2 creds (alta)
+app.post('/verification/offer2creds', async (req, res) => {
+    if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+        return res.status(500).json({ error: 'Faltan variables de entorno' });
+    }
+
+    const stateId = uuidv4();
+    const requestBody = {
+        vp_policies: ["signature", "expired"],
+        vc_policies: ["signature", "expired"],
+        request_credentials: [
+            { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
+            { "type": "PassportCh", "format": "jwt_vc_json" }
+        ]
+    };
+
+    try {
+        const headers = {
+            'Content-Type': 'application/json',
+            'authorizeBaseUrl': 'openid4vp://authorize',
+            'responseMode': 'direct_post',
+            'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
+        };
+
+        const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+        sessions[stateId] = {
+            status: 'pending',
+            verificationUrl: response.data,
+            verificationResult: null,
+            type: 'alta'
+        };
+        res.status(200).json({ verificationUrl: response.data, state: stateId });
+    } catch (error) {
+        console.error('Error en /verification/offer2creds:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Callback alta
+// Aquí ya no almacenamos el jti de la credencial de identidad, solo marcamos que el usuario está listo para emitir la credencial de alta.
+app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
+    const { stateId } = req.params;
+    const verificationData = req.body;
+
+    if (!sessions[stateId]) {
+        return res.status(404).json({ error: 'Sesión no encontrada' });
+    }
+
+    const { verificationResult } = verificationData;
+    sessions[stateId].verificationResult = verificationResult;
+    sessions[stateId].status = verificationResult === true ? 'verified' : 'failed';
+
+    if (verificationResult === true) {
+        const vpToken = verificationData.tokenResponse && verificationData.tokenResponse.vp_token;
+        if (!vpToken) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'No se encontró el vp_token' });
+        }
+
+        const vpDecoded = jwt.decode(vpToken);
+        const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
+        if (credentialsJwt.length < 2) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'Faltan credenciales' });
+        }
+
+        // Comprobar revocación
+        const revoked = await checkCredentialsRevocation(credentialsJwt);
+        if (revoked) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'Una de las credenciales está revocada' });
+        }
+
+        // Extraer datos del usuario
+        const { idData } = extractUserDataForAlta(credentialsJwt);
+        const user = await findOrCreateOrUpdateUser(idData);
+        // Marcamos que el usuario se puede dar de alta (ha pasado la verificación).
+        // La credencial de alta no se ha emitido aún, por lo tanto no tenemos su jti.
+        // Esto se obtendrá en /issuance/offer
+        user.hasAltaCredential = true;
+        user.altaIssueDate = new Date();
+        await user.save();
+
+        const token = "ejemplo-de-token-alta";
+        sessions[stateId].user = user;
+        sessions[stateId].token = token;
+    }
+
+    res.status(200).send('Status callback alta processed successfully');
+});
+
+// Endpoint emisión credencial alta
+// Tras emitir la credencial, decodificamos el JWT devuelto (asumiendo que response.data es el JWT de la credencial emitida).
+// Extraemos jti y lo almacenamos en el usuario.
+app.post('/issuance/offer', async (req, res) => {
+    const { stateId } = req.body;
+    if (!sessions[stateId] || !sessions[stateId].user) {
+        return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
+    }
+
+    const user = sessions[stateId].user;
+    if (!user.hasAltaCredential) {
+        return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
+    }
+
+    const issuerDid = "did:web:93f6ae0f35b1.ngrok.app";
+    const issuerKey = {
+        "type": "jwk",
+        "jwk": {
+            "kty": "OKP",
+            "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
+            "crv": "Ed25519",
+            "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+            "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+        }
+    };
+    const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
+
+    const altaData = {
+        fullName: user.firstName + ' ' + user.familyName,
+        dni: user.documentNumber,
+        address: user.currentAddress,
+        issueDate: user.altaIssueDate.toISOString(),
+        credentialType: "Alta_Seguridad_Social"
+    };
+
+    const revocationId = uuidv4(); // El mismo UUID que vamos a usar como vc.id
+
+    const issuanceRequestBody = {
+        issuerKey: issuerKey,
+        issuerDid: issuerDid,
+        credentialConfigurationId,
+        credentialData: {
+            "@context": ["https://www.w3.org/2018/credentials/v1"],
+            "type": ["VerifiableCredential", "AltaSeguridadSocialCredential"],
+            "issuer": { "id": issuerDid },
+            "issuanceDate": altaData.issueDate,
+            // Aquí utilizamos el revocationId como id único de la credencial
+            "id": `urn:uuid:${revocationId}`,
+            "credentialSubject": {
+                "id": "did:web:93f6ae0f35b1.ngrok.app",
+                "fullName": altaData.fullName,
+                "dni": altaData.dni,
+                "address": altaData.address,
+                "tipoDeAlta": altaData.credentialType
+            }
+        },
+        "mapping": {
+            "issuer": { "id": "<issuerDid>" },
+            "credentialSubject": { "id": "<subjectDid>" },
+            "issuanceDate": "<timestamp>",
+            "expirationDate": "<timestamp-in:365d>"
+        },
+        "authenticationMethod": "PRE_AUTHORIZED"
+    };
+
+    try {
+        const response = await axios.post(`${WALTID_ISSUER_URL}/openid4vc/jwt/issue`, issuanceRequestBody, {
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const issuedCredentialJwt = response.data;
+
+        // Guardamos el revocationId (que ahora es el id de la credencial)
+        const dbUser = await User.findOne({ documentNumber: user.documentNumber });
+        if (dbUser) {
+            dbUser.altaCredentialJti = revocationId;
+            await dbUser.save();
+        }
+
+        sessions[stateId].user = dbUser;
+        sessions[stateId].issuanceOfferUrl = issuedCredentialJwt;
+        res.status(200).json({ issuanceOfferUrl: issuedCredentialJwt, state: stateId });
+    } catch (error) {
+        console.error('Error emitiendo credencial:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Callback genérico
+app.post('/verification/statusCallback/:stateId', async (req, res) => {
+    const { stateId } = req.params;
+    const verificationData = req.body;
+
+    if (!sessions[stateId]) {
+        return res.status(404).json({ error: 'Sesión no encontrada' });
+    }
+
+    const { verificationResult } = verificationData;
+    sessions[stateId].verificationResult = verificationResult;
+    sessions[stateId].status = verificationResult ? 'verified' : 'failed';
+
+    if (verificationResult) {
+        const vpToken = verificationData.tokenResponse && verificationData.tokenResponse.vp_token;
+        if (!vpToken) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'No vp_token' });
+        }
+
+        const vpDecoded = jwt.decode(vpToken);
+        const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
+        if (credentialsJwt.length < 1) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'Falta la credencial requerida' });
+        }
+
+        // Comprobar revocación
+        const revoked = await checkCredentialsRevocation(credentialsJwt);
+        if (revoked) {
+            sessions[stateId].status = 'failed';
+            return res.status(400).json({ error: 'La credencial está revocada' });
+        }
+
+        const vcDecoded = decodeVC(credentialsJwt[0]);
+        const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
+        const user = await findOrCreateOrUpdateUser(userData);
+
+        const token = "ejemplo-de-token";
+        sessions[stateId].user = user;
+        sessions[stateId].token = token;
+    }
+
+    res.status(200).send('Status callback processed successfully');
+});
+
+// Endpoint estado de sesión
+app.get('/verification/session/:stateId', async (req, res) => {
+    const { stateId } = req.params;
+    if (!sessions[stateId]) {
+        return res.status(404).json({ error: 'Sesión no encontrada' });
+    }
+
+    const sessionData = sessions[stateId];
+    let userResponse = null;
+    if (sessionData.user && sessionData.user.documentNumber) {
+        const u = await User.findOne({ documentNumber: sessionData.user.documentNumber });
+        if (u) {
+            userResponse = {
+                firstName: u.firstName,
+                familyName: u.familyName,
+                documentNumber: u.documentNumber,
+                currentAddress: u.currentAddress,
+                hasAltaCredential: u.hasAltaCredential,
+                altaIssueDate: u.altaIssueDate
+            };
+        }
+    }
+
+    res.status(200).json({
+        status: sessionData.status,
+        token: sessionData.token || null,
+        user: userResponse
+    });
+});
+
+// Endpoint para revocar la credencial
+// Ahora se revoca la credencial de alta real, usando user.altaCredentialJti que se obtuvo tras la emisión.
+app.post('/revocar-credencial', async (req, res) => {
+    const { dni } = req.body;
+    const user = await User.findOne({ documentNumber: dni });
+    if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Marcar el alta como revocada
+    user.hasAltaCredential = false;
+    user.altaIssueDate = null;
+    await user.save();
+
+    // Añadir el jti de la credencial de alta a la lista negra
+    if (user.altaCredentialJti) {
+        try {
+            await RevokedCredential.create({ credentialId: user.altaCredentialJti });
+        } catch (e) {
+            if (e.code !== 11000) { // ignorar error si ya existe
+                console.error('Error añadiendo a la lista negra:', e);
+            }
+        }
+    } else {
+        console.warn('No se encontró altaCredentialJti en el usuario, no se pudo revocar en la lista negra.');
+    }
+
+    return res.status(200).json({ message: 'Credencial revocada con éxito', user });
+});
+
+// Endpoint para obtener usuario por DNI (opcional, si se requiere refrescar datos en front)
+app.get('/user/:dni', async (req, res) => {
+    const { dni } = req.params;
+    const user = await User.findOne({ documentNumber: dni });
+    if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const userResponse = {
+        firstName: user.firstName,
+        familyName: user.familyName,
+        documentNumber: user.documentNumber,
+        currentAddress: user.currentAddress,
+        hasAltaCredential: user.hasAltaCredential,
+        altaIssueDate: user.altaIssueDate
+    };
+
+    return res.status(200).json({ user: userResponse });
+});
+
+// Middleware final de respuesta
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        console.log(`Respuesta enviada con status ${res.statusCode}`);
+    });
+    next();
+});
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Backend escuchando en http://localhost:${PORT}`);
+});
+
+
+--- seguridad-social-web/server/src/models/User.js ---
+const mongoose = require('mongoose');
+
+const UserSchema = new mongoose.Schema({
+    documentNumber: { type: String, unique: true, required: true },
+    firstName: String,
+    familyName: String,
+    currentAddress: [String],
+
+    // Credenciales verificadas:
+    identityCredential: { type: Boolean, default: false },
+    residenceCredential: { type: Boolean, default: false },
+
+    // Credencial de alta emitida:
+    altaCredential: {
+        issued: { type: Boolean, default: false },
+        issueDate: Date,
+        tipoDeAlta: String,
+        fullName: String,
+        dni: String,
+        address: [String]
+    }
+}, { timestamps: true });
+
+const User = mongoose.model('User', UserSchema);
+module.exports = User;
+
+
+--- seguridad-social-web/server/src/models/sessionModel.js ---
+
+
+--- seguridad-social-web/server/src/routes/index.js ---
+
+
+--- seguridad-social-web/server/src/utils/logger.js ---
+
+
+--- seguridad-social-web/server/src/controllers/mainController.js ---
+
+
+--- seguridad-social-web/src/index.js ---
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { Provider } from 'react-redux';
+import store from './store/store';
+import { initializeFromStorage } from './store/authSlice';
+import './i18n';
+
+// Inicializar estado desde localStorage
+const token = localStorage.getItem('token');
+const user = JSON.parse(localStorage.getItem('user'));
+if (token && user) {
+  store.dispatch(initializeFromStorage({ token, user }));
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </React.StrictMode>
+);
+
+
+--- seguridad-social-web/src/App.test.js ---
+import { render, screen } from '@testing-library/react';
+import App from './App';
+
+test('renders learn react link', () => {
+  render(<App />);
+  const linkElement = screen.getByText(/learn react/i);
+  expect(linkElement).toBeInTheDocument();
+});
+
+
+--- seguridad-social-web/src/reportWebVitals.js ---
+const reportWebVitals = onPerfEntry => {
+  if (onPerfEntry && onPerfEntry instanceof Function) {
+    import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+      getCLS(onPerfEntry);
+      getFID(onPerfEntry);
+      getFCP(onPerfEntry);
+      getLCP(onPerfEntry);
+      getTTFB(onPerfEntry);
+    });
+  }
+};
+
+export default reportWebVitals;
+
+
+--- seguridad-social-web/src/setupTests.js ---
+// jest-dom adds custom jest matchers for asserting on DOM nodes.
+// allows you to do things like:
+// expect(element).toHaveTextContent(/react/i)
+// learn more: https://github.com/testing-library/jest-dom
+import '@testing-library/jest-dom';
+
+
+--- seguridad-social-web/src/App.js ---
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './pages/Home/Home';
+import Register from './pages/Register/Register';
+import Dashboard from './pages/Dashboard/Dashboard';
+import Header from './components/Header/Header';
+import Footer from './components/Footer/Footer';
+import Alta from './pages/Alta/Alta';
+import ProtectedRoute from './ProtectedRoute';
+import VerificationTutorial from './pages/VerificationTutorial/VerificationTutorial'; // Importamos la nueva vista
+import './App.css';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+function App() {
+  return (
+    <>
+      <Router>
+        <Header />
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/verification-tutorial" element={<VerificationTutorial />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/alta"
+              element={
+                <ProtectedRoute>
+                  <Alta />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </div>
+        <Footer />
+      </Router>
+      <ToastContainer />
+    </>
+  );
+}
+
+export default App;
+
+
+--- seguridad-social-web/src/ProtectedRoute.js ---
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+
+const ProtectedRoute = ({ children }) => {
+  const isVerified = useSelector(state => state.auth.isVerified);
+
+  if (!isVerified) {
+    return <Navigate to="/register" replace />;
+  }
+
+  return children;
+};
+
+export default ProtectedRoute;
+
+
+--- seguridad-social-web/src/logo.svg ---
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 841.9 595.3"><g fill="#61DAFB"><path d="M666.3 296.5c0-32.5-40.7-63.3-103.1-82.4 14.4-63.6 8-114.2-20.2-130.4-6.5-3.8-14.1-5.6-22.4-5.6v22.3c4.6 0 8.3.9 11.4 2.6 13.6 7.8 19.5 37.5 14.9 75.7-1.1 9.4-2.9 19.3-5.1 29.4-19.6-4.8-41-8.5-63.5-10.9-13.5-18.5-27.5-35.3-41.6-50 32.6-30.3 63.2-46.9 84-46.9V78c-27.5 0-63.5 19.6-99.9 53.6-36.4-33.8-72.4-53.2-99.9-53.2v22.3c20.7 0 51.4 16.5 84 46.6-14 14.7-28 31.4-41.3 49.9-22.6 2.4-44 6.1-63.6 11-2.3-10-4-19.7-5.2-29-4.7-38.2 1.1-67.9 14.6-75.8 3-1.8 6.9-2.6 11.5-2.6V78.5c-8.4 0-16 1.8-22.6 5.6-28.1 16.2-34.4 66.7-19.9 130.1-62.2 19.2-102.7 49.9-102.7 82.3 0 32.5 40.7 63.3 103.1 82.4-14.4 63.6-8 114.2 20.2 130.4 6.5 3.8 14.1 5.6 22.5 5.6 27.5 0 63.5-19.6 99.9-53.6 36.4 33.8 72.4 53.2 99.9 53.2 8.4 0 16-1.8 22.6-5.6 28.1-16.2 34.4-66.7 19.9-130.1 62-19.1 102.5-49.9 102.5-82.3zm-130.2-66.7c-3.7 12.9-8.3 26.2-13.5 39.5-4.1-8-8.4-16-13.1-24-4.6-8-9.5-15.8-14.4-23.4 14.2 2.1 27.9 4.7 41 7.9zm-45.8 106.5c-7.8 13.5-15.8 26.3-24.1 38.2-14.9 1.3-30 2-45.2 2-15.1 0-30.2-.7-45-1.9-8.3-11.9-16.4-24.6-24.2-38-7.6-13.1-14.5-26.4-20.8-39.8 6.2-13.4 13.2-26.8 20.7-39.9 7.8-13.5 15.8-26.3 24.1-38.2 14.9-1.3 30-2 45.2-2 15.1 0 30.2.7 45 1.9 8.3 11.9 16.4 24.6 24.2 38 7.6 13.1 14.5 26.4 20.8 39.8-6.3 13.4-13.2 26.8-20.7 39.9zm32.3-13c5.4 13.4 10 26.8 13.8 39.8-13.1 3.2-26.9 5.9-41.2 8 4.9-7.7 9.8-15.6 14.4-23.7 4.6-8 8.9-16.1 13-24.1zM421.2 430c-9.3-9.6-18.6-20.3-27.8-32 9 .4 18.2.7 27.5.7 9.4 0 18.7-.2 27.8-.7-9 11.7-18.3 22.4-27.5 32zm-74.4-58.9c-14.2-2.1-27.9-4.7-41-7.9 3.7-12.9 8.3-26.2 13.5-39.5 4.1 8 8.4 16 13.1 24 4.7 8 9.5 15.8 14.4 23.4zM420.7 163c9.3 9.6 18.6 20.3 27.8 32-9-.4-18.2-.7-27.5-.7-9.4 0-18.7.2-27.8.7 9-11.7 18.3-22.4 27.5-32zm-74 58.9c-4.9 7.7-9.8 15.6-14.4 23.7-4.6 8-8.9 16-13 24-5.4-13.4-10-26.8-13.8-39.8 13.1-3.1 26.9-5.8 41.2-7.9zm-90.5 125.2c-35.4-15.1-58.3-34.9-58.3-50.6 0-15.7 22.9-35.6 58.3-50.6 8.6-3.7 18-7 27.7-10.1 5.7 19.6 13.2 40 22.5 60.9-9.2 20.8-16.6 41.1-22.2 60.6-9.9-3.1-19.3-6.5-28-10.2zM310 490c-13.6-7.8-19.5-37.5-14.9-75.7 1.1-9.4 2.9-19.3 5.1-29.4 19.6 4.8 41 8.5 63.5 10.9 13.5 18.5 27.5 35.3 41.6 50-32.6 30.3-63.2 46.9-84 46.9-4.5-.1-8.3-1-11.3-2.7zm237.2-76.2c4.7 38.2-1.1 67.9-14.6 75.8-3 1.8-6.9 2.6-11.5 2.6-20.7 0-51.4-16.5-84-46.6 14-14.7 28-31.4 41.3-49.9 22.6-2.4 44-6.1 63.6-11 2.3 10.1 4.1 19.8 5.2 29.1zm38.5-66.7c-8.6 3.7-18 7-27.7 10.1-5.7-19.6-13.2-40-22.5-60.9 9.2-20.8 16.6-41.1 22.2-60.6 9.9 3.1 19.3 6.5 28.1 10.2 35.4 15.1 58.3 34.9 58.3 50.6-.1 15.7-23 35.6-58.4 50.6zM320.8 78.4z"/><circle cx="420.9" cy="296.5" r="45.7"/><path d="M520.5 78.1z"/></g></svg>
+
+--- seguridad-social-web/src/index.css ---
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply font-body bg-neutralLight text-neutralDark;
+  margin: 0;
+  line-height: 1.6;
+}
+
+a {
+  @apply transition-colors duration-200 hover:text-primary;
+  text-decoration: none;
+}
+
+h1, h2, h3, h4 {
+  @apply font-headings text-neutralDark font-bold;
+}
+
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fade-in-scale {
+  animation: fadeInScale 0.5s ease-in-out forwards;
+}
+
+
+--- seguridad-social-web/src/i18n.js ---
+// src/i18n.js
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+
+const resources = {
+    es: {
+        translation: {
+            "welcome": "Bienvenido a la Seguridad Social",
+            "verifyDNI": "Verificar CredencialDNI"
+        }
+    },
+    en: {
+        translation: {
+            "welcome": "Welcome to Social Security",
+            "verifyDNI": "Verify DNI"
+        }
+    }
+};
+
+i18n
+    .use(initReactI18next)
+    .init({
+        resources,
+        lng: "es", // idioma por defecto
+        interpolation: {
+            escapeValue: false
+        }
+    });
+
+export default i18n;
+
+
+--- seguridad-social-web/src/store/authSlice.js ---
+// src/store/authSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const initialState = {
+    isVerified: false,
+    userData: null,
+    token: null,
+};
+
+const authSlice = createSlice({
+    name: 'auth',
+    initialState,
+    reducers: {
+        verifyUser: (state, action) => {
+            state.isVerified = true;
+            state.userData = action.payload.user;
+            state.token = action.payload.token;
+        },
+        logout: (state) => {
+            state.isVerified = false;
+            state.userData = null;
+            state.token = null;
+        },
+        initializeFromStorage: (state, action) => {
+            const { token, user } = action.payload;
+            if (token && user) {
+                state.isVerified = true;
+                state.userData = user;
+                state.token = token;
+            }
+        }
+    },
+});
+
+export const { verifyUser, logout, initializeFromStorage } = authSlice.actions;
+export default authSlice.reducer;
+
+
+--- seguridad-social-web/src/store/store.js ---
+// src/store/store.js
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from './authSlice';
+
+const store = configureStore({
+    reducer: {
+        auth: authReducer,
+    },
+});
+
+export default store;
+
+
+--- seguridad-social-web/src/context/AuthContext.js ---
+import React, { createContext, useState } from 'react';
+
+export const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [isVerified, setIsVerified] = useState(false);
+  const [userData, setUserData] = useState(null);
+
+  const verifyUser = (data) => {
+    setIsVerified(true);
+    setUserData(data);
+  };
+
+  const logout = () => {
+    setIsVerified(false);
+    setUserData(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ isVerified, userData, verifyUser, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+
+--- seguridad-social-web/src/services/api.js ---
+import axios from 'axios';
+
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001';
+
+export const startVerification = async () => {
+  const response = await axios.post(`${BASE_URL}/verification/offer`, {
+    request_credentials: [
+      {
+        format: "jwt_vc_json",
+        type: "CustomIdentityCredential"
+      }
+    ]
+  });
+  return { verificationUrl: response.data.verificationUrl, sessionId: response.data.state };
+};
+
+export const checkSessionStatus = async (stateId) => {
+  const response = await axios.get(`${BASE_URL}/verification/session/${stateId}`);
+  return response.data; // {status, token?, user?}
+};
+
+// Nueva función para obtener el usuario por DNI
+export const fetchUserDataByDni = async (dni) => {
+  const response = await axios.get(`${BASE_URL}/user/${dni}`);
+  return response.data; // Debe devolver {user: {...}} con la info actualizada
+};
+
+
+--- seguridad-social-web/src/utils/validation.js ---
+// src/utils/validation.js
+import { z } from 'zod';
+
+export const userSchema = z.object({
+    firstName: z.string().nonempty(),
+    familyName: z.string().nonempty(),
+    documentNumber: z.string().nonempty(),
+    currentAddress: z.array(z.string()).optional()
+});
+
+
+--- seguridad-social-web/src/pages/Alta/Alta.js ---
+import React, { useState } from 'react';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { QRCodeCanvas } from 'qrcode.react';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+
+const Alta = () => {
+    const [verificationUrl, setVerificationUrl] = useState('');
+    const [sessionId, setSessionId] = useState('');
+    const [qrVisible, setQrVisible] = useState(false);
+    const [issuanceOfferUrl, setIssuanceOfferUrl] = useState('');
+    const [issuanceQrVisible, setIssuanceQrVisible] = useState(false);
+
+    const navigate = useNavigate();
+
+    const startTwoCredsVerification = async () => {
+        try {
+            const response = await axios.post('http://localhost:3001/verification/offer2creds', {});
+            setVerificationUrl(response.data.verificationUrl);
+            setSessionId(response.data.state);
+            setQrVisible(true);
+
+            const interval = setInterval(async () => {
+                const statusRes = await axios.get(`http://localhost:3001/verification/session/${response.data.state}`);
+                const { status } = statusRes.data;
+                if (status === 'verified') {
+                    clearInterval(interval);
+                    toast.success('¡Verificación completada! Emisión de credencial en proceso...');
+                    const issuanceRes = await axios.post('http://localhost:3001/issuance/offer', { stateId: response.data.state });
+                    setIssuanceOfferUrl(issuanceRes.data.issuanceOfferUrl);
+                    setIssuanceQrVisible(true);
+                } else if (status === 'failed') {
+                    clearInterval(interval);
+                    toast.error('La verificación ha fallado.');
+                }
+            }, 5000);
+        } catch (error) {
+            console.error(error);
+            toast.error('Error iniciando verificación para el alta.');
+        }
+    };
+
+    // Variants para animaciones con Framer Motion
+    const containerVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.5, ease: 'easeOut' }
+        }
+    };
+
+    const cardVariants = {
+        hidden: { opacity: 0, scale: 0.95 },
+        visible: {
+            opacity: 1,
+            scale: 1,
+            transition: { type: 'spring', stiffness: 120, damping: 15 }
+        }
+    };
+
+    return (
+        <motion.div
+            className="flex flex-col items-center justify-center min-h-[80vh] p-4 bg-white text-neutralDark"
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
+            <h2 className="font-headings text-3xl md:text-4xl mb-6 text-primary font-bold">
+                Proceso de Alta
+            </h2>
+            <p className="font-body text-lg md:text-xl mb-6 text-justify max-w-xl leading-relaxed">
+                Para darse de alta en la Seguridad Social necesita presentar dos credenciales:
+                <br /><br />
+                - Credencial de Identidad (CustomIdentityCredential)
+                <br />
+                - Prueba de Residencia (ProofOfResidenceCredential)
+                <br /><br />
+                Al iniciar este proceso se le pedirá escanear un QR y presentar ambas credenciales.
+                <br /><br />
+                Una vez validadas, procederemos a la emisión de su credencial de Alta en la Seguridad Social.
+            </p>
+
+            {!qrVisible && !issuanceQrVisible && (
+                <motion.button
+                    onClick={startTwoCredsVerification}
+                    className="px-7 py-3 bg-primary text-white rounded-full hover:bg-secondary transition font-body text-lg font-semibold focus:outline-none"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                >
+                    Iniciar verificación para el alta
+                </motion.button>
+            )}
+
+            {qrVisible && !issuanceQrVisible && (
+                <motion.div
+                    className="flex flex-col items-center mt-7 p-7 bg-white rounded-xl shadow-lg"
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <p className="font-body mb-4 text-neutralDark text-base">
+                        Escanea este código QR con tu wallet y presenta las 2 credenciales requeridas:
+                    </p>
+                    <div className="hover:scale-105 transition-transform duration-200 ease-in-out">
+                        <QRCodeCanvas value={verificationUrl} size={256} className="mb-4" />
+                    </div>
+                    <p className="font-body text-sm text-neutralDark animate-pulse">
+                        Esperando verificación de ambas credenciales...
+                    </p>
+                </motion.div>
+            )}
+
+            {issuanceQrVisible && (
+                <motion.div
+                    className="flex flex-col items-center mt-6 p-6 bg-white rounded-xl shadow-lg"
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                >
+                    <p className="font-body mb-4 text-neutralDark text-base">
+                        Verificación completada. Ahora escanee este QR para recibir su credencial Alta_Seguridad_Social:
+                    </p>
+                    <div className="hover:scale-105 transition-transform duration-200 ease-in-out">
+                        <QRCodeCanvas value={issuanceOfferUrl} size={256} className="mb-4" />
+                    </div>
+                    <p className="font-body text-sm text-neutralDark mb-4">Escanee para emitir la credencial en su wallet.</p>
+                    <button
+                        className="px-6 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
+                        onClick={() => navigate('/dashboard')}
+                    >
+                        Volver al Dashboard
+                    </button>
+                </motion.div>
+            )}
+        </motion.div>
+    );
+};
+
+export default Alta;
+
+
+--- seguridad-social-web/src/pages/VerificationTutorial/VerificationTutorial.js ---
+// src/pages/VerificationTutorial/VerificationTutorial.js
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const VerificationTutorial = () => {
+    const navigate = useNavigate();
+
+    const handleUnderstood = () => {
+        navigate('/register'); // Redirigimos a la página de registro/verificación real
+    };
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 bg-white text-neutralDark fade-in-scale">
+            <h2 className="font-headings text-3xl md:text-4xl mb-6 text-primary font-bold">Antes de comenzar</h2>
+            <p className="font-body text-lg md:text-xl mb-8 text-justify max-w-xl leading-relaxed">
+                Para verificar su identidad mediante DNI necesitará su wallet WaltId instalada en su dispositivo.
+                Asegúrese de que su dispositivo cuenta con cámara para escanear los códigos QR que se le mostrarán
+                en el siguiente paso. Una vez que haya presentado su credencial con éxito, podrá acceder a todos los
+                servicios habilitados sin necesidad de desplazarse.
+            </p>
+
+            <button
+                onClick={handleUnderstood}
+                className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold"
+            >
+                Entendido
+            </button>
+        </div>
+    );
+};
+
+export default VerificationTutorial;
+
+
+--- seguridad-social-web/src/pages/Dashboard/Dashboard.js ---
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout, verifyUser } from '../../store/authSlice';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { fetchUserDataByDni } from '../../services/api';
+
+const Dashboard = () => {
+    const { userData, token } = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    const handleDarseAlta = async () => {
+        navigate('/alta');
+    };
+
+    const handleDarseBaja = async () => {
+        try {
+            const dni = userData.documentNumber;
+            const response = await axios.post('http://localhost:3001/revocar-credencial', { dni });
+            if (response.status === 200) {
+                toast.success('Credencial revocada con éxito.');
+                // Tras revocar la credencial, refrescamos datos del usuario:
+                refreshUserData();
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Error revocando credencial.');
+        }
+    };
+
+    const handleLogout = () => {
+        dispatch(logout());
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    };
+
+    // Función para refrescar datos del usuario
+    const refreshUserData = async () => {
+        if (userData && userData.documentNumber) {
+            try {
+                const updatedUser = await fetchUserDataByDni(userData.documentNumber);
+                if (updatedUser && updatedUser.user) {
+                    // Actualizamos el estado global con los datos frescos
+                    dispatch(verifyUser({ user: updatedUser.user, token }));
+                    localStorage.setItem('user', JSON.stringify(updatedUser.user));
+                }
+            } catch (err) {
+                console.error('Error actualizando datos de usuario:', err);
+            }
+        }
+    };
+
+    useEffect(() => {
+        // Cada vez que se monta el Dashboard (o userData cambie), refrescar los datos
+        // Esto asegurará que al volver al dashboard tras la revocación/emisión se vea el estado actualizado
+        refreshUserData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const hasAltaCredential = userData?.hasAltaCredential || false;
+    const altaData = {};
+    // Nota: Si el backend no asocia la altaData directamente al user, podría haber que extraerla de userData
+    // Por simplicidad, se deja así, o ajusta si tu backend lo devolviese en userData.
+
+    return (
+        <div className="min-h-[80vh] p-4 bg-neutralLight fade-in-scale flex flex-col items-center">
+            <div className="bg-white w-full max-w-4xl p-8 rounded-xl shadow-lg">
+                <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+                    <div>
+                        <h2 className="font-headings text-3xl md:text-4xl text-primary font-bold mb-2">
+                            Bienvenido{userData ? `, ${userData.firstName}` : ''}
+                        </h2>
+                        <p className="font-body text-neutralDark text-base md:text-lg max-w-2xl leading-relaxed">
+                            Aquí puedes acceder a tus datos, gestionar tus trámites y aprovechar todos los servicios disponibles
+                            de la Seguridad Social.
+                        </p>
+                    </div>
+                    <div className="mt-4 md:mt-0 flex gap-4">
+                        {!hasAltaCredential && (
+                            <button
+                                onClick={handleDarseAlta}
+                                className="px-6 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
+                            >
+                                Darse de Alta
+                            </button>
+                        )}
+                        <button
+                            onClick={handleLogout}
+                            className="px-6 py-2 bg-neutralDark text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
+                        >
+                            Cerrar Sesión
+                        </button>
+                    </div>
+                </div>
+
+                {userData ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-neutralLight p-6 rounded-xl shadow-inner">
+                            <h3 className="font-headings text-xl text-primary font-semibold mb-4">Datos Personales</h3>
+                            <ul className="font-body text-base text-neutralDark space-y-2">
+                                <li><strong>Nombre:</strong> {userData.firstName} {userData.familyName}</li>
+                                <li><strong>DNI:</strong> {userData.documentNumber}</li>
+                                <li><strong>Dirección:</strong> {userData.currentAddress && userData.currentAddress.join(', ')}</li>
+                            </ul>
+                        </div>
+
+                        {!hasAltaCredential ? (
+                            <div className="bg-neutralLight p-6 rounded-xl shadow-inner">
+                                <h3 className="font-headings text-xl text-primary font-semibold mb-4">Servicios Disponibles</h3>
+                                <p className="font-body text-base text-neutralDark leading-relaxed">
+                                    Para acceder a servicios exclusivos (como la acreditación de su alta en la Seguridad Social)
+                                    puede iniciar el proceso ahora mismo pulsando "Darse de Alta". Una vez completado, podrá gestionar trámites
+                                    avanzados sin necesidad de desplazarse.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="bg-neutralLight p-6 rounded-xl shadow-inner">
+                                <h3 className="font-headings text-xl text-primary font-semibold mb-4">Credencial de Alta</h3>
+                                <p className="font-body text-base text-neutralDark leading-relaxed mb-4">
+                                    Usted ya dispone de la credencial <strong>Alta_Seguridad_Social</strong>. Esto le permite acceder
+                                    a todos los servicios y prestaciones con la máxima comodidad.
+                                </p>
+                                <div className="bg-white p-4 rounded-lg shadow flex flex-col gap-2">
+                                    <p className="font-body text-sm text-neutralDark"><strong>Tipo:</strong> Alta_Seguridad_Social</p>
+                                    <p className="font-body text-sm text-neutralDark"><strong>Emitida el:</strong> {altaData.issueDate || (userData.altaIssueDate || 'N/A')}</p>
+                                    <p className="font-body text-sm text-neutralDark">
+                                        <strong>Información del Sujeto:</strong> {userData.firstName} {userData.familyName}, DNI: {userData.documentNumber}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleDarseBaja}
+                                    className="mt-4 px-6 py-3 bg-red-600 text-white rounded-full hover:bg-red-500 hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
+                                >
+                                    Darse de Baja (Revocar Credencial)
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <p className="font-body text-center text-red-600 text-base mt-8">
+                        No hay datos de usuario disponibles. ¿Está verificado?
+                    </p>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default Dashboard;
+
+
+--- seguridad-social-web/src/pages/Home/Home.css ---
+.home {
+    text-align: center;
+    margin-top: 50px;
+  }
+  
+  .home button {
+    padding: 10px 20px;
+    background-color: #004080;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+  }
+  
+  @keyframes fadeInScale {
+    0% {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .fade-in-scale {
+    animation: fadeInScale 0.5s ease-in-out forwards;
+  }
+  
+
+--- seguridad-social-web/src/pages/Home/Home.js ---
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+
+const Home = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 bg-neutralLight text-neutralDark fade-in-scale">
+      <h2 className="font-headings text-4xl md:text-5xl mb-7 text-primary font-bold">{t('welcome')}</h2>
+      <p className="font-body text-lg md:text-xl mb-10 text-justify max-w-2xl leading-relaxed">
+        La Seguridad Social pone a su disposición una amplia gama de servicios y trámites
+        electrónicos. Al verificar su identidad con el DNI o acceder con Cl@ve u otros medios
+        electrónicos reconocidos, podrá gestionar sus prestaciones, consultar su información
+        personal y realizar numerosas gestiones sin necesidad de desplazarse, de forma segura
+        y disponible las 24 horas del día.
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Link
+          to="/login"
+          className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold"
+        >
+          Iniciar sesión con cuenta
+        </Link>
+
+        <Link
+          to="/verification-tutorial"
+          className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold"
+        >
+          {t('verifyDNI')}
+        </Link>
+
+        <Link
+          to="/clave"
+          className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold"
+        >
+          Acceder con Cl@ve
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+export default Home;
+
+
+--- seguridad-social-web/src/pages/Register/Register.js ---
+// src/pages/Register/Register.js
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
+import { startVerification, checkSessionStatus } from '../../services/api';
+import { verifyUser } from '../../store/authSlice';
+import { useNavigate } from 'react-router-dom';
+import { QRCodeCanvas } from 'qrcode.react';
+import { toast } from 'react-toastify';
+import { userSchema } from '../../utils/validation';
+import { motion } from 'framer-motion';
+import './Register.css';
+
+const Register = () => {
+  const [offerURL, setOfferURL] = useState('');
+  const [sessionId, setSessionId] = useState('');
+  const [qrVisible, setQrVisible] = useState(false);
+  const [isLoadingQRCode, setIsLoadingQRCode] = useState(false);
+  const [isVerifiedAnimation, setIsVerifiedAnimation] = useState(false);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleVerifyDNI = async () => {
+    try {
+      const { verificationUrl, sessionId } = await startVerification();
+      setIsLoadingQRCode(true);
+      setTimeout(() => {
+        setOfferURL(verificationUrl);
+        setSessionId(sessionId);
+        setIsLoadingQRCode(false);
+        setQrVisible(true);
+        toast.info('Escanee el código QR con su wallet');
+      }, 3000);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error iniciando verificación');
+    }
+  };
+
+  const checkVerificationStatusCallback = useCallback(async () => {
+    if (!sessionId) return;
+    try {
+      const data = await checkSessionStatus(sessionId);
+      const { status, token, user } = data;
+      if (status === 'verified' && token && user) {
+        const result = userSchema.safeParse(user);
+        if (!result.success) {
+          toast.error('Datos de usuario inválidos recibidos del backend.');
+          return;
+        }
+        setIsVerifiedAnimation(true);
+        setTimeout(() => {
+          localStorage.setItem('token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          dispatch(verifyUser({ user, token }));
+          toast.success('Verificación exitosa!');
+          navigate('/dashboard');
+        }, 2000);
+      } else if (status === 'failed') {
+        toast.error('Verificación fallida.');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, [sessionId, dispatch, navigate]);
+
+  useEffect(() => {
+    let interval;
+    if (sessionId) {
+      interval = setInterval(checkVerificationStatusCallback, 5000);
+    }
+    return () => clearInterval(interval);
+  }, [sessionId, checkVerificationStatusCallback]);
+
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: 'easeOut' }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: { type: 'spring', stiffness: 120, damping: 15 }
+    }
+  };
+
+  return (
+    <motion.div
+      className="flex flex-col items-center justify-center min-h-[80vh] p-4 bg-white"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <h2 className="font-headings text-3xl md:text-4xl mb-6 text-primary font-bold">Verificación DNI</h2>
+
+      {isVerifiedAnimation && (
+        <motion.div
+          className="verification-check-animation flex flex-col items-center justify-center"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1, transition: { duration: 0.5, ease: 'easeOut' } }}
+        >
+          <div className="checkmark flex items-center justify-center">
+          </div>
+          <p className="font-body text-lg mt-2 text-primary font-semibold">Credencial Verificada</p>
+        </motion.div>
+      )}
+
+      {!isVerifiedAnimation && (
+        <>
+          {!qrVisible && !isLoadingQRCode && (
+            <motion.button
+              onClick={handleVerifyDNI}
+              className="px-6 py-3 bg-primary text-white rounded-full hover:bg-secondary transition font-body text-lg font-semibold"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              Verificar DNI
+            </motion.button>
+          )}
+
+          {isLoadingQRCode && (
+            <motion.div
+              className="loading-animation flex flex-col items-center"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.5 } }}
+            >
+              <div className="spinner"></div>
+              <p className="font-body text-neutralDark mt-2 text-base">Generando QR...</p>
+            </motion.div>
+          )}
+
+          {qrVisible && !isLoadingQRCode && (
+            <motion.div
+              className="flex flex-col items-center mt-6 p-6 bg-white rounded-xl shadow-lg"
+              variants={cardVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <p className="font-body mb-4 text-neutralDark text-base">Escanea este código QR con tu wallet:</p>
+              <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.2 }}>
+                <QRCodeCanvas value={offerURL} size={256} className="mb-4" />
+              </motion.div>
+              <p className="font-body text-sm text-neutralDark animate-pulse">Esperando verificación...</p>
+            </motion.div>
+          )}
+        </>
+      )}
+    </motion.div>
+  );
+};
+
+export default Register;
+
+
+--- seguridad-social-web/src/components/Footer/Footer.js ---
+// src/components/Footer/Footer.js
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+
+const Footer = () => {
+  return (
+    <footer id="pie" className="w-full bg-azulOscuro text-blanco mt-10 font-body">
+      {/* Submenú en el pie */}
+      <div className="w-full bg-azulMedio py-4">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap gap-4 text-sm">
+          <nav aria-label="Enlaces del pie de página" className="flex flex-wrap gap-4">
+            <a href="/wps/portal/wss/internet/HerramientasWeb/4c5c5105-04d1-4dfd-8af4-1e2d5c0c1ae3" className="hover:text-blanco">Cómo identificarme</a>
+            <a href="/wps/portal/wss/internet/MapaWeb" className="hover:text-blanco">Mapa Web</a>
+            <a href="/wps/portal/wss/internet/Glosario" className="hover:text-blanco">Glosario</a>
+            <a href="/wps/portal/wss/internet/Enlaces" className="hover:text-blanco">Enlaces</a>
+            <a href="/wps/portal/wss/internet/Ayuda" className="hover:text-blanco">Ayuda</a>
+            <a href="/wps/portal/wss/internet/Accesibilidad" className="hover:text-blanco">Accesibilidad</a>
+            <a href="/wps/portal/wss/internet/InformacionLinguistica" className="hover:text-blanco">Información Lingüística</a>
+            <a href="/wps/portal/wss/internet/RSS" className="hover:text-blanco">RSS</a>
+          </nav>
+        </div>
+      </div>
+
+      {/* Aviso legal y copyright */}
+      <div className="w-full bg-azulOscuro text-blanco py-4 text-sm">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between">
+          <div className="mb-2 md:mb-0">
+            Copyright © Seguridad Social {new Date().getFullYear()}. Todos los derechos reservados.
+          </div>
+          <ul className="flex gap-4">
+            <li><a href="/wps/portal/wss/internet/AvisoLegal" className="hover:text-blanco">Aviso Legal</a></li>
+            <li><a href="/wps/portal/wss/internet/PoliticaCookies" className="hover:text-blanco">Política de cookies</a></li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
+
+
+--- seguridad-social-web/src/components/Footer/Footer.css ---
+.footer {
+    background-color: #004080;
+    color: white;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .footer-links {
+    list-style: none;
+    display: inline-flex;
+    gap: 15px;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 10px;
+  }
+  
+  .footer-links li a {
+    color: white;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  
+  .footer p {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+  
+
+--- seguridad-social-web/src/components/Header/Header.js ---
+// src/components/Header/Header.js
+
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+
+const Header = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <header id="top" className="w-full bg-blanco text-blanco font-body">
+      {/* Barra superior */}
+      <div className="w-full bg-blanco py-2">
+        <div className="relative group">
+          <ul className="absolute hidden group-hover:block bg-blanco text-grisOscuro mt-2 py-2 w-32 text-sm">
+            <li><a href="?changeLanguage=es" className="block px-4 py-1 hover:bg-azulClaro">Castellano</a></li>
+            <li><a href="?changeLanguage=ca" className="block px-4 py-1 hover:bg-azulClaro">Català</a></li>
+            <li><a href="?changeLanguage=gl" className="block px-4 py-1 hover:bg-azulClaro">Galego</a></li>
+            <li><a href="?changeLanguage=eu" className="block px-4 py-1 hover:bg-azulClaro">Euskara</a></li>
+            <li><a href="?changeLanguage=va" className="block px-4 py-1 hover:bg-azulClaro">Valencià</a></li>
+            <li><a href="?changeLanguage=en" className="block px-4 py-1 hover:bg-azulClaro">English</a></li>
+            <li><a href="?changeLanguage=fr" className="block px-4 py-1 hover:bg-azulClaro">Français</a></li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Contenedor principal con logo y buscador */}
+      <div className="w-full bg-blanco text-grisOscuro">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <a href="https://www.inclusion.gob.es" target="_blank" rel="noopener noreferrer" className="mr-4" title="Enlace externo al Ministerio">
+              <img src="https://www.seg-social.es/wps/contenthandler/wss/!ut/p/digest!XtdIT20stkPclqf1n5x5qQ/war/POINThemeStatic/themes/Portal8.5/css/img/logo-institucional.png" alt="Ministerio de Inclusión" className="h-15" />
+            </a>
+          </div>
+          <form action="#" className="flex" role="search">
+            <input
+              type="text"
+              placeholder="Introduzca su búsqueda"
+              className="border border-gray-300 px-3 py-1 text-sm rounded-l-md focus:outline-none"
+            />
+            <button
+              type="submit"
+              className="bg-azulMedio text-blanco px-4 py-1 text-sm rounded-r-md hover:bg-azulOscuro transition"
+            >
+              Buscar
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Menú principal */}
+      <div className="w-full bg-azulOscuro text-blanco">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <nav aria-label="Menú principal">
+            <ul className="flex gap-6 text-sm font-body">
+              <li><a href="/wps/portal/wss/internet/Inicio" className="hover:text-blanco">Inicio</a></li>
+              <li><a href="/wps/portal/wss/internet/Conocenos" className="hover:text-blanco">Conócenos</a></li>
+              <li><a href="/wps/portal/wss/internet/Trabajadores" className="hover:text-blanco">Trabajadores</a></li>
+              <li><a href="/wps/portal/wss/internet/Pensionistas" className="hover:text-blanco">Pensionistas</a></li>
+              <li><a href="/wps/portal/wss/internet/Empresarios" className="hover:text-blanco">Empresarios</a></li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default Header;
+
+
+--- seguridad-social-web/src/components/Header/Header.css ---
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    background-color: #004080;
+    color: white;
+  }
+  
+  .logo-container {
+    font-size: 1.5rem;
+  }
+  
+  .nav-links {
+    list-style: none;
+    display: flex;
+    margin: 0;
+  }
+  
+  .nav-links li {
+    margin-left: 20px;
+  }
+  
+  .nav-links li a {
+    color: white;
+    text-decoration: none;
+  }
+  
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+  }
+  
+  .hamburger .bar {
+    width: 25px;
+    height: 3px;
+    background-color: white;
+    margin: 4px 0;
+  }
+  
+  /* Responsivo */
+  @media (max-width: 768px) {
+    .nav-links {
+      position: absolute;
+      top: 60px;
+      left: -100%;
+      flex-direction: column;
+      background-color: #004080;
+      width: 100%;
+      text-align: center;
+      transition: left 0.3s ease-in-out;
+      padding: 0;
+    }
+  
+    .nav-links.active {
+      left: 0;
+    }
+  
+    .nav-links li {
+      margin: 15px 0;
+    }
+  
+    .hamburger {
+      display: flex;
+    }
+  }
+  
+

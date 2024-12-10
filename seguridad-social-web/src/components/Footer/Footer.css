@@ -1,0 +1,27 @@
+.footer {
+    background-color: #004080;
+    color: white;
+    text-align: center;
+    padding: 20px;
+  }
+  
+  .footer-links {
+    list-style: none;
+    display: inline-flex;
+    gap: 15px;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 10px;
+  }
+  
+  .footer-links li a {
+    color: white;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  
+  .footer p {
+    margin: 0;
+    font-size: 0.8rem;
+  }
+  

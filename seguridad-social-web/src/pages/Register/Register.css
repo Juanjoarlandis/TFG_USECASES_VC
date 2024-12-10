@@ -1,0 +1,60 @@
+/* Spinner Animation */
+.loading-animation .spinner {
+  width: 50px;
+  height: 50px;
+  border: 6px solid #ccc;
+  border-top-color: #004080;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Verification Check Animation */
+.verification-check-animation {
+  animation: fadeIn 0.5s forwards;
+}
+
+.verification-check-animation .checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #4caf50;
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.verification-check-animation .checkmark::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 25px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 0 5px 5px;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.fade-in-scale {
+  animation: fadeInScale 0.5s ease-in-out forwards;
+}
+
