@@ -1,8 +1,3 @@
-/**
- * @file app.js
- * @description Backend de la aplicación utilizando Express.js, MongoDB y JWT para la gestión de credenciales y usuarios.
- */
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -11,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const User = require('./src/models/User');
+
 
 const app = express();
 app.use(cors());
@@ -21,26 +17,15 @@ mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Conectado a MongoDB'))
     .catch(err => console.error('Error conectando a MongoDB:', err));
 
-/**
- * @typedef {Object} RevokedCredential
- * @property {String} credentialId - Identificador único de la credencial revocada.
- */
-
-/**
- * Esquema de Mongoose para credenciales revocadas.
- */
 const RevokedCredentialSchema = new mongoose.Schema({
     credentialId: { type: String, unique: true }
 });
 const RevokedCredential = mongoose.model('RevokedCredential', RevokedCredentialSchema);
 
-const sessions = {}; // Almacenamiento de sesiones en memoria
+const sessions = {}; // Memoria de sesiones
 
-const OFFER_EXPIRATION_MS = 1 * 60 * 1000; // 1 minuto de expiración, ajustar según necesidades
+const OFFER_EXPIRATION_MS = 1 * 60 * 1000; // 1 minuto
 
-/**
- * Middleware para registrar las solicitudes entrantes y las respuestas salientes.
- */
 app.use((req, res, next) => {
     console.log(`\n[${new Date().toISOString()}] Request: ${req.method} ${req.originalUrl}`);
     console.log('Headers:', req.headers);
@@ -48,12 +33,6 @@ app.use((req, res, next) => {
     next();
 });
 
-/**
- * Encuentra un usuario existente o crea/actualiza uno nuevo con los datos proporcionados.
- *
- * @param {Object} userData - Datos del usuario a encontrar o crear.
- * @returns {Promise<User>} El usuario encontrado o creado.
- */
 async function findOrCreateOrUpdateUser(userData) {
     let user = await User.findOne({ documentNumber: userData.documentNumber });
     if (!user) {
@@ -76,7 +55,8 @@ async function findOrCreateOrUpdateUser(userData) {
             issuingTeamCode: userData.issuingTeamCode,
             hasAltaCredential: false,
             altaIssueDate: null,
-            altaCredentialJti: null
+            altaCredentialJti: null,
+            altaCredentialData: null
         });
     } else {
         user.firstName = userData.firstName;
@@ -99,22 +79,10 @@ async function findOrCreateOrUpdateUser(userData) {
     return user;
 }
 
-/**
- * Decodifica una credencial JWT completa.
- *
- * @param {String} jwtCredential - La credencial JWT a decodificar.
- * @returns {Object|null} El objeto decodificado o null si falla.
- */
 function decodeVC(jwtCredential) {
     return jwt.decode(jwtCredential);
 }
 
-/**
- * Extrae los datos del usuario del sujeto de la credencial decodificada.
- *
- * @param {Object} cs - El sujeto de la credencial decodificada.
- * @returns {Object} Datos extraídos del usuario.
- */
 function extractUserDataFromDecodedCredentialSubject(cs) {
     let firstName = '';
     let familyName = '';
@@ -147,7 +115,6 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
             birthDate = new Date(cs.dni.birthDate);
         }
 
-        // frontSide
         if (cs.dni.frontSide) {
             personalNumber = cs.dni.frontSide.personalNumber || '';
             laserEngravedSerial = cs.dni.frontSide.laserEngravedSerial || '';
@@ -158,7 +125,6 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
             }
         }
 
-        // backSide
         if (cs.dni.backSide) {
             if (cs.dni.backSide.address) {
                 const addr = cs.dni.backSide.address;
@@ -207,58 +173,17 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
     };
 }
 
-/**
- * Extrae los datos del usuario necesarios para la emisión de una credencial de alta.
- *
- * @param {Array<String>} credentialsJwtArray - Array de credenciales JWT.
- * @returns {Object} Datos de identidad del usuario.
- * @throws {Error} Si no se encuentra la credencial de identidad.
- */
-function extractUserDataForAlta(credentialsJwtArray) {
-    const decodedCreds = credentialsJwtArray.map(jwtCred => jwt.decode(jwtCred));
-    const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
-    if (!identityCredDecoded) {
-        throw new Error('No se encontró la credencial de identidad');
-    }
-
-    const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
-
-    const residenceCredDecoded = decodedCreds.find(c =>
-        c.vc && (c.vc.type.includes('PassportCh') || c.vc.type.includes('ProofOfResidenceCredential'))
-    );
-
-    if (residenceCredDecoded && residenceCredDecoded.vc.credentialSubject && Array.isArray(residenceCredDecoded.vc.credentialSubject.address)) {
-        idData.currentAddress = residenceCredDecoded.vc.credentialSubject.address;
-    }
-
-    return { idData };
-}
-
-/**
- * Verifica si una credencial está revocada.
- *
- * @param {String} credentialId - Identificador de la credencial.
- * @returns {Promise<Boolean>} True si está revocada, false en caso contrario.
- */
 async function isCredentialRevoked(credentialId) {
     const revoked = await RevokedCredential.findOne({ credentialId });
     return !!revoked;
 }
 
-/**
- * Verifica si alguna de las credenciales presentadas está revocada.
- *
- * @param {Array<String>} credentialsJwtArray - Array de credenciales JWT.
- * @returns {Promise<Boolean>} True si alguna está revocada, false en caso contrario.
- */
 async function checkCredentialsRevocation(credentialsJwtArray) {
     for (let jwtCred of credentialsJwtArray) {
         const vcDecoded = decodeVC(jwtCred);
         if (!vcDecoded) {
-            // Sin decodificación no podemos continuar
             return true;
         }
-        // Prioriza jti, si no existe, usa vc.id
         let credId = vcDecoded.jti || (vcDecoded.vc && vcDecoded.vc.id ? vcDecoded.vc.id : null);
         if (!credId) {
             return true;
@@ -271,12 +196,6 @@ async function checkCredentialsRevocation(credentialsJwtArray) {
 
 const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, WALTID_ISSUER_URL } = process.env;
 
-/**
- * @route POST /verification/offer
- * @description Endpoint para una verificación simple de credenciales.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.post('/verification/offer', async (req, res) => {
     if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
         return res.status(500).json({ error: 'Faltan variables de entorno' });
@@ -306,12 +225,6 @@ app.post('/verification/offer', async (req, res) => {
     }
 });
 
-/**
- * @route POST /verification/offer3creds
- * @description Endpoint para una verificación que requiere tres credenciales:
- * CustomIdentityCredential, PassportCredential y EmployerRegistrationCredential
- * para proceder con la emisión de la credencial de Alta.
- */
 app.post('/verification/offer3creds', async (req, res) => {
     if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
         return res.status(500).json({ error: 'Faltan variables de entorno' });
@@ -359,85 +272,86 @@ app.post('/verification/offer3creds', async (req, res) => {
     }
 });
 
-/**
- * @route POST /verification/statusCallbackAlta/:stateId
- * @description Callback para procesar el resultado de la verificación de alta con 3 credenciales.
- * Ahora se requieren las 3 credenciales: Identidad, Pasaporte y Registro del Empleador.
- */
 app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
     const { stateId } = req.params;
     const verificationData = req.body;
+
+    console.log("Llamada de callback a statusCallbackAlta, datos recibidos:", JSON.stringify(verificationData, null, 2));
 
     if (!sessions[stateId]) {
         return res.status(404).json({ error: 'Sesión no encontrada' });
     }
 
-    const { verificationResult } = verificationData;
+    const { verificationResult, tokenResponse } = verificationData;
     sessions[stateId].verificationResult = verificationResult;
     sessions[stateId].status = verificationResult === true ? 'verified' : 'failed';
 
     if (verificationResult === true) {
-        const vpToken = verificationData.tokenResponse && verificationData.tokenResponse.vp_token;
+        // Aquí es donde obtenemos el vp_token con las 3 credenciales verificadas
+        const vpToken = tokenResponse && tokenResponse.vp_token;
         if (!vpToken) {
             sessions[stateId].status = 'failed';
+            console.error("No se encontró vp_token en la respuesta del callback de verificación");
             return res.status(400).json({ error: 'No se encontró el vp_token' });
         }
 
+        // Decodificar el vp_token para obtener las credenciales
         const vpDecoded = jwt.decode(vpToken);
-        const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
+        console.log("VP Decodificado:", JSON.stringify(vpDecoded, null, 2));
 
-        if (credentialsJwt.length < 3) {
+        const credentialsJwt = vpDecoded?.vp?.verifiableCredential;
+        if (!credentialsJwt || credentialsJwt.length < 3) {
             sessions[stateId].status = 'failed';
+            console.error("No se presentaron las 3 credenciales requeridas o no se encuentran en el vp_token");
             return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
         }
 
+        // Ahora decodificamos cada credencial
         const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
+        console.log("Credenciales decodificadas:", JSON.stringify(decodedCreds, null, 2));
+
         const hasIdentity = decodedCreds.some(c => c?.vc?.type?.includes('CustomIdentityCredential'));
         const hasPassport = decodedCreds.some(c => c?.vc?.type?.includes('PassportCredential'));
         const hasEmployer = decodedCreds.some(c => c?.vc?.type?.includes('EmployerRegistrationCredential'));
 
         if (!hasIdentity || !hasPassport || !hasEmployer) {
             sessions[stateId].status = 'failed';
-            return res.status(400).json({ error: 'Faltan una o más de las credenciales requeridas (Identidad, Pasaporte, Empleador)' });
+            console.error("Falta al menos una de las credenciales requeridas: Identidad, Pasaporte o Empleador");
+            return res.status(400).json({ error: 'Faltan credenciales requeridas (Identidad, Pasaporte, Empleador)' });
         }
 
-        // Verificar revocación
+        // Antes de procesar, revisa revocación
         const revoked = await checkCredentialsRevocation(credentialsJwt);
         if (revoked) {
             sessions[stateId].status = 'failed';
+            console.error("Una de las credenciales está revocada");
             return res.status(400).json({ error: 'Una de las credenciales está revocada' });
         }
 
-        // Extraer credenciales
+        // Extraemos las credenciales específicas
         const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
         const passportCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('PassportCredential'));
         const employerCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('EmployerRegistrationCredential'));
 
         if (!identityCredDecoded) {
             sessions[stateId].status = 'failed';
-            return res.status(400).json({ error: 'No se encontró la credencial de identidad (requerida)' });
+            console.error("No se encontró la credencial de identidad");
+            return res.status(400).json({ error: 'No se encontró la credencial de identidad' });
         }
 
-        // Datos de usuario (identidad)
+        // Procesamos los datos del usuario desde la credencial de identidad
         const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
 
-        // Extraer dirección completa del pasaporte (si tiene)
+        // Procesar dirección combinando info del pasaporte si fuera necesario
         let fullAddress = '';
-        if (passportCredDecoded && passportCredDecoded.vc.credentialSubject) {
-            // Aquí asumimos que hay datos suficientes para formar una dirección
-            // Por ejemplo, si el pasaporte no contiene una dirección tan detallada,
-            // se podría combinar con la identidad. Ajustar según el esquema real.
-            const ps = passportCredDecoded.vc.credentialSubject;
-            // Si el pasaporte no trae dirección, podemos usar la de idData.currentAddress
+        if (passportCredDecoded && passportCredDecoded.vc?.credentialSubject) {
             if (idData.currentAddress && idData.currentAddress.length > 0) {
                 fullAddress = idData.currentAddress.join(', ');
             } else {
-                // Sin dirección en Identity, inventamos o usamos pasaporte si tuviera:
-                // Ajustar según la info real del pasaporte:
+                const ps = passportCredDecoded.vc.credentialSubject;
                 fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
             }
         } else {
-            // Si no hay pasaporte o no tiene dirección, usamos la de identidad:
             if (idData.currentAddress && idData.currentAddress.length > 0) {
                 fullAddress = idData.currentAddress.join(', ');
             } else {
@@ -445,9 +359,10 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
             }
         }
 
-        // Datos del empleador
-        if (!employerCredDecoded || !employerCredDecoded.vc || !employerCredDecoded.vc.credentialSubject) {
+        // Procesar datos del empleador
+        if (!employerCredDecoded || !employerCredDecoded.vc?.credentialSubject) {
             sessions[stateId].status = 'failed';
+            console.error("No se pudo extraer la credencial del empleador");
             return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
         }
 
@@ -457,6 +372,7 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
         const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
         const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
 
+        // Creamos/actualizamos el usuario en la DB
         const user = await findOrCreateOrUpdateUser(idData);
         user.hasAltaCredential = true;
         user.altaIssueDate = new Date();
@@ -465,16 +381,15 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
         const token = "ejemplo-de-token-alta";
         sessions[stateId].user = user;
         sessions[stateId].token = token;
-
-        // Guardamos también datos del empleador y la dirección completa del usuario en la sesión para usarlos en la emisión
         sessions[stateId].employerData = {
             employerName,
             contributionAccountCode,
             socialSecurityRegime,
             collectiveAgreements
         };
-
         sessions[stateId].userAddress = fullAddress;
+
+        console.log("Verificación y almacenamiento completados con éxito");
     }
 
     res.status(200).send('Status callback alta processed successfully');
@@ -487,154 +402,142 @@ app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
  * @param {Object} res - Objeto de respuesta Express.
  */
 app.post('/issuance/offer', async (req, res) => {
-    const { stateId } = req.body;
-    if (!sessions[stateId] || !sessions[stateId].user) {
-        return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
-    }
-
-    const user = sessions[stateId].user;
-    if (!user.hasAltaCredential) {
-        return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
-    }
-
-    const employerData = sessions[stateId].employerData || {
-        employerName: "Empresa de Servicios S.A.",
-        contributionAccountCode: "0111-2222-33-4444444444",
-        socialSecurityRegime: "Régimen General",
-        collectiveAgreements: [
-            "Convenio Colectivo de Empresas de Servicios Generales",
-            "Convenio Colectivo Sectorial"
-        ]
-    };
-
-    const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
-
-    // Datos del trabajador
-    const apellidos = user.familyName || "Perez";
-    const nombre = user.firstName || "Mario";
-    const dni = user.documentNumber || "12345678A";
-    const nss = user.nss || "123456789012";
-    const domicilio = userAddress; // dirección completa obtenida del paso anterior
-    const fechaInicioActividad = "2024-12-08"; // puede ser fija o dinámica
-    const grupoCotizacion = "Grupo 4";
-    const tipoContrato = "Indefinido tiempo completo";
-    const coeficienteJornada = "100%";
-    const ocupacion = "Administrativo";
-    const codigoCuentaCotizacion = employerData.contributionAccountCode;
-
-    const revocationId = uuidv4();
-
-    // Construimos la credencial final de Alta según el ejemplo proporcionado
-    const altaCredential = {
-        "@context": [
-            "https://www.w3.org/ns/credentials/v2",
-            "https://www.w3.org/ns/credentials/examples/v2"
-        ],
-        "id": `urn:uuid:${revocationId}`,
-        "type": ["VerifiableCredential", "SocialSecurityRegistrationCredential"],
-        "issuer": {
-            "id": "did:web:tesoreria.seguridadsocial.gob.es",
-            "name": "Tesorería General de la Seguridad Social - España",
-            "description": "Entidad emisora de la credencial de alta en la Seguridad Social"
-        },
-        "name": "Credencial de Alta en la Seguridad Social",
-        "description": "Credencial verificable de alta en el régimen de la Seguridad Social del trabajador",
-        "validFrom": "2024-12-08T10:19:28Z",
-        "expirationDate": "2025-12-08T10:19:28Z",
-        "category": "SocialSecurityEnrollment",
-        "credentialSubject": {
-            "id": "did:web:trabajador.example.com",
-            "employer": {
-                "employerName": employerData.employerName,
-                "contributionAccountCode": employerData.contributionAccountCode,
-                "socialSecurityRegime": employerData.socialSecurityRegime,
-                "collectiveAgreements": employerData.collectiveAgreements
-            },
-            "worker": {
-                "apellidos": apellidos,
-                "nombre": nombre,
-                "dni": dni,
-                "nss": nss,
-                "domicilio": domicilio,
-                "fechaInicioActividad": fechaInicioActividad,
-                "grupoCotizacion": grupoCotizacion,
-                "tipoContrato": tipoContrato,
-                "coeficienteJornada": coeficienteJornada,
-                "ocupacion": ocupacion,
-                "codigoCuentaCotizacion": codigoCuentaCotizacion
-            }
-        }
-    };
-
-    const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
-    const issuerKey = {
-        "type": "jwk",
-        "jwk": {
-            "kty": "OKP",
-            "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
-            "crv": "Ed25519",
-            "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
-            "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
-        }
-    };
-
-    // Como ya no usamos "AltaSeguridadSocialCredential", cambiamos credentialConfigurationId 
-    // si es necesario. Aquí asumimos que "CustomIdentityCredential_jwt_vc_json" 
-    // puede seguir usándose, o configuramos uno para "SocialSecurityRegistrationCredential".
-    const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
-
-    const issuanceRequestBody = {
-        issuerKey: issuerKey,
-        issuerDid: issuerDid,
-        credentialConfigurationId,
-        credentialData: altaCredential,
-        "mapping": {
-            "id": "<uuid>",
-            "issuer": {
-                "id": "<issuerDid>"
-            },
-            "credentialSubject": {
-                "id": "<subjectDid>"
-            },
-            "issuanceDate": "<timestamp>",
-            "expirationDate": "<timestamp-in:365d>"
-        },
-        "authenticationMethod": "PRE_AUTHORIZED"
-    };
-
     try {
-        const callbackUrl = `${VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
-        const issueResponse = await axios.post(`${WALTID_ISSUER_URL}/openid4vc/jwt/issue`, issuanceRequestBody, {
+        const { stateId } = req.body;
+        if (!sessions[stateId] || !sessions[stateId].user) {
+            return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
+        }
+
+        const user = sessions[stateId].user;
+        if (!user.hasAltaCredential) {
+            return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
+        }
+
+        const employerData = sessions[stateId].employerData || {
+            employerName: "Empresa de Servicios S.A.",
+            contributionAccountCode: "0111-2222-33-4444444444",
+            socialSecurityRegime: "Régimen General",
+            collectiveAgreements: [
+                "Convenio Colectivo de Empresas de Servicios Generales",
+                "Convenio Colectivo Sectorial"
+            ]
+        };
+        const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
+
+        const apellidos = user.familyName || "Perez";
+        const nombre = user.firstName || "Mario";
+        const dni = user.documentNumber || "12345678A";
+        const nss = user.nss || "123456789012";
+        const domicilio = userAddress;
+        const fechaInicioActividad = "2024-12-08";
+        const grupoCotizacion = "Grupo 4";
+        const tipoContrato = "Indefinido tiempo completo";
+        const coeficienteJornada = "100%";
+        const ocupacion = "Administrativo";
+        const codigoCuentaCotizacion = employerData.contributionAccountCode;
+
+        const revocationId = uuidv4();
+
+        const altaCredential = {
+            "@context": [
+                "https://www.w3.org/ns/credentials/v2",
+                "https://www.w3.org/ns/credentials/examples/v2"
+            ],
+            "id": `urn:uuid:${revocationId}`,
+            "type": ["VerifiableCredential", "SocialSecurityRegistrationCredential"],
+            "issuer": {
+                "id": "did:web:tesoreria.seguridadsocial.gob.es",
+                "name": "Tesorería General de la Seguridad Social - España",
+                "description": "Entidad emisora de la credencial de alta en la Seguridad Social"
+            },
+            "name": "Credencial de Alta en la Seguridad Social",
+            "description": "Credencial verificable de alta en el régimen de la Seguridad Social del trabajador",
+            "validFrom": "2024-12-08T10:19:28Z",
+            "expirationDate": "2025-12-08T10:19:28Z",
+            "category": "SocialSecurityEnrollment",
+            "credentialSubject": {
+                "id": "did:web:trabajador.example.com",
+                "employer": {
+                    "employerName": employerData.employerName,
+                    "contributionAccountCode": employerData.contributionAccountCode,
+                    "socialSecurityRegime": employerData.socialSecurityRegime,
+                    "collectiveAgreements": employerData.collectiveAgreements
+                },
+                "worker": {
+                    "apellidos": apellidos,
+                    "nombre": nombre,
+                    "dni": dni,
+                    "nss": nss,
+                    "domicilio": domicilio,
+                    "fechaInicioActividad": fechaInicioActividad,
+                    "grupoCotizacion": grupoCotizacion,
+                    "tipoContrato": tipoContrato,
+                    "coeficienteJornada": coeficienteJornada,
+                    "ocupacion": ocupacion,
+                    "codigoCuentaCotizacion": codigoCuentaCotizacion
+                }
+            }
+        };
+
+        const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
+        const issuerKey = {
+            "type": "jwk",
+            "jwk": {
+                "kty": "OKP",
+                "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
+                "crv": "Ed25519",
+                "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+                "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+            }
+        };
+        const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
+
+        // Guardamos la credencial en el usuario antes de emitirla
+        const dbUser = await User.findOne({ documentNumber: user.documentNumber });
+        if (dbUser) {
+            dbUser.altaCredentialJti = revocationId;
+            dbUser.altaCredentialData = altaCredential; // Guardamos la credencial completa
+            await dbUser.save();
+        }
+
+        const callbackUrl = `${process.env.VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
+        const issuanceRequestBody = {
+            issuerKey: issuerKey,
+            issuerDid: issuerDid,
+            credentialConfigurationId,
+            credentialData: altaCredential,
+            "mapping": {
+                "id": "<uuid>",
+                "issuer": {
+                    "id": "<issuerDid>"
+                },
+                "credentialSubject": {
+                    "id": "<subjectDid>"
+                },
+                "issuanceDate": "<timestamp>",
+                "expirationDate": "<timestamp-in:365d>"
+            },
+            "authenticationMethod": "PRE_AUTHORIZED"
+        };
+
+        const issueResponse = await axios.post(`${process.env.WALTID_ISSUER_URL}/openid4vc/jwt/issue`, issuanceRequestBody, {
             headers: {
                 'Content-Type': 'application/json',
                 'statusCallbackUri': callbackUrl
             }
         });
 
-        const issuedCredentialJwt = issueResponse.data;
-        const dbUser = await User.findOne({ documentNumber: user.documentNumber });
-        if (dbUser) {
-            dbUser.altaCredentialJti = revocationId;
-            await dbUser.save();
-        }
-
         sessions[stateId].user = dbUser;
-        sessions[stateId].issuanceOfferUrl = issuedCredentialJwt;
+        sessions[stateId].issuanceOfferUrl = issueResponse.data; // URL de oferta
         sessions[stateId].issuanceStatus = 'offered';
 
-        res.status(200).json({ issuanceOfferUrl: issuedCredentialJwt, state: stateId });
+        res.status(200).json({ issuanceOfferUrl: issueResponse.data, state: stateId });
     } catch (error) {
         console.error('Error emitiendo credencial:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-/**
- * @route POST /issuance/statusCallback/:stateId
- * @description Callback para procesar el resultado de la emisión de una credencial.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.post('/issuance/statusCallback/:stateId', async (req, res) => {
     const { stateId } = req.params;
 
@@ -642,19 +545,10 @@ app.post('/issuance/statusCallback/:stateId', async (req, res) => {
         return res.status(404).json({ error: 'Sesión no encontrada' });
     }
 
-    // Asumimos que la llamada del callback significa credencial aceptada.
-    // Si WaltID manda datos adicionales, puedes analizarlos aquí.
     sessions[stateId].issuanceStatus = 'accepted';
-
     res.status(200).json({ message: 'Issuance callback processed successfully' });
 });
 
-/**
- * @route GET /issuance/session/:stateId
- * @description Endpoint para consultar el estado de la emisión de una credencial.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.get('/issuance/session/:stateId', async (req, res) => {
     const { stateId } = req.params;
     if (!sessions[stateId]) {
@@ -665,12 +559,6 @@ app.get('/issuance/session/:stateId', async (req, res) => {
     res.status(200).json({ issuanceStatus: issuanceStatus || 'unknown' });
 });
 
-/**
- * @route POST /verification/statusCallback/:stateId
- * @description Callback genérico para procesar el resultado de una verificación.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.post('/verification/statusCallback/:stateId', async (req, res) => {
     const { stateId } = req.params;
     const verificationData = req.body;
@@ -697,7 +585,6 @@ app.post('/verification/statusCallback/:stateId', async (req, res) => {
             return res.status(400).json({ error: 'Falta la credencial requerida' });
         }
 
-        // Comprobar revocación
         const revoked = await checkCredentialsRevocation(credentialsJwt);
         if (revoked) {
             sessions[stateId].status = 'failed';
@@ -716,12 +603,6 @@ app.post('/verification/statusCallback/:stateId', async (req, res) => {
     res.status(200).send('Status callback processed successfully');
 });
 
-/**
- * @route GET /verification/session/:stateId
- * @description Endpoint para consultar el estado de una sesión de verificación.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.get('/verification/session/:stateId', async (req, res) => {
     const { stateId } = req.params;
     if (!sessions[stateId]) {
@@ -729,8 +610,6 @@ app.get('/verification/session/:stateId', async (req, res) => {
     }
 
     const sessionData = sessions[stateId];
-
-    // Comprobar expiración
     if (sessionData.expiresAt && Date.now() > sessionData.expiresAt && sessionData.status === 'pending') {
         sessionData.status = 'expired';
     }
@@ -746,7 +625,6 @@ app.get('/verification/session/:stateId', async (req, res) => {
                 currentAddress: u.currentAddress,
                 hasAltaCredential: u.hasAltaCredential,
                 altaIssueDate: u.altaIssueDate,
-
                 gender: u.gender,
                 nationality: u.nationality,
                 birthDate: u.birthDate,
@@ -758,7 +636,8 @@ app.get('/verification/session/:stateId', async (req, res) => {
                 sex: u.sex,
                 placeOfBirth: u.placeOfBirth,
                 ascendants: u.ascendants,
-                issuingTeamCode: u.issuingTeamCode
+                issuingTeamCode: u.issuingTeamCode,
+                altaCredentialData: u.altaCredentialData || null
             };
         }
     }
@@ -770,12 +649,6 @@ app.get('/verification/session/:stateId', async (req, res) => {
     });
 });
 
-/**
- * @route POST /revocar-credencial
- * @description Endpoint para revocar una credencial basada en el DNI del usuario.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.post('/revocar-credencial', async (req, res) => {
     const { dni } = req.body;
     const user = await User.findOne({ documentNumber: dni });
@@ -785,6 +658,7 @@ app.post('/revocar-credencial', async (req, res) => {
 
     user.hasAltaCredential = false;
     user.altaIssueDate = null;
+    user.altaCredentialData = null; // Al revocar, podemos limpiar la data de la credencial
     await user.save();
 
     if (user.altaCredentialJti) {
@@ -796,18 +670,12 @@ app.post('/revocar-credencial', async (req, res) => {
             }
         }
     } else {
-        console.warn('No se encontró altaCredentialJti en el usuario, no se pudo revocar en la lista negra.');
+        console.warn('No se encontró altaCredentialJti en el usuario.');
     }
 
     return res.status(200).json({ message: 'Credencial revocada con éxito', user });
 });
 
-/**
- * @route GET /user/:dni
- * @description Endpoint para obtener la información de un usuario por su DNI.
- * @param {Object} req - Objeto de solicitud Express.
- * @param {Object} res - Objeto de respuesta Express.
- */
 app.get('/user/:dni', async (req, res) => {
     const { dni } = req.params;
     const user = await User.findOne({ documentNumber: dni });
@@ -822,7 +690,6 @@ app.get('/user/:dni', async (req, res) => {
         currentAddress: user.currentAddress,
         hasAltaCredential: user.hasAltaCredential,
         altaIssueDate: user.altaIssueDate,
-
         gender: user.gender,
         nationality: user.nationality,
         birthDate: user.birthDate,
@@ -834,15 +701,13 @@ app.get('/user/:dni', async (req, res) => {
         sex: user.sex,
         placeOfBirth: user.placeOfBirth,
         ascendants: user.ascendants,
-        issuingTeamCode: user.issuingTeamCode
+        issuingTeamCode: user.issuingTeamCode,
+        altaCredentialData: user.altaCredentialData || null
     };
 
     return res.status(200).json({ user: userResponse });
 });
 
-/**
- * Middleware final para registrar el estado de las respuestas enviadas.
- */
 app.use((req, res, next) => {
     res.on('finish', () => {
         console.log(`Respuesta enviada con status ${res.statusCode}`);

@@ -67,6 +67,9 @@ const Dashboard = () => {
         return format(date, 'dd/MM/yyyy', { locale: esLocale });
     };
 
+    // Extraemos la credencial de alta si está disponible
+    const altaData = userData?.altaCredentialData || null;
+
     return (
         <div className="min-h-[80vh] p-4 bg-neutralLight fade-in-scale flex flex-col items-center">
             <div className="bg-white w-full max-w-7xl p-8 rounded-xl shadow-lg relative overflow-hidden">
@@ -106,7 +109,7 @@ const Dashboard = () => {
                 {userData ? (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-                            {/* Perfil del Usuario (Información Personal Extendida) */}
+                            {/* Perfil del Usuario */}
                             <div className="bg-neutralLight p-6 rounded-xl shadow-inner">
                                 <h3 className="font-headings text-xl text-primary font-semibold mb-4">Perfil del Usuario</h3>
                                 {userData.photo && (
@@ -159,7 +162,7 @@ const Dashboard = () => {
                                 <span>Mis Credenciales</span>
                                 {showCredentials ? <FaChevronUp /> : <FaChevronDown />}
                             </button>
-                            {showCredentials && hasAltaCredential && (
+                            {showCredentials && hasAltaCredential && altaData && (
                                 <div
                                     className="p-6 mt-4 rounded-xl relative overflow-hidden animate-fadeInZoom bg-gradient-to-r from-blue-100 to-blue-300"
                                     style={{
@@ -167,7 +170,7 @@ const Dashboard = () => {
                                         boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                                     }}
                                 >
-                                    {/* Marca de agua o sello suave */}
+                                    {/* Marca de agua suave */}
                                     <div className="absolute top-0 left-0 opacity-5 pointer-events-none" style={{ fontSize: '8rem', lineHeight: '1' }}>
                                         <FaShieldAlt className="text-primary" />
                                     </div>
@@ -182,19 +185,51 @@ const Dashboard = () => {
                                         </div>
 
                                         <p className="font-body text-base text-neutralDark leading-relaxed mb-4">
-                                            Usted ya dispone de la credencial <strong className="font-semibold text-neutralDark">Alta_Seguridad_Social</strong>. Esto le permite acceder
-                                            a todos los servicios y prestaciones con la máxima comodidad.
+                                            Esta credencial le acredita como trabajador dado de alta en la Seguridad Social, otorgándole acceso a
+                                            prestaciones, servicios y derechos asociados a su afiliación.
                                         </p>
                                         <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow flex flex-col gap-2 relative">
                                             <p className="font-body text-sm text-neutralDark">
-                                                <FaFileAlt className="inline-block mr-1" /> <strong>Tipo:</strong> <span className="font-bold text-neutralDark">Alta_Seguridad_Social</span>
-                                            </p>
-                                            <p className="font-body text-sm text-neutralDark" title={userData.altaIssueDate ? `Emitida originalmente el ${formatDate(userData.altaIssueDate)}` : ''}>
-                                                <FaCalendarAlt className="inline-block mr-1" /> <strong>Emitida el:</strong> <span className="font-bold text-neutralDark">{userData.altaIssueDate ? formatDate(userData.altaIssueDate) : 'N/A'}</span>
+                                                <FaFileAlt className="inline-block mr-1" /> <strong>Tipo de Credencial:</strong> {altaData.type?.join(', ')}
                                             </p>
                                             <p className="font-body text-sm text-neutralDark">
-                                                <strong>Información del Sujeto:</strong> <span className="font-bold text-neutralDark">{userData.firstName} {userData.familyName}</span>, DNI: <span className="font-bold text-neutralDark">{userData.documentNumber}</span>
+                                                <strong>Emisor:</strong> {altaData.issuer?.name} ({altaData.issuer?.id})
                                             </p>
+                                            <p className="font-body text-sm text-neutralDark">
+                                                <strong>Válida desde:</strong> {altaData.validFrom || 'N/A'}
+                                            </p>
+                                            <p className="font-body text-sm text-neutralDark">
+                                                <strong>Expira el:</strong> {altaData.expirationDate || 'N/A'}
+                                            </p>
+
+                                            {/* Datos del Empleador */}
+                                            <div className="mt-4">
+                                                <h4 className="font-headings text-lg text-primary font-semibold mb-2">Datos del Empleador</h4>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Nombre:</strong> {altaData.credentialSubject?.employer?.employerName}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.employer?.contributionAccountCode}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Régimen:</strong> {altaData.credentialSubject?.employer?.socialSecurityRegime}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Convenios Colectivos:</strong></p>
+                                                <ul className="list-disc pl-5">
+                                                    {altaData.credentialSubject?.employer?.collectiveAgreements?.map((acuerdo, i) => (
+                                                        <li key={i} className="font-body text-sm text-neutralDark">{acuerdo}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+
+                                            {/* Datos del Trabajador */}
+                                            <div className="mt-4">
+                                                <h4 className="font-headings text-lg text-primary font-semibold mb-2">Datos del Trabajador</h4>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Nombre y Apellidos:</strong> {altaData.credentialSubject?.worker?.nombre} {altaData.credentialSubject?.worker?.apellidos}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>DNI:</strong> {altaData.credentialSubject?.worker?.dni}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>NSS:</strong> {altaData.credentialSubject?.worker?.nss}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Domicilio:</strong> {altaData.credentialSubject?.worker?.domicilio}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Fecha Inicio Actividad:</strong> {altaData.credentialSubject?.worker?.fechaInicioActividad}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Grupo Cotización:</strong> {altaData.credentialSubject?.worker?.grupoCotizacion}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Tipo Contrato:</strong> {altaData.credentialSubject?.worker?.tipoContrato}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Coeficiente Jornada:</strong> {altaData.credentialSubject?.worker?.coeficienteJornada}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Ocupación:</strong> {altaData.credentialSubject?.worker?.ocupacion}</p>
+                                                <p className="font-body text-sm text-neutralDark"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.worker?.codigoCuentaCotizacion}</p>
+                                            </div>
                                         </div>
 
                                         <button
@@ -214,7 +249,7 @@ const Dashboard = () => {
                             )}
                         </div>
 
-                        {/* Continúa el resto de la vista (Historial, Prestaciones, Avisos, etc.) debajo de la pestaña de Credenciales */}
+                        {/* Secciones adicionales del Dashboard (Historial, Prestaciones, etc.) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10 mt-6">
                             {/* Historial de Cotizaciones */}
                             <div className="bg-neutralLight p-6 rounded-xl shadow-inner md:col-span-2">
@@ -353,4 +388,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

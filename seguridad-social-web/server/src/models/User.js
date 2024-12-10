@@ -1,4 +1,3 @@
-// src/models/User.js
 const mongoose = require('mongoose');
 const encrypt = require('mongoose-encryption');
 
@@ -29,23 +28,19 @@ const UserSchema = new mongoose.Schema({
     ],
     hasAltaCredential: { type: Boolean, default: false },
     altaIssueDate: { type: Date, default: null },
-    altaCredentialJti: { type: String, default: null }
+    altaCredentialJti: { type: String, default: null },
+    altaCredentialData: { type: Object, default: null }
 }, { timestamps: true });
 
-// Claves desde variables de entorno
-// ENCRYPTION_KEY y SIGNING_KEY deben ser claves en base64
-const encKey = process.env.ENCRYPTION_KEY; // Por ejemplo una clave base64 de 32 bytes
-const sigKey = process.env.SIGNING_KEY;    // Por ejemplo una clave base64 de 64 bytes
+const encKey = process.env.ENCRYPTION_KEY;
+const sigKey = process.env.SIGNING_KEY;
 
-// Convertir a Buffer
 const encKeyBuf = Buffer.from(encKey, 'base64');
 const sigKeyBuf = Buffer.from(sigKey, 'base64');
 
-// Configurar plugin de cifrado
 UserSchema.plugin(encrypt, {
     encryptionKey: encKeyBuf,
     signingKey: sigKeyBuf,
-    // Campos a cifrar
     encryptedFields: [
         'nss',
         'personalNumber',

@@ -54,7 +54,7 @@ def gather_file_contents(source_dirs, exclude_dirs=None, exclude_files=None, out
 if __name__ == "__main__":
     # Ejemplo de uso
     source_dirs = [
-        "/home/juanjo/seguridad-social-web"
+        "/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/server"
     ]
     exclude_dirs = ["node_modules", "build", "dist", "data",".git"]
     exclude_files = ["package-lock.json", "logs.log","verifier_logs.log", "copiar.py", "App.css" , "Register.css", "Dashboard.css", "todo_junto.json", "todo_junto.txt"]  # Añade aquí los archivos a excluir
