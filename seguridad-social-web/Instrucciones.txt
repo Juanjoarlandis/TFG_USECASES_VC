@@ -1,0 +1,13 @@
+Primero construir vault-init
+
+docker-compose build vault-init
+
+Luego lanzamos vault:
+
+docker-compose up -d vault
+
+Luego lanzamos vault-init:
+
+docker-compose up vault-init
+
+Y una vez termine, ya lanzamos el docker-compose.yaml global. 

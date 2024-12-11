@@ -1,0 +1,1402 @@
+[INFO]: 11:18:51 HTTP server listening on http://localhost:5500
+[DEBUG]:11:19:07 Enviando petición a walt.id para crear el DID
+[INFO]: 11:19:07 DID creado exitosamente
+[DEBUG]:11:19:07 Issuer DID:
+[DEBUG]:11:19:07 Issuer Key: 
+    {
+  "type": "jwk",
+  "jwk": {
+    "kty": "OKP",
+    "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
+    "crv": "Ed25519",
+    "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+    "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+  }
+}
+[INFO]: 11:19:07 Documento DID creado exitosamente
+[DEBUG]:11:19:07 Documento DID: 
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:web:93f6ae0f35b1.ngrok.app",
+  "verificationMethod": [
+    {
+      "id": "did:web:93f6ae0f35b1.ngrok.app#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:93f6ae0f35b1.ngrok.app",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+        "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+      }
+    }
+  ],
+  "authentication": [
+    "did:web:93f6ae0f35b1.ngrok.app#key-1"
+  ],
+  "assertionMethod": [
+    "did:web:93f6ae0f35b1.ngrok.app#key-1"
+  ]
+}
+[INFO]: 11:19:07 Documento DID guardado exitosamente en did.json
+[INFO]: 11:19:07 Issuer Key guardado exitosamente en issuerKey.json
+[DEBUG]:11:19:16 Received data 
+    {
+  "name": "Juan Perez",
+  "identifier": "12345678A",
+  "domain": "did:web:localhost:6000"
+}
+[DEBUG]:11:19:16 Issuer DID:
+[DEBUG]:11:19:16 Issuer Key loaded successfully
+[INFO]: 11:19:16 Modo de emisión seleccionado: open
+[INFO]: 11:19:16 Payload construido exitosamente para OpenID
+[DEBUG]:11:19:16 Payload OpenID:
+[DEBUG]:11:19:16 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 11:19:16 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:11:19:16 Issuance URL OpenID:
+[ERROR]:11:19:16 Ocurrió un error: ENOENT: no such file or directory, open '/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json' 
+    {
+  "errno": -2,
+  "code": "ENOENT",
+  "syscall": "open",
+  "path": "/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json",
+  "stack": "Error: ENOENT: no such file or directory, open '/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json'\n    at Object.writeFileSync (node:fs:2344:20)\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:370:8)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}
+[ERROR]:11:19:16 Error inesperado: ENOENT: no such file or directory, open '/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json' 
+    {
+  "errno": -2,
+  "code": "ENOENT",
+  "syscall": "open",
+  "path": "/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json",
+  "stack": "Error: ENOENT: no such file or directory, open '/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/data/credentials/credential_urn:uuid:f283b49c-7bdc-450c-b1f5-24e227edbbc8.json'\n    at Object.writeFileSync (node:fs:2344:20)\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:370:8)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}
+[INFO]: 11:19:26 HTTP server listening on http://localhost:5500
+[DEBUG]:11:19:28 Received data 
+    {
+  "name": "Juan Perez",
+  "identifier": "12345678A",
+  "domain": "did:web:localhost:6000"
+}
+[DEBUG]:11:19:28 Issuer DID:
+[DEBUG]:11:19:28 Issuer Key loaded successfully
+[INFO]: 11:19:28 Modo de emisión seleccionado: open
+[INFO]: 11:19:28 Payload construido exitosamente para OpenID
+[DEBUG]:11:19:28 Payload OpenID:
+[DEBUG]:11:19:28 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 11:19:28 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:11:19:28 Issuance URL OpenID:
+[INFO]: 11:19:28 Credencial almacenada localmente con ID urn:uuid:7edb0dd8-b017-4393-bbe9-ded020ff3a46
+[INFO]: 11:19:58 DID Document accessed successfully
+[INFO]: 11:35:36 DID Document accessed successfully
+[INFO]: 11:44:17 DID Document accessed successfully
+[INFO]: 11:45:12 DID Document accessed successfully
+[INFO]: 11:48:30 DID Document accessed successfully
+[INFO]: 11:51:51 DID Document accessed successfully
+[INFO]: 11:52:27 DID Document accessed successfully
+[INFO]: 12:04:49 DID Document accessed successfully
+[INFO]: 12:05:13 DID Document accessed successfully
+[INFO]: 12:25:59 DID Document accessed successfully
+[INFO]: 12:27:36 DID Document accessed successfully
+[INFO]: 12:34:34 DID Document accessed successfully
+[INFO]: 12:36:04 DID Document accessed successfully
+[INFO]: 12:37:47 DID Document accessed successfully
+[INFO]: 12:41:48 DID Document accessed successfully
+[INFO]: 12:46:04 DID Document accessed successfully
+[INFO]: 12:48:39 DID Document accessed successfully
+[INFO]: 13:06:47 DID Document accessed successfully
+[INFO]: 13:26:21 DID Document accessed successfully
+[INFO]: 13:27:44 DID Document accessed successfully
+[INFO]: 13:30:17 DID Document accessed successfully
+[INFO]: 13:31:38 DID Document accessed successfully
+[INFO]: 13:35:42 DID Document accessed successfully
+[INFO]: 13:36:42 DID Document accessed successfully
+[INFO]: 13:37:27 DID Document accessed successfully
+[INFO]: 13:44:05 DID Document accessed successfully
+[INFO]: 13:44:19 DID Document accessed successfully
+[INFO]: 13:45:08 DID Document accessed successfully
+[INFO]: 13:45:50 DID Document accessed successfully
+[INFO]: 13:46:08 DID Document accessed successfully
+[INFO]: 13:54:27 DID Document accessed successfully
+[INFO]: 13:55:09 DID Document accessed successfully
+[INFO]: 14:01:06 DID Document accessed successfully
+[INFO]: 14:01:38 DID Document accessed successfully
+[INFO]: 14:02:13 DID Document accessed successfully
+[INFO]: 14:03:32 DID Document accessed successfully
+[INFO]: 14:07:18 DID Document accessed successfully
+[INFO]: 14:07:27 DID Document accessed successfully
+[INFO]: 14:35:15 DID Document accessed successfully
+[INFO]: 14:35:32 DID Document accessed successfully
+[INFO]: 14:37:48 DID Document accessed successfully
+[INFO]: 14:41:12 DID Document accessed successfully
+[INFO]: 14:41:29 DID Document accessed successfully
+[INFO]: 14:43:15 DID Document accessed successfully
+[INFO]: 14:45:55 DID Document accessed successfully
+[INFO]: 15:30:24 DID Document accessed successfully
+[INFO]: 15:56:08 DID Document accessed successfully
+[INFO]: 15:59:35 DID Document accessed successfully
+[INFO]: 16:01:55 DID Document accessed successfully
+[INFO]: 16:03:20 DID Document accessed successfully
+[INFO]: 16:04:49 DID Document accessed successfully
+[INFO]: 16:07:56 DID Document accessed successfully
+[INFO]: 16:08:47 DID Document accessed successfully
+[INFO]: 16:10:37 DID Document accessed successfully
+[INFO]: 16:10:53 DID Document accessed successfully
+[INFO]: 16:18:37 DID Document accessed successfully
+[INFO]: 16:22:29 DID Document accessed successfully
+[INFO]: 16:22:49 DID Document accessed successfully
+[INFO]: 16:23:20 DID Document accessed successfully
+[INFO]: 16:32:38 DID Document accessed successfully
+[INFO]: 16:33:14 DID Document accessed successfully
+[INFO]: 16:33:47 DID Document accessed successfully
+[INFO]: 16:37:54 DID Document accessed successfully
+[INFO]: 16:38:22 DID Document accessed successfully
+[INFO]: 16:38:35 DID Document accessed successfully
+[INFO]: 16:40:08 DID Document accessed successfully
+[INFO]: 16:41:32 DID Document accessed successfully
+[INFO]: 16:42:23 DID Document accessed successfully
+[INFO]: 16:44:46 DID Document accessed successfully
+[INFO]: 16:45:14 DID Document accessed successfully
+[INFO]: 16:49:01 DID Document accessed successfully
+[INFO]: 16:50:32 DID Document accessed successfully
+[INFO]: 16:52:04 DID Document accessed successfully
+[INFO]: 16:52:54 DID Document accessed successfully
+[INFO]: 16:54:30 DID Document accessed successfully
+[INFO]: 16:56:30 DID Document accessed successfully
+[INFO]: 17:10:39 DID Document accessed successfully
+[INFO]: 17:25:13 DID Document accessed successfully
+[INFO]: 17:28:55 DID Document accessed successfully
+[INFO]: 17:29:37 DID Document accessed successfully
+[INFO]: 17:30:15 DID Document accessed successfully
+[INFO]: 17:45:32 DID Document accessed successfully
+[INFO]: 18:09:55 DID Document accessed successfully
+[INFO]: 18:10:30 DID Document accessed successfully
+[INFO]: 18:11:03 DID Document accessed successfully
+[INFO]: 18:20:12 DID Document accessed successfully
+[INFO]: 18:21:27 DID Document accessed successfully
+[INFO]: 18:22:11 DID Document accessed successfully
+[INFO]: 18:23:19 DID Document accessed successfully
+[INFO]: 18:24:20 DID Document accessed successfully
+[INFO]: 18:24:37 DID Document accessed successfully
+[INFO]: 18:26:02 DID Document accessed successfully
+[INFO]: 18:29:33 DID Document accessed successfully
+[INFO]: 18:30:01 DID Document accessed successfully
+[INFO]: 18:39:51 DID Document accessed successfully
+[INFO]: 18:40:19 DID Document accessed successfully
+[INFO]: 18:40:35 DID Document accessed successfully
+[INFO]: 18:42:36 DID Document accessed successfully
+[INFO]: 18:43:22 DID Document accessed successfully
+[INFO]: 18:44:55 DID Document accessed successfully
+[INFO]: 19:05:03 DID Document accessed successfully
+[INFO]: 19:15:43 DID Document accessed successfully
+[INFO]: 19:16:03 DID Document accessed successfully
+[ERROR]:19:45:17 Ocurrió un error: Missing required parameter 
+    {
+  "name": "MissingParameterError",
+  "code": 400,
+  "stack": "MissingParameterError: Missing required parameter\n    at checkMissing (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:613:11)\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:193:5)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)"
+}
+[ERROR]:19:45:17 Validación/Error:
+[INFO]: 19:46:11 HTTP server listening on http://localhost:5500
+[DEBUG]:19:46:13 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:46:13 Issuer DID:
+[ERROR]:19:46:13 Ocurrió un error: Cannot read properties of undefined (reading 'startsWith') 
+    {
+  "stack": "TypeError: Cannot read properties of undefined (reading 'startsWith')\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:208:21)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)\n    at router (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:47:12)"
+}
+[ERROR]:19:46:13 Error inesperado: Cannot read properties of undefined (reading 'startsWith') 
+    {
+  "stack": "TypeError: Cannot read properties of undefined (reading 'startsWith')\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:208:21)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)\n    at router (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:47:12)"
+}
+[INFO]: 19:46:25 HTTP server listening on http://localhost:5500
+[INFO]: 19:47:44 HTTP server listening on http://localhost:5500
+[INFO]: 19:48:13 HTTP server listening on http://localhost:5500
+[INFO]: 19:48:35 HTTP server listening on http://localhost:5500
+[DEBUG]:19:48:38 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:48:38 Issuer DID:
+[DEBUG]:19:48:38 Issuer Key loaded successfully
+[INFO]: 19:48:38 Modo de emisión seleccionado: open
+[INFO]: 19:48:38 Payload construido exitosamente para OpenID
+[DEBUG]:19:48:38 Payload OpenID:
+[DEBUG]:19:48:38 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:48:38 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:48:38 Issuance URL OpenID:
+[INFO]: 19:48:38 Credencial almacenada localmente con ID urn:uuid:b7f1c7f3-e142-4222-9b65-c7ef405de7d7
+[DEBUG]:19:49:50 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:49:50 Issuer DID:
+[DEBUG]:19:49:50 Issuer Key loaded successfully
+[INFO]: 19:49:50 Modo de emisión seleccionado: open
+[INFO]: 19:49:50 Payload construido exitosamente para OpenID
+[DEBUG]:19:49:50 Payload OpenID:
+[DEBUG]:19:49:50 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:49:50 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:49:50 Issuance URL OpenID:
+[INFO]: 19:49:50 Credencial almacenada localmente con ID urn:uuid:759849d4-f622-468f-b10e-32ff14918425
+[INFO]: 19:50:42 HTTP server listening on http://localhost:5500
+[DEBUG]:19:50:43 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:50:43 Issuer DID:
+[DEBUG]:19:50:43 Issuer Key loaded successfully
+[INFO]: 19:50:43 Modo de emisión seleccionado: open
+[INFO]: 19:50:43 Payload construido exitosamente para OpenID
+[DEBUG]:19:50:43 Payload OpenID:
+[DEBUG]:19:50:43 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:50:43 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:50:43 Issuance URL OpenID:
+[INFO]: 19:50:43 Credencial almacenada localmente con ID urn:uuid:bab9a65f-ae7a-48f3-9a42-2fb86cb6d3c8
+[INFO]: 19:51:38 HTTP server listening on http://localhost:5500
+[DEBUG]:19:51:39 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:51:39 Issuer DID:
+[DEBUG]:19:51:39 Issuer Key loaded successfully
+[INFO]: 19:51:39 Modo de emisión seleccionado: open
+[INFO]: 19:51:39 Payload construido exitosamente para OpenID
+[DEBUG]:19:51:39 Payload OpenID:
+[DEBUG]:19:51:39 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:51:39 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:51:39 Issuance URL OpenID:
+[INFO]: 19:51:39 Credencial almacenada localmente con ID urn:uuid:429190d2-be7b-4d67-9c20-fbae5598acc5
+[INFO]: 19:54:46 HTTP server listening on http://localhost:5500
+[INFO]: 19:55:02 HTTP server listening on http://localhost:5500
+[INFO]: 19:55:05 HTTP server listening on http://localhost:5500
+[DEBUG]:19:55:09 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:55:09 Issuer DID:
+[DEBUG]:19:55:09 Issuer Key loaded successfully
+[INFO]: 19:55:09 Modo de emisión seleccionado: open
+[INFO]: 19:55:09 Payload construido exitosamente para OpenID
+[DEBUG]:19:55:09 Payload OpenID:
+[DEBUG]:19:55:09 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:55:09 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:55:09 Issuance URL OpenID:
+[INFO]: 19:55:09 Credencial almacenada localmente con ID urn:uuid:113b1e8f-79a7-4773-8efb-147a0598aae7
+[DEBUG]:19:55:22 Received data 
+    {
+  "identifier": "12345678A",
+  "name": "Juan Perez",
+  "nss": "123456789012",
+  "address": [
+    "Calle Ejemplo 123, 28000 Madrid, España"
+  ]
+}
+[DEBUG]:19:55:22 Issuer DID:
+[DEBUG]:19:55:22 Issuer Key loaded successfully
+[INFO]: 19:55:22 Modo de emisión seleccionado: open
+[INFO]: 19:55:22 Payload construido exitosamente para OpenID
+[DEBUG]:19:55:22 Payload OpenID:
+[DEBUG]:19:55:22 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 19:55:22 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:19:55:22 Issuance URL OpenID:
+[INFO]: 19:55:22 Credencial almacenada localmente con ID urn:uuid:bc94fe9e-c883-4b22-9377-a50503531e43
+[INFO]: 20:20:42 HTTP server listening on http://localhost:5500
+[DEBUG]:20:20:53 Received data 
+    {
+  "name": "Juan Perez",
+  "identifier": "12345678A",
+  "domain": "did:web:localhost:6000"
+}
+[DEBUG]:20:20:53 Issuer DID:
+[DEBUG]:20:20:53 Issuer Key loaded successfully
+[INFO]: 20:20:53 Modo de emisión seleccionado: open
+[INFO]: 20:20:53 Payload construido exitosamente para OpenID
+[DEBUG]:20:20:53 Payload OpenID:
+[DEBUG]:20:20:53 Enviando solicitud de emisión a walt.id con el payload OpenID
+[INFO]: 20:20:53 Emisión de credencial a través de OpenID iniciada exitosamente
+[DEBUG]:20:20:53 Issuance URL OpenID:
+[INFO]: 20:20:53 Credencial almacenada localmente con ID urn:uuid:0a76ddf9-e904-4b23-ad18-0929cacd8eb8
+[INFO]: 20:25:24 HTTP server listening on http://localhost:5500
+[INFO]: 20:27:30 HTTP server listening on http://localhost:5500
+[INFO]: 20:28:42 DID Document accessed successfully
+[INFO]: 20:30:58 HTTP server listening on http://localhost:5500
+[INFO]: 20:31:29 HTTP server listening on http://localhost:5500
+[INFO]: 20:33:21 HTTP server listening on http://localhost:5500
+[INFO]: 20:36:48 DID Document accessed successfully
+[INFO]: 20:39:03 DID Document accessed successfully
+[INFO]: 20:40:32 DID Document accessed successfully
+[INFO]: 21:05:05 DID Document accessed successfully
+[INFO]: 21:05:35 DID Document accessed successfully
+[INFO]: 21:11:52 DID Document accessed successfully
+[INFO]: 21:12:11 DID Document accessed successfully
+[INFO]: 21:21:36 DID Document accessed successfully
+[INFO]: 21:22:34 DID Document accessed successfully
+[INFO]: 21:22:55 DID Document accessed successfully
+[INFO]: 21:42:28 DID Document accessed successfully
+[INFO]: 21:42:50 DID Document accessed successfully
+[INFO]: 22:01:22 DID Document accessed successfully
+[INFO]: 22:02:17 DID Document accessed successfully
+[INFO]: 22:03:34 DID Document accessed successfully
+[INFO]: 22:08:07 DID Document accessed successfully
+[INFO]: 22:12:18 DID Document accessed successfully
+[INFO]: 22:12:42 DID Document accessed successfully
+[INFO]: 22:20:15 DID Document accessed successfully
+[INFO]: 22:50:12 DID Document accessed successfully
+[INFO]: 22:55:49 DID Document accessed successfully
+[INFO]: 23:06:25 DID Document accessed successfully
+[INFO]: 23:08:30 DID Document accessed successfully
+[INFO]: 23:08:57 DID Document accessed successfully
+[INFO]: 23:12:37 DID Document accessed successfully
+[INFO]: 23:13:57 DID Document accessed successfully
+[INFO]: 23:15:43 DID Document accessed successfully
+[INFO]: 23:16:04 DID Document accessed successfully
+[INFO]: 23:24:21 DID Document accessed successfully
+[INFO]: 23:30:45 DID Document accessed successfully
+[INFO]: 23:35:47 DID Document accessed successfully
+[INFO]: 23:36:19 DID Document accessed successfully
+[INFO]: 08:20:30 HTTP server listening on http://localhost:5500
+[INFO]: 08:21:13 HTTP server listening on http://localhost:5500
+[DEBUG]:08:21:34 Enviando petición a walt.id para crear el DID
+[INFO]: 08:21:34 DID creado exitosamente
+[DEBUG]:08:21:34 Issuer DID:
+[DEBUG]:08:21:34 Issuer Key: 
+    {
+  "type": "jwk",
+  "jwk": {
+    "kty": "OKP",
+    "d": "sBx6BDX3F9rU87CQ6ZH4eWwnj_kGAKv6ifb-vPCbYrY",
+    "crv": "Ed25519",
+    "kid": "oIS1EqofTMroa8qpA_WmbCi3lKY0OXO6b2WI0GRu9mI",
+    "x": "S1HSxbNNgZhYyp7ypeieaPXmbJ-9YtXwobnoblORGfg"
+  }
+}
+[INFO]: 08:21:34 Documento DID creado exitosamente
+[DEBUG]:08:21:34 Documento DID: 
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:web:5a4b7b0ff4db.ngrok.app",
+  "verificationMethod": [
+    {
+      "id": "did:web:5a4b7b0ff4db.ngrok.app#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:5a4b7b0ff4db.ngrok.app",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "oIS1EqofTMroa8qpA_WmbCi3lKY0OXO6b2WI0GRu9mI",
+        "x": "S1HSxbNNgZhYyp7ypeieaPXmbJ-9YtXwobnoblORGfg"
+      }
+    }
+  ],
+  "authentication": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ],
+  "assertionMethod": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ]
+}
+[INFO]: 08:21:34 Documento DID guardado exitosamente en did.json
+[INFO]: 08:21:34 Issuer Key guardado exitosamente en issuerKey.json
+[INFO]: 08:21:38 DID Document accessed successfully
+[INFO]: 08:22:13 HTTP server listening on http://localhost:5500
+[INFO]: 08:22:44 HTTP server listening on http://localhost:5500
+[INFO]: 08:23:10 HTTP server listening on http://localhost:5500
+[INFO]: 08:23:34 HTTP server listening on http://localhost:5500
+[INFO]: 08:23:38 HTTP server listening on http://localhost:5500
+[INFO]: 08:23:43 HTTP server listening on http://localhost:5500
+[INFO]: 08:25:52 HTTP server listening on http://localhost:5500
+[INFO]: 08:25:57 HTTP server listening on http://localhost:5500
+[DEBUG]:08:25:59 Enviando petición a walt.id para crear el DID
+[INFO]: 08:25:59 DID creado exitosamente
+[DEBUG]:08:25:59 Issuer DID:
+[DEBUG]:08:25:59 Issuer Key: 
+    {
+  "type": "jwk",
+  "jwk": {
+    "kty": "OKP",
+    "d": "Zk642_cCJ8tsjq6NChuUaTYd7vrau_TJWHwFWztKC5o",
+    "crv": "Ed25519",
+    "kid": "2QWiNPYYfC_igo6oUFwFZJw3FetuMJOEwAXJGUfI7zM",
+    "x": "VZh9SqJzal91mfiu8ILA47lf6yYJ_6rS7xucXeYiRCg"
+  }
+}
+[INFO]: 08:25:59 Documento DID creado exitosamente
+[DEBUG]:08:25:59 Documento DID: 
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:web:5a4b7b0ff4db.ngrok.app",
+  "verificationMethod": [
+    {
+      "id": "did:web:5a4b7b0ff4db.ngrok.app#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:5a4b7b0ff4db.ngrok.app",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "2QWiNPYYfC_igo6oUFwFZJw3FetuMJOEwAXJGUfI7zM",
+        "x": "VZh9SqJzal91mfiu8ILA47lf6yYJ_6rS7xucXeYiRCg"
+      }
+    }
+  ],
+  "authentication": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ],
+  "assertionMethod": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ]
+}
+[INFO]: 08:25:59 Documento DID guardado exitosamente en did.json
+[INFO]: 08:25:59 Issuer Key guardado exitosamente en issuerKey.json
+[INFO]: 08:34:52 HTTP server listening on http://localhost:5500
+[ERROR]:08:35:02 Ocurrió un error: Issuer Key no encontrado. Asegúrate de haber creado el DID correctamente. 
+    {
+  "name": "NotFoundError",
+  "code": 404,
+  "stack": "NotFoundError: Issuer Key no encontrado. Asegúrate de haber creado el DID correctamente.\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:263:13)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)\n    at router (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:47:12)"
+}
+[ERROR]:08:35:02 Validación/Error:
+[DEBUG]:08:35:05 Enviando petición a walt.id para crear el DID
+[INFO]: 08:35:05 DID creado exitosamente
+[DEBUG]:08:35:05 Issuer DID:
+[DEBUG]:08:35:05 Issuer Key: 
+    {
+  "type": "jwk",
+  "jwk": {
+    "kty": "OKP",
+    "d": "FEMcMjg9Xa6FReWabVaUoQY7R-ilMOU3vxV6q4EaDe0",
+    "crv": "Ed25519",
+    "kid": "A4kLzpiur5pD8yxkQGBFpJIh5Ewig2xXSUo-hpgbSoA",
+    "x": "2RFGFqlb-HuxnOMgR3CiWixjshUcgFIa5G2JAtDNnwI"
+  }
+}
+[INFO]: 08:35:05 Documento DID creado exitosamente
+[DEBUG]:08:35:05 Documento DID: 
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:web:5a4b7b0ff4db.ngrok.app",
+  "verificationMethod": [
+    {
+      "id": "did:web:5a4b7b0ff4db.ngrok.app#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:web:5a4b7b0ff4db.ngrok.app",
+      "publicKeyJwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "kid": "A4kLzpiur5pD8yxkQGBFpJIh5Ewig2xXSUo-hpgbSoA",
+        "x": "2RFGFqlb-HuxnOMgR3CiWixjshUcgFIa5G2JAtDNnwI"
+      }
+    }
+  ],
+  "authentication": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ],
+  "assertionMethod": [
+    "did:web:5a4b7b0ff4db.ngrok.app#key-1"
+  ]
+}
+[INFO]: 08:35:05 Documento DID guardado exitosamente en did.json
+[INFO]: 08:35:05 Issuer Key guardado exitosamente en issuerKey.json
+[INFO]: 08:35:34 HTTP server listening on http://localhost:5500
+[INFO]: 08:35:56 DID Document accessed successfully
+[INFO]: 08:36:19 DID Document accessed successfully
+[INFO]: 15:27:41 DID Document accessed successfully
+[INFO]: 15:51:49 DID Document accessed successfully
+[INFO]: 15:52:08 DID Document accessed successfully
+[INFO]: 18:22:58 DID Document accessed successfully
+[INFO]: 18:23:23 DID Document accessed successfully
+[INFO]: 18:27:59 DID Document accessed successfully
+[INFO]: 18:28:18 DID Document accessed successfully
+[INFO]: 19:30:02 HTTP server listening on http://localhost:5500
+[INFO]: 19:30:11 HTTP server listening on http://localhost:5500
+[INFO]: 19:57:26 DID Document accessed successfully
+[INFO]: 19:57:41 DID Document accessed successfully
+[INFO]: 20:00:15 DID Document accessed successfully
+[INFO]: 20:00:49 DID Document accessed successfully
+[INFO]: 20:06:21 DID Document accessed successfully
+[INFO]: 19:08:45 HTTP server listening on http://localhost:5500
+[ERROR]:19:09:24 Ocurrió un error al crear el DID: Error al crear el DID: Internal Server Error 
+    {
+  "stack": "Error: Error al crear el DID: Internal Server Error\n    at cr_did (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:66:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}
+[INFO]: 19:10:02 HTTP server listening on http://localhost:5500
+[ERROR]:19:10:06 Ocurrió un error al crear el DID: Error al crear el DID: Internal Server Error 
+    {
+  "stack": "Error: Error al crear el DID: Internal Server Error\n    at cr_did (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:66:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}
+[INFO]: 19:12:24 HTTP server listening on http://localhost:5500
+[INFO]: 19:12:33 HTTP server listening on http://localhost:5500
+[INFO]: 19:12:36 HTTP server listening on http://localhost:5500
+[INFO]: 19:12:59 Documento DID creado exitosamente
+[DEBUG]:19:12:59 Documento DID: 
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy",
+  "verificationMethod": [
+    {
+      "id": "did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy",
+      "publicKeyJwk": {}
+    }
+  ],
+  "authentication": [
+    "did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy#key-1"
+  ],
+  "assertionMethod": [
+    "did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy#key-1"
+  ]
+}
+[INFO]: 19:12:59 Documento DID guardado exitosamente en did.json
+[INFO]: 19:12:59 Issuer Key guardado exitosamente en issuerKey.json
+[INFO]: 19:13:38 DID Document accessed successfully
+[INFO]: 19:17:48 HTTP server listening on http://localhost:5500
+[INFO]: 20:08:11 HTTP server listening on http://localhost:5500
+[INFO]: 20:15:12 HTTP server listening on http://localhost:5500
+[INFO]: 20:24:51 HTTP server listening on http://localhost:5500
+[ERROR]:20:24:55 Ocurrió un error: Request failed with status code 400
+    {
+  "name": "AxiosError",
+  "code": "ERR_BAD_REQUEST",
+  "config": {
+    "transitional": {
+      "silentJSONParsing": true,
+      "forcedJSONParsing": true,
+      "clarifyTimeoutError": false
+    },
+    "adapter": [
+      "xhr",
+      "http",
+      "fetch"
+    ],
+    "transformRequest": [
+      null
+    ],
+    "transformResponse": [
+      null
+    ],
+    "timeout": 0,
+    "xsrfCookieName": "XSRF-TOKEN",
+    "xsrfHeaderName": "X-XSRF-TOKEN",
+    "maxContentLength": -1,
+    "maxBodyLength": -1,
+    "env": {},
+    "headers": {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": "axios/1.7.8",
+      "Content-Length": "1767",
+      "Accept-Encoding": "gzip, compress, deflate, br"
+    },
+    "method": "post",
+    "url": "http://localhost:7002/openid4vc/jwt/issue",
+    "data": "{\"issuerKey\":{\"type\":\"tse\",\"server\":\"http://host.docker.internal:8200/v1/transit\",\"auth\":{\"roleId\":\"da03d0aa-d3e9-76a5-7ca1-eeb88f463441\",\"secretId\":\"abf02e2a-8757-4c4c-ae46-a4169080a617\"},\"id\":\"k816723681\",\"_publicKey\":[57,84,52,112,95,-82,81,122,3,-113,29,-16,127,-79,107,66,122,4,-53,-88,92,-64,-5,-30,77,98,-34,109,80,-105,-71,-102],\"_keyType\":\"Ed25519\"},\"issuerDid\":\"did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy\",\"credentialConfigurationId\":\"EmployerRegistrationCredential_jwt_vc_json\",\"credentialData\":{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://www.w3.org/ns/credentials/examples/v2\"],\"id\":\"urn:uuid:bd7c2959-94d0-4bfa-811c-9e8678b97524\",\"type\":[\"VerifiableCredential\",\"EmployerRegistrationCredential\"],\"issuer\":{\"id\":\"did:web:empresaregistradora.example.com\",\"name\":\"Ministerio de Trabajo y Economía Social - España\",\"description\":\"Entidad emisora del registro laboral de la empresa\"},\"name\":\"Registro del Empleador\",\"description\":\"Credencial que acredita el registro del empleador en la Seguridad Social\",\"validFrom\":\"2024-12-08T10:19:28Z\",\"expirationDate\":\"2026-12-08T10:19:28Z\",\"category\":\"EmployerRegistration\",\"credentialSubject\":{\"id\":\"did:web:empresa.example.com\",\"employerName\":\"Empresa de Servicios S.A.\",\"socialSecurityRegime\":\"Régimen General\",\"employerContributionAccountCode\":\"0111-2222-33-4444444444\",\"collectiveAgreements\":[\"Convenio Colectivo de Empresas de Servicios Generales\",\"Convenio Colectivo Sectorial\"]}},\"mapping\":{\"id\":\"urn:uuid:bd7c2959-94d0-4bfa-811c-9e8678b97524\",\"issuer\":{\"id\":\"did:web:empresaregistradora.example.com\"},\"credentialSubject\":{\"id\":\"did:web:empresa.example.com\"},\"issuanceDate\":\"2024-12-08T10:19:28Z\",\"expirationDate\":\"2026-12-08T10:19:28Z\"},\"authenticationMethod\":\"PRE_AUTHORIZED\"}"
+  },
+  "request": {
+    "_events": {},
+    "_eventsCount": 7,
+    "outputData": [],
+    "outputSize": 0,
+    "writable": true,
+    "destroyed": true,
+    "_last": false,
+    "chunkedEncoding": false,
+    "shouldKeepAlive": true,
+    "maxRequestsOnConnectionReached": false,
+    "_defaultKeepAlive": true,
+    "useChunkedEncodingByDefault": true,
+    "sendDate": false,
+    "_removedConnection": false,
+    "_removedContLen": false,
+    "_removedTE": false,
+    "strictContentLength": false,
+    "_contentLength": "1767",
+    "_hasBody": true,
+    "_trailer": "",
+    "finished": true,
+    "_headerSent": true,
+    "_closed": true,
+    "_header": "POST /openid4vc/jwt/issue HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nUser-Agent: axios/1.7.8\r\nContent-Length: 1767\r\nAccept-Encoding: gzip, compress, deflate, br\r\nHost: localhost:7002\r\nConnection: keep-alive\r\n\r\n",
+    "_keepAliveTimeout": 0,
+    "agent": {
+      "_events": {},
+      "_eventsCount": 2,
+      "defaultPort": 80,
+      "protocol": "http:",
+      "options": {
+        "keepAlive": true,
+        "scheduling": "lifo",
+        "timeout": 5000,
+        "noDelay": true,
+        "path": null
+      },
+      "requests": {},
+      "sockets": {},
+      "freeSockets": {
+        "localhost:7002:": [
+          {
+            "connecting": false,
+            "_hadError": false,
+            "_parent": null,
+            "_host": "localhost",
+            "_closeAfterHandlingError": false,
+            "_events": {},
+            "_readableState": {
+              "highWaterMark": 65536,
+              "buffer": [],
+              "bufferIndex": 0,
+              "length": 0,
+              "pipes": [],
+              "awaitDrainWriters": null
+            },
+            "_writableState": {
+              "highWaterMark": 65536,
+              "length": 0,
+              "corked": 0,
+              "writelen": 0,
+              "bufferedIndex": 0,
+              "pendingcb": 0
+            },
+            "allowHalfOpen": false,
+            "_eventsCount": 6,
+            "_sockname": null,
+            "_pendingData": null,
+            "_pendingEncoding": "",
+            "server": null,
+            "_server": null,
+            "timeout": 5000,
+            "parser": null,
+            "_httpMessage": null,
+            "autoSelectFamilyAttemptedAddresses": [
+              "::1:7002"
+            ]
+          }
+        ]
+      },
+      "keepAliveMsecs": 1000,
+      "keepAlive": true,
+      "maxSockets": null,
+      "maxFreeSockets": 256,
+      "scheduling": "lifo",
+      "maxTotalSockets": null,
+      "totalSocketCount": 1
+    },
+    "method": "POST",
+    "path": "/openid4vc/jwt/issue",
+    "_ended": true,
+    "res": {
+      "_events": {
+        "end": [
+          null,
+          null
+        ]
+      },
+      "_readableState": {
+        "highWaterMark": 65536,
+        "buffer": [],
+        "bufferIndex": 0,
+        "length": 0,
+        "pipes": [],
+        "awaitDrainWriters": null
+      },
+      "socket": null,
+      "httpVersionMajor": 1,
+      "httpVersionMinor": 1,
+      "httpVersion": "1.1",
+      "complete": true,
+      "rawHeaders": [
+        "Content-Length",
+        "102",
+        "Content-Type",
+        "text/plain; charset=UTF-8",
+        "Server",
+        "Caddy",
+        "Vary",
+        "Origin",
+        "Date",
+        "Tue, 10 Dec 2024 19:24:55 GMT"
+      ],
+      "rawTrailers": [],
+      "aborted": false,
+      "upgrade": false,
+      "url": "",
+      "method": null,
+      "statusCode": 400,
+      "statusMessage": "Bad Request",
+      "client": "[Circular]",
+      "_consuming": false,
+      "_dumped": false,
+      "req": "[Circular]",
+      "_eventsCount": 4,
+      "responseUrl": "http://localhost:7002/openid4vc/jwt/issue",
+      "redirects": []
+    },
+    "aborted": false,
+    "timeoutCb": null,
+    "upgradeOrConnect": false,
+    "parser": null,
+    "maxHeadersCount": null,
+    "reusedSocket": false,
+    "host": "localhost",
+    "protocol": "http:",
+    "_redirectable": {
+      "_events": {},
+      "_writableState": {
+        "highWaterMark": 65536,
+        "length": 0,
+        "corked": 0,
+        "writelen": 0,
+        "bufferedIndex": 0,
+        "pendingcb": 0
+      },
+      "_options": {
+        "maxRedirects": 21,
+        "maxBodyLength": null,
+        "protocol": "http:",
+        "path": "/openid4vc/jwt/issue",
+        "method": "POST",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "axios/1.7.8",
+          "Content-Length": "1767",
+          "Accept-Encoding": "gzip, compress, deflate, br"
+        },
+        "agents": {},
+        "beforeRedirects": {},
+        "hostname": "localhost",
+        "port": "7002",
+        "nativeProtocols": {
+          "http:": {
+            "METHODS": [
+              "ACL",
+              "BIND",
+              "CHECKOUT",
+              "CONNECT",
+              "COPY",
+              "DELETE",
+              "GET",
+              "HEAD",
+              "LINK",
+              "LOCK",
+              "M-SEARCH",
+              "MERGE",
+              "MKACTIVITY",
+              "MKCALENDAR",
+              "MKCOL",
+              "MOVE",
+              "NOTIFY",
+              "OPTIONS",
+              "PATCH",
+              "POST",
+              "PROPFIND",
+              "PROPPATCH",
+              "PURGE",
+              "PUT",
+              "QUERY",
+              "REBIND",
+              "REPORT",
+              "SEARCH",
+              "SOURCE",
+              "SUBSCRIBE",
+              "TRACE",
+              "UNBIND",
+              "UNLINK",
+              "UNLOCK",
+              "UNSUBSCRIBE"
+            ],
+            "STATUS_CODES": {
+              "100": "Continue",
+              "101": "Switching Protocols",
+              "102": "Processing",
+              "103": "Early Hints",
+              "200": "OK",
+              "201": "Created",
+              "202": "Accepted",
+              "203": "Non-Authoritative Information",
+              "204": "No Content",
+              "205": "Reset Content",
+              "206": "Partial Content",
+              "207": "Multi-Status",
+              "208": "Already Reported",
+              "226": "IM Used",
+              "300": "Multiple Choices",
+              "301": "Moved Permanently",
+              "302": "Found",
+              "303": "See Other",
+              "304": "Not Modified",
+              "305": "Use Proxy",
+              "307": "Temporary Redirect",
+              "308": "Permanent Redirect",
+              "400": "Bad Request",
+              "401": "Unauthorized",
+              "402": "Payment Required",
+              "403": "Forbidden",
+              "404": "Not Found",
+              "405": "Method Not Allowed",
+              "406": "Not Acceptable",
+              "407": "Proxy Authentication Required",
+              "408": "Request Timeout",
+              "409": "Conflict",
+              "410": "Gone",
+              "411": "Length Required",
+              "412": "Precondition Failed",
+              "413": "Payload Too Large",
+              "414": "URI Too Long",
+              "415": "Unsupported Media Type",
+              "416": "Range Not Satisfiable",
+              "417": "Expectation Failed",
+              "418": "I'm a Teapot",
+              "421": "Misdirected Request",
+              "422": "Unprocessable Entity",
+              "423": "Locked",
+              "424": "Failed Dependency",
+              "425": "Too Early",
+              "426": "Upgrade Required",
+              "428": "Precondition Required",
+              "429": "Too Many Requests",
+              "431": "Request Header Fields Too Large",
+              "451": "Unavailable For Legal Reasons",
+              "500": "Internal Server Error",
+              "501": "Not Implemented",
+              "502": "Bad Gateway",
+              "503": "Service Unavailable",
+              "504": "Gateway Timeout",
+              "505": "HTTP Version Not Supported",
+              "506": "Variant Also Negotiates",
+              "507": "Insufficient Storage",
+              "508": "Loop Detected",
+              "509": "Bandwidth Limit Exceeded",
+              "510": "Not Extended",
+              "511": "Network Authentication Required"
+            },
+            "maxHeaderSize": 16384,
+            "globalAgent": "[Circular]"
+          },
+          "https:": {
+            "globalAgent": {
+              "_events": {},
+              "_eventsCount": 2,
+              "defaultPort": 443,
+              "protocol": "https:",
+              "options": {
+                "keepAlive": true,
+                "scheduling": "lifo",
+                "timeout": 5000,
+                "noDelay": true,
+                "path": null
+              },
+              "requests": {},
+              "sockets": {},
+              "freeSockets": {},
+              "keepAliveMsecs": 1000,
+              "keepAlive": true,
+              "maxSockets": null,
+              "maxFreeSockets": 256,
+              "scheduling": "lifo",
+              "maxTotalSockets": null,
+              "totalSocketCount": 0,
+              "maxCachedSessions": 100,
+              "_sessionCache": {
+                "map": {},
+                "list": []
+              }
+            }
+          }
+        },
+        "pathname": "/openid4vc/jwt/issue"
+      },
+      "_ended": true,
+      "_ending": true,
+      "_redirectCount": 0,
+      "_redirects": "[Circular]",
+      "_requestBodyLength": 1767,
+      "_requestBodyBuffers": [],
+      "_eventsCount": 3,
+      "_currentRequest": "[Circular]",
+      "_currentUrl": "http://localhost:7002/openid4vc/jwt/issue"
+    }
+  },
+  "response": {
+    "status": 400,
+    "statusText": "Bad Request",
+    "headers": {
+      "content-length": "102",
+      "content-type": "text/plain; charset=UTF-8",
+      "server": "Caddy",
+      "vary": "Origin",
+      "date": "Tue, 10 Dec 2024 19:24:55 GMT"
+    },
+    "config": "[Circular]",
+    "request": "[Circular]",
+    "data": {
+      "exception": true,
+      "status": "Bad Request",
+      "code": "400",
+      "message": "Invalid Credential Configuration Id"
+    }
+  },
+  "status": 400,
+  "stack": "AxiosError: Request failed with status code 400\n    at settle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/core/settle.js:19:12)\n    at IncomingMessage.handleStreamEnd (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/adapters/http.js:599:11)\n    at IncomingMessage.emit (node:events:530:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)\n    at Axios.request (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/core/Axios.js:45:41)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:381:29)"
+}
+[ERROR]:20:24:55 API Error: 400 - {"exception":true,"status":"Bad Request","code":"400","message":"Invalid Credential Configuration Id"}
+[ERROR]:20:26:17 Ocurrió un error: Request failed with status code 400
+    {
+  "name": "AxiosError",
+  "code": "ERR_BAD_REQUEST",
+  "config": {
+    "transitional": {
+      "silentJSONParsing": true,
+      "forcedJSONParsing": true,
+      "clarifyTimeoutError": false
+    },
+    "adapter": [
+      "xhr",
+      "http",
+      "fetch"
+    ],
+    "transformRequest": [
+      null
+    ],
+    "transformResponse": [
+      null
+    ],
+    "timeout": 0,
+    "xsrfCookieName": "XSRF-TOKEN",
+    "xsrfHeaderName": "X-XSRF-TOKEN",
+    "maxContentLength": -1,
+    "maxBodyLength": -1,
+    "env": {},
+    "headers": {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": "axios/1.7.8",
+      "Content-Length": "1767",
+      "Accept-Encoding": "gzip, compress, deflate, br"
+    },
+    "method": "post",
+    "url": "http://localhost:7002/openid4vc/jwt/issue",
+    "data": "{\"issuerKey\":{\"type\":\"tse\",\"server\":\"http://host.docker.internal:8200/v1/transit\",\"auth\":{\"roleId\":\"da03d0aa-d3e9-76a5-7ca1-eeb88f463441\",\"secretId\":\"abf02e2a-8757-4c4c-ae46-a4169080a617\"},\"id\":\"k816723681\",\"_publicKey\":[57,84,52,112,95,-82,81,122,3,-113,29,-16,127,-79,107,66,122,4,-53,-88,92,-64,-5,-30,77,98,-34,109,80,-105,-71,-102],\"_keyType\":\"Ed25519\"},\"issuerDid\":\"did:key:z6MkiK3kmYs25U5k7wjbNKZWZfi81Bw1mdJmPQHtGzoizeQy\",\"credentialConfigurationId\":\"EmployerRegistrationCredential_jwt_vc_json\",\"credentialData\":{\"@context\":[\"https://www.w3.org/ns/credentials/v2\",\"https://www.w3.org/ns/credentials/examples/v2\"],\"id\":\"urn:uuid:b6de30fd-43fd-48cb-92f0-22c5b0e0a28b\",\"type\":[\"VerifiableCredential\",\"EmployerRegistrationCredential\"],\"issuer\":{\"id\":\"did:web:empresaregistradora.example.com\",\"name\":\"Ministerio de Trabajo y Economía Social - España\",\"description\":\"Entidad emisora del registro laboral de la empresa\"},\"name\":\"Registro del Empleador\",\"description\":\"Credencial que acredita el registro del empleador en la Seguridad Social\",\"validFrom\":\"2024-12-08T10:19:28Z\",\"expirationDate\":\"2026-12-08T10:19:28Z\",\"category\":\"EmployerRegistration\",\"credentialSubject\":{\"id\":\"did:web:empresa.example.com\",\"employerName\":\"Empresa de Servicios S.A.\",\"socialSecurityRegime\":\"Régimen General\",\"employerContributionAccountCode\":\"0111-2222-33-4444444444\",\"collectiveAgreements\":[\"Convenio Colectivo de Empresas de Servicios Generales\",\"Convenio Colectivo Sectorial\"]}},\"mapping\":{\"id\":\"urn:uuid:b6de30fd-43fd-48cb-92f0-22c5b0e0a28b\",\"issuer\":{\"id\":\"did:web:empresaregistradora.example.com\"},\"credentialSubject\":{\"id\":\"did:web:empresa.example.com\"},\"issuanceDate\":\"2024-12-08T10:19:28Z\",\"expirationDate\":\"2026-12-08T10:19:28Z\"},\"authenticationMethod\":\"PRE_AUTHORIZED\"}"
+  },
+  "request": {
+    "_events": {},
+    "_eventsCount": 7,
+    "outputData": [],
+    "outputSize": 0,
+    "writable": true,
+    "destroyed": true,
+    "_last": false,
+    "chunkedEncoding": false,
+    "shouldKeepAlive": true,
+    "maxRequestsOnConnectionReached": false,
+    "_defaultKeepAlive": true,
+    "useChunkedEncodingByDefault": true,
+    "sendDate": false,
+    "_removedConnection": false,
+    "_removedContLen": false,
+    "_removedTE": false,
+    "strictContentLength": false,
+    "_contentLength": "1767",
+    "_hasBody": true,
+    "_trailer": "",
+    "finished": true,
+    "_headerSent": true,
+    "_closed": true,
+    "_header": "POST /openid4vc/jwt/issue HTTP/1.1\r\nAccept: application/json\r\nContent-Type: application/json\r\nUser-Agent: axios/1.7.8\r\nContent-Length: 1767\r\nAccept-Encoding: gzip, compress, deflate, br\r\nHost: localhost:7002\r\nConnection: keep-alive\r\n\r\n",
+    "_keepAliveTimeout": 0,
+    "agent": {
+      "_events": {},
+      "_eventsCount": 2,
+      "defaultPort": 80,
+      "protocol": "http:",
+      "options": {
+        "keepAlive": true,
+        "scheduling": "lifo",
+        "timeout": 5000,
+        "noDelay": true,
+        "path": null
+      },
+      "requests": {},
+      "sockets": {},
+      "freeSockets": {
+        "localhost:7002:": [
+          {
+            "connecting": false,
+            "_hadError": false,
+            "_parent": null,
+            "_host": "localhost",
+            "_closeAfterHandlingError": false,
+            "_events": {},
+            "_readableState": {
+              "highWaterMark": 65536,
+              "buffer": [],
+              "bufferIndex": 0,
+              "length": 0,
+              "pipes": [],
+              "awaitDrainWriters": null
+            },
+            "_writableState": {
+              "highWaterMark": 65536,
+              "length": 0,
+              "corked": 0,
+              "writelen": 0,
+              "bufferedIndex": 0,
+              "pendingcb": 0
+            },
+            "allowHalfOpen": false,
+            "_eventsCount": 6,
+            "_sockname": null,
+            "_pendingData": null,
+            "_pendingEncoding": "",
+            "server": null,
+            "_server": null,
+            "timeout": 5000,
+            "parser": null,
+            "_httpMessage": null,
+            "autoSelectFamilyAttemptedAddresses": [
+              "::1:7002"
+            ]
+          }
+        ]
+      },
+      "keepAliveMsecs": 1000,
+      "keepAlive": true,
+      "maxSockets": null,
+      "maxFreeSockets": 256,
+      "scheduling": "lifo",
+      "maxTotalSockets": null,
+      "totalSocketCount": 1
+    },
+    "method": "POST",
+    "path": "/openid4vc/jwt/issue",
+    "_ended": true,
+    "res": {
+      "_events": {
+        "end": [
+          null,
+          null
+        ]
+      },
+      "_readableState": {
+        "highWaterMark": 65536,
+        "buffer": [],
+        "bufferIndex": 0,
+        "length": 0,
+        "pipes": [],
+        "awaitDrainWriters": null
+      },
+      "socket": null,
+      "httpVersionMajor": 1,
+      "httpVersionMinor": 1,
+      "httpVersion": "1.1",
+      "complete": true,
+      "rawHeaders": [
+        "Content-Length",
+        "102",
+        "Content-Type",
+        "text/plain; charset=UTF-8",
+        "Server",
+        "Caddy",
+        "Vary",
+        "Origin",
+        "Date",
+        "Tue, 10 Dec 2024 19:26:17 GMT"
+      ],
+      "rawTrailers": [],
+      "aborted": false,
+      "upgrade": false,
+      "url": "",
+      "method": null,
+      "statusCode": 400,
+      "statusMessage": "Bad Request",
+      "client": "[Circular]",
+      "_consuming": false,
+      "_dumped": false,
+      "req": "[Circular]",
+      "_eventsCount": 4,
+      "responseUrl": "http://localhost:7002/openid4vc/jwt/issue",
+      "redirects": []
+    },
+    "aborted": false,
+    "timeoutCb": null,
+    "upgradeOrConnect": false,
+    "parser": null,
+    "maxHeadersCount": null,
+    "reusedSocket": false,
+    "host": "localhost",
+    "protocol": "http:",
+    "_redirectable": {
+      "_events": {},
+      "_writableState": {
+        "highWaterMark": 65536,
+        "length": 0,
+        "corked": 0,
+        "writelen": 0,
+        "bufferedIndex": 0,
+        "pendingcb": 0
+      },
+      "_options": {
+        "maxRedirects": 21,
+        "maxBodyLength": null,
+        "protocol": "http:",
+        "path": "/openid4vc/jwt/issue",
+        "method": "POST",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "User-Agent": "axios/1.7.8",
+          "Content-Length": "1767",
+          "Accept-Encoding": "gzip, compress, deflate, br"
+        },
+        "agents": {},
+        "beforeRedirects": {},
+        "hostname": "localhost",
+        "port": "7002",
+        "nativeProtocols": {
+          "http:": {
+            "METHODS": [
+              "ACL",
+              "BIND",
+              "CHECKOUT",
+              "CONNECT",
+              "COPY",
+              "DELETE",
+              "GET",
+              "HEAD",
+              "LINK",
+              "LOCK",
+              "M-SEARCH",
+              "MERGE",
+              "MKACTIVITY",
+              "MKCALENDAR",
+              "MKCOL",
+              "MOVE",
+              "NOTIFY",
+              "OPTIONS",
+              "PATCH",
+              "POST",
+              "PROPFIND",
+              "PROPPATCH",
+              "PURGE",
+              "PUT",
+              "QUERY",
+              "REBIND",
+              "REPORT",
+              "SEARCH",
+              "SOURCE",
+              "SUBSCRIBE",
+              "TRACE",
+              "UNBIND",
+              "UNLINK",
+              "UNLOCK",
+              "UNSUBSCRIBE"
+            ],
+            "STATUS_CODES": {
+              "100": "Continue",
+              "101": "Switching Protocols",
+              "102": "Processing",
+              "103": "Early Hints",
+              "200": "OK",
+              "201": "Created",
+              "202": "Accepted",
+              "203": "Non-Authoritative Information",
+              "204": "No Content",
+              "205": "Reset Content",
+              "206": "Partial Content",
+              "207": "Multi-Status",
+              "208": "Already Reported",
+              "226": "IM Used",
+              "300": "Multiple Choices",
+              "301": "Moved Permanently",
+              "302": "Found",
+              "303": "See Other",
+              "304": "Not Modified",
+              "305": "Use Proxy",
+              "307": "Temporary Redirect",
+              "308": "Permanent Redirect",
+              "400": "Bad Request",
+              "401": "Unauthorized",
+              "402": "Payment Required",
+              "403": "Forbidden",
+              "404": "Not Found",
+              "405": "Method Not Allowed",
+              "406": "Not Acceptable",
+              "407": "Proxy Authentication Required",
+              "408": "Request Timeout",
+              "409": "Conflict",
+              "410": "Gone",
+              "411": "Length Required",
+              "412": "Precondition Failed",
+              "413": "Payload Too Large",
+              "414": "URI Too Long",
+              "415": "Unsupported Media Type",
+              "416": "Range Not Satisfiable",
+              "417": "Expectation Failed",
+              "418": "I'm a Teapot",
+              "421": "Misdirected Request",
+              "422": "Unprocessable Entity",
+              "423": "Locked",
+              "424": "Failed Dependency",
+              "425": "Too Early",
+              "426": "Upgrade Required",
+              "428": "Precondition Required",
+              "429": "Too Many Requests",
+              "431": "Request Header Fields Too Large",
+              "451": "Unavailable For Legal Reasons",
+              "500": "Internal Server Error",
+              "501": "Not Implemented",
+              "502": "Bad Gateway",
+              "503": "Service Unavailable",
+              "504": "Gateway Timeout",
+              "505": "HTTP Version Not Supported",
+              "506": "Variant Also Negotiates",
+              "507": "Insufficient Storage",
+              "508": "Loop Detected",
+              "509": "Bandwidth Limit Exceeded",
+              "510": "Not Extended",
+              "511": "Network Authentication Required"
+            },
+            "maxHeaderSize": 16384,
+            "globalAgent": "[Circular]"
+          },
+          "https:": {
+            "globalAgent": {
+              "_events": {},
+              "_eventsCount": 2,
+              "defaultPort": 443,
+              "protocol": "https:",
+              "options": {
+                "keepAlive": true,
+                "scheduling": "lifo",
+                "timeout": 5000,
+                "noDelay": true,
+                "path": null
+              },
+              "requests": {},
+              "sockets": {},
+              "freeSockets": {},
+              "keepAliveMsecs": 1000,
+              "keepAlive": true,
+              "maxSockets": null,
+              "maxFreeSockets": 256,
+              "scheduling": "lifo",
+              "maxTotalSockets": null,
+              "totalSocketCount": 0,
+              "maxCachedSessions": 100,
+              "_sessionCache": {
+                "map": {},
+                "list": []
+              }
+            }
+          }
+        },
+        "pathname": "/openid4vc/jwt/issue"
+      },
+      "_ended": true,
+      "_ending": true,
+      "_redirectCount": 0,
+      "_redirects": "[Circular]",
+      "_requestBodyLength": 1767,
+      "_requestBodyBuffers": [],
+      "_eventsCount": 3,
+      "_currentRequest": "[Circular]",
+      "_currentUrl": "http://localhost:7002/openid4vc/jwt/issue"
+    }
+  },
+  "response": {
+    "status": 400,
+    "statusText": "Bad Request",
+    "headers": {
+      "content-length": "102",
+      "content-type": "text/plain; charset=UTF-8",
+      "server": "Caddy",
+      "vary": "Origin",
+      "date": "Tue, 10 Dec 2024 19:26:17 GMT"
+    },
+    "config": "[Circular]",
+    "request": "[Circular]",
+    "data": {
+      "exception": true,
+      "status": "Bad Request",
+      "code": "400",
+      "message": "Invalid Credential Configuration Id"
+    }
+  },
+  "status": 400,
+  "stack": "AxiosError: Request failed with status code 400\n    at settle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/core/settle.js:19:12)\n    at IncomingMessage.handleStreamEnd (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/adapters/http.js:599:11)\n    at IncomingMessage.emit (node:events:530:35)\n    at endReadableNT (node:internal/streams/readable:1698:12)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)\n    at Axios.request (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/axios/lib/core/Axios.js:45:41)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:381:29)"
+}
+[ERROR]:20:26:17 API Error: 400 - {"exception":true,"status":"Bad Request","code":"400","message":"Invalid Credential Configuration Id"}
+[ERROR]:20:29:07 Ocurrió un error al crear el DID: Error al crear el DID: Internal Server Error
+    {
+  "stack": "Error: Error al crear el DID: Internal Server Error\n    at cr_did (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:70:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}
+[INFO]: 20:32:14 HTTP server listening on http://localhost:5500
+[INFO]: 20:32:18 Documento DID creado exitosamente
+[DEBUG]:20:32:18 Documento DID:
+    {
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:key:z6MkjJi7DaPqgbXqVjXYGRzRrwshZ2W88jAYAEdWdTUpQSNY",
+  "verificationMethod": [
+    {
+      "id": "did:key:z6MkjJi7DaPqgbXqVjXYGRzRrwshZ2W88jAYAEdWdTUpQSNY#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:key:z6MkjJi7DaPqgbXqVjXYGRzRrwshZ2W88jAYAEdWdTUpQSNY",
+      "publicKeyJwk": {}
+    }
+  ],
+  "authentication": [
+    "did:key:z6MkjJi7DaPqgbXqVjXYGRzRrwshZ2W88jAYAEdWdTUpQSNY#key-1"
+  ],
+  "assertionMethod": [
+    "did:key:z6MkjJi7DaPqgbXqVjXYGRzRrwshZ2W88jAYAEdWdTUpQSNY#key-1"
+  ]
+}
+[INFO]: 20:32:18 Documento DID guardado exitosamente en did.json
+[INFO]: 20:32:18 Issuer Key guardado exitosamente en issuerKey.json
+[INFO]: 20:35:52 HTTP server listening on http://localhost:5500
+[INFO]: 20:35:58 HTTP server listening on http://localhost:5500
+[ERROR]:20:37:02 Ocurrió un error: Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".
+    {
+  "stack": "Error: Tipo de credencial no soportado. Use \"Identity\", \"Passport\" o \"Work\".\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:360:15)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)\n    at router (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:47:12)"
+}
+[ERROR]:20:37:02 Error inesperado: Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".
+    {
+  "stack": "Error: Tipo de credencial no soportado. Use \"Identity\", \"Passport\" o \"Work\".\n    at issue (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/src/App/controllers/maincontroller.ts:360:15)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)\n    at next (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:280:10)\n    at Function.handle (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:175:3)\n    at router (/home/juanjo/Descargas/V-CAPI/ISSUER_COORD/node_modules/express/lib/router/index.js:47:12)"
+}
+[INFO]: 07:14:23 HTTP server listening on http://localhost:5500
+[INFO]: 15:51:37 HTTP server listening on http://localhost:5500
+[ERROR]:15:51:44 Ocurrió un error al crear el DID: Error al crear el DID: Internal Server Error
+    {
+  "stack": "Error: Error al crear el DID: Internal Server Error\n    at cr_did (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:70:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}

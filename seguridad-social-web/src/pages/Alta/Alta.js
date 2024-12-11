@@ -7,6 +7,9 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaIdCard, FaCheckCircle, FaQrcode, FaRedoAlt } from 'react-icons/fa';
 
+const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
+
 const Alta = () => {
     const [verificationUrl, setVerificationUrl] = useState('');
     const [sessionId, setSessionId] = useState('');
@@ -23,7 +26,7 @@ const Alta = () => {
     const startThreeCredsVerification = async () => {
         try {
             // Cambiamos el endpoint de 2 a 3 credenciales
-            const response = await axios.post('http://localhost:3001/verification/offer3creds', {});
+            const response = await axios.post(`${BASE_URL}/verification/offer3creds`, {});
             setVerificationUrl(response.data.verificationUrl);
             setSessionId(response.data.state);
             setQrVisible(true);
@@ -38,11 +41,11 @@ const Alta = () => {
     const checkStatus = useCallback(async () => {
         if (!sessionId || !qrVisible || qrExpired || issuanceQrVisible) return;
         try {
-            const statusRes = await axios.get(`http://localhost:3001/verification/session/${sessionId}`);
+            const statusRes = await axios.get(`${BASE_URL}/verification/session/${sessionId}`);
             const { status } = statusRes.data;
             if (status === 'verified') {
                 toast.success('¡Verificación completada! Emisión de credencial en proceso...');
-                const issuanceRes = await axios.post('http://localhost:3001/issuance/offer', { stateId: sessionId });
+                const issuanceRes = await axios.post(`${BASE_URL}/issuance/offer`, { stateId: sessionId });
                 setIssuanceOfferUrl(issuanceRes.data.issuanceOfferUrl);
                 setIssuanceQrVisible(true);
             } else if (status === 'failed') {
@@ -93,7 +96,7 @@ const Alta = () => {
     const checkIssuanceStatus = useCallback(async () => {
         if (!sessionId || !issuanceQrVisible || issuanceAccepted) return;
         try {
-            const res = await axios.get(`http://localhost:3001/issuance/session/${sessionId}`);
+            const res = await axios.get(`${BASE_URL}/issuance/session/${sessionId}`);
             const { issuanceStatus } = res.data;
             if (issuanceStatus === 'accepted') {
                 setIssuanceAccepted(true);

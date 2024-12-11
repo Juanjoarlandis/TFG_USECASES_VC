@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  issuer_coord:
+    container_name: issuer_coord
+    build: ./ISSUER_COORD
+    env_file:
+      - ./ISSUER_COORD/.env       # Variables estáticas propias del issuer_coord
+      - ./vault-init/env/vault_approle.env    # Variables generadas por el proceso anterior (ROLE_ID, SECRET_ID)
+    ports:
+      - "5500:5500"
+    networks:
+      - my_network
+    depends_on:
+      - backend
+
+  backend:
+    container_name: backend
+    build: ./server
+    environment:
+      MONGO_URI: "mongodb://mongo-backend:27017/seguridadSocial"
+    ports:
+      - "3001:3001"
+    networks:
+      - my_network
+    depends_on:
+      - mongo-backend
+
+  mongo-backend:
+    container_name: mongo-backend
+    image: mongo:5.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    networks:
+      - my_network
+
+  frontend:
+    container_name: frontend
+    build: ./
+    environment:
+      REACT_APP_BACKEND_URL: "http://backend:3001"
+    ports:
+      - "3000:3000"
+    networks:
+      - my_network
+    depends_on:
+      - backend
+
+networks:
+  my_network:
+    driver: bridge

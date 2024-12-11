@@ -9,6 +9,8 @@ import { format } from 'date-fns';
 import esLocale from 'date-fns/locale/es';
 import { FaShieldAlt, FaCheckCircle, FaCalendarAlt, FaFileAlt, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
+const BASE_URL = process.env.REACT_APP_BACKEND_URL;
+
 const Dashboard = () => {
     const { userData, token } = useSelector((state) => state.auth);
     const dispatch = useDispatch();
@@ -23,7 +25,7 @@ const Dashboard = () => {
     const handleDarseBaja = async () => {
         try {
             const dni = userData.documentNumber;
-            const response = await axios.post('http://localhost:3001/revocar-credencial', { dni });
+            const response = await axios.post(`${BASE_URL}/revocar-credencial`, { dni });
             if (response.status === 200) {
                 toast.success('Credencial revocada con éxito.');
                 refreshUserData();

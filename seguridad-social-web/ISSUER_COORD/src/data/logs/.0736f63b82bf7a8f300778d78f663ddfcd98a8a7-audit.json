@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "/mnt/c/Users/Usuario/Desktop/DIT_VCAPI/V-CAPI/ISSUER_COORD/src/data/logs/.0736f63b82bf7a8f300778d78f663ddfcd98a8a7-audit.json",
+    "files": [
+        {
+            "date": 1733047136456,
+            "name": "/mnt/c/Users/Usuario/Desktop/DIT_VCAPI/V-CAPI/ISSUER_COORD/src/data/logs/error-2024-12-01.log",
+            "hash": "7dd0ae2439553b0c7e696368f7eff12e883f0c407c85126fffda0bc09c3037ab"
+        }
+    ],
+    "hashType": "sha256"
+}

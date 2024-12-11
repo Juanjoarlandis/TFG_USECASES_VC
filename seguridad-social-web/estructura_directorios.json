@@ -1,0 +1,206 @@
+[
+    {
+        "name": "seguridad-social-web",
+        "dirs": [
+            {
+                "name": "Caddyfile",
+                "dirs": [],
+                "files": []
+            },
+            {
+                "name": "docker-compose",
+                "dirs": [],
+                "files": [
+                    ".env",
+                    "docker-compose.yaml"
+                ]
+            },
+            {
+                "name": "public",
+                "dirs": [],
+                "files": [
+                    "favicon.ico",
+                    "index.html",
+                    "robots.txt",
+                    "manifest.json",
+                    "logo192.png",
+                    "logo512.png"
+                ]
+            },
+            {
+                "name": "server",
+                "dirs": [
+                    {
+                        "name": "src",
+                        "dirs": [
+                            {
+                                "name": "models",
+                                "dirs": [],
+                                "files": [
+                                    "User.js",
+                                    "sessionModel.js"
+                                ]
+                            },
+                            {
+                                "name": "routes",
+                                "dirs": [],
+                                "files": [
+                                    "index.js"
+                                ]
+                            },
+                            {
+                                "name": "utils",
+                                "dirs": [],
+                                "files": [
+                                    "logger.js"
+                                ]
+                            },
+                            {
+                                "name": "controllers",
+                                "dirs": [],
+                                "files": [
+                                    "mainController.js"
+                                ]
+                            }
+                        ],
+                        "files": []
+                    }
+                ],
+                "files": [
+                    "package.json",
+                    "signing_key_base64.txt",
+                    ".env",
+                    "Dockerfile",
+                    "encryption_key_base64.txt",
+                    "app.js"
+                ]
+            },
+            {
+                "name": "src",
+                "dirs": [
+                    {
+                        "name": "assets",
+                        "dirs": [],
+                        "files": [
+                            "escudo_espana.png",
+                            "escudo_espana.avif"
+                        ]
+                    },
+                    {
+                        "name": "store",
+                        "dirs": [],
+                        "files": [
+                            "authSlice.js",
+                            "store.js"
+                        ]
+                    },
+                    {
+                        "name": "context",
+                        "dirs": [],
+                        "files": [
+                            "AuthContext.js"
+                        ]
+                    },
+                    {
+                        "name": "services",
+                        "dirs": [],
+                        "files": [
+                            "api.js"
+                        ]
+                    },
+                    {
+                        "name": "utils",
+                        "dirs": [],
+                        "files": [
+                            "validation.js"
+                        ]
+                    },
+                    {
+                        "name": "pages",
+                        "dirs": [
+                            {
+                                "name": "Alta",
+                                "dirs": [],
+                                "files": [
+                                    "Alta.js"
+                                ]
+                            },
+                            {
+                                "name": "VerificationTutorial",
+                                "dirs": [],
+                                "files": [
+                                    "VerificationTutorial.js"
+                                ]
+                            },
+                            {
+                                "name": "Dashboard",
+                                "dirs": [],
+                                "files": [
+                                    "Dashboard.js"
+                                ]
+                            },
+                            {
+                                "name": "Home",
+                                "dirs": [],
+                                "files": [
+                                    "Home.css",
+                                    "Home.js"
+                                ]
+                            },
+                            {
+                                "name": "Register",
+                                "dirs": [],
+                                "files": [
+                                    "Register.js"
+                                ]
+                            }
+                        ],
+                        "files": []
+                    },
+                    {
+                        "name": "components",
+                        "dirs": [
+                            {
+                                "name": "Footer",
+                                "dirs": [],
+                                "files": [
+                                    "Footer.js",
+                                    "Footer.css"
+                                ]
+                            },
+                            {
+                                "name": "Header",
+                                "dirs": [],
+                                "files": [
+                                    "Header.js",
+                                    "Header.css"
+                                ]
+                            }
+                        ],
+                        "files": []
+                    }
+                ],
+                "files": [
+                    "index.js",
+                    "App.test.js",
+                    "reportWebVitals.js",
+                    "setupTests.js",
+                    "App.js",
+                    "ProtectedRoute.js",
+                    "logo.svg",
+                    "index.css",
+                    "i18n.js"
+                ]
+            }
+        ],
+        "files": [
+            "package.json",
+            ".gitignore",
+            ".env",
+            "Dockerfile",
+            "README.md",
+            "postcss.config.js",
+            "tailwind.config.js"
+        ]
+    }
+]

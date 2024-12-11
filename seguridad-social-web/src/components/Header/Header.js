@@ -16,8 +16,8 @@ const Header = () => {
   return (
     <header id="top" className="w-full bg-blanco text-blanco font-body relative z-50">
       {/* Barra superior de idiomas */}
-      <div className="w-full bg-azulClaro py-2 text-grisOscuro flex justify-end px-4">
-        <div className="relative group inline-block">
+      <div className="w-full bg-azulClaro py-2 text-grisOscuro flex justify-end px-4 items-center">
+        <div className="relative group inline-block mr-4">
           <button
             type="button"
             className="flex items-center gap-1 hover:text-primary transition-colors"
@@ -34,6 +34,13 @@ const Header = () => {
             <li><a href="?changeLanguage=fr" className="block px-4 py-1 hover:bg-azulClaro hover:text-primary">Français</a></li>
           </ul>
         </div>
+
+        {/* Si el usuario está verificado, mostramos un pequeño texto arriba a la derecha */}
+        {isVerified && userData && (
+          <div className="text-sm text-gray-700 bg-white px-2 py-1 rounded-full shadow-sm font-body">
+            Sesión iniciada como <span className="font-semibold">{userData.firstName}</span>
+          </div>
+        )}
       </div>
 
       {/* Contenedor principal con logo y buscador */}
@@ -77,23 +84,19 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 py-3">
           <nav aria-label="Menú principal">
             <ul className="flex flex-col md:flex-row gap-6 text-sm font-body md:items-center">
-              {/* Ajustamos los enlaces según el estado del usuario */}
               <li>
                 <Link to="/" className="hover:text-secondary transition-colors">Inicio</Link>
               </li>
-              {/* Sólo mostramos la verificación de identidad si el usuario NO está verificado */}
               {!isVerified && (
                 <li>
                   <Link to="/verification-tutorial" className="hover:text-secondary transition-colors">Verificación de Identidad</Link>
                 </li>
               )}
-              {/* Sólo mostramos el acceso al dashboard si el usuario está verificado */}
               {isVerified && (
                 <li>
                   <Link to="/dashboard" className="hover:text-secondary transition-colors">Área Personal</Link>
                 </li>
               )}
-              {/* Sólo mostramos el alta si el usuario no tiene la credencial de alta */}
               {!hasAltaCredential && isVerified && (
                 <li>
                   <Link to="/alta" className="hover:text-secondary transition-colors">Darse de Alta</Link>
