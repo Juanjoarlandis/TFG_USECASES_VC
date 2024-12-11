@@ -199,5 +199,6 @@ volumes:
 
 networks:
   my_network:
-    external: false
-    driver: bridge
+    external: true
+    name: my_network
+

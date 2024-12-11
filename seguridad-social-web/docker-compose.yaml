@@ -29,9 +29,6 @@ services:
   mongo-backend:
     container_name: mongo-backend
     image: mongo:5.0
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
     networks:
       - my_network
 
@@ -49,4 +46,6 @@ services:
 
 networks:
   my_network:
-    driver: bridge
+    external: true
+    name: my_network
+
