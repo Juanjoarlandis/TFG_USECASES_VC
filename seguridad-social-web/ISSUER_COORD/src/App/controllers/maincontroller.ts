@@ -4,154 +4,157 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import logger from '../../logger';
 import { CredStatus } from '../../models/models';
-import { v4 as uuidv4 } from 'uuid'; // Para generar UUIDs
+import { v4 as uuidv4 } from 'uuid'; 
 import axios from 'axios';
 import { MissingParameterError, CredentialIDError, NotFoundError, IssuerCoordError } from '../errors/errors';
-
 
 const issuerUrl: string = process.env.ISS_URL!;
 const waltidUrl: string = process.env.WALTID_URL!;
 const vaultTransitUrl: string = process.env.VAULT_TRANSIT_URL!;
 
-/**
- * Responde a las solicitudes de "ping" con un "pong".
- * @param _req - Objeto de solicitud de Express.
- * @param res - Objeto de respuesta de Express.
- */
 export const ping = (_req: Request, res: Response) => {
   logger.info('Ping received');
   res.send('pong');
 };
 
+// Función auxiliar para crear un DID dado un roleId y secretId
+async function createDidForIssuer(roleId: string, secretId: string, issuerLabel: string) {
+  const requestBody = {
+    key: {
+      backend: 'tse',
+      keyType: 'Ed25519',
+      config: {
+        server: vaultTransitUrl,
+        auth: {
+          roleId: roleId,
+          secretId: secretId
+        }
+      }
+    },
+    did: {
+      method: 'key'
+    }
+  };
+
+  const onboardUrl = `${waltidUrl}/onboard/issuer`;
+  const response = await fetch(onboardUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error al crear el DID para ${issuerLabel}: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  const issuerDid = data.issuerDid;
+  const issuerKey = data.issuerKey;
+
+  // Construir DID Document
+  const publicKeyJwk = { ...issuerKey.jwk };
+  delete publicKeyJwk.d; 
+
+  const verificationMethod = {
+    id: `${issuerDid}#key-1`,
+    type: 'JsonWebKey2020',
+    controller: issuerDid,
+    publicKeyJwk: publicKeyJwk,
+  };
+
+  const didDocument = {
+    '@context': 'https://www.w3.org/ns/did/v1',
+    id: issuerDid,
+    verificationMethod: [verificationMethod],
+    authentication: [verificationMethod.id],
+    assertionMethod: [verificationMethod.id],
+  };
+
+  logger.info(`Documento DID para ${issuerLabel} creado exitosamente`);
+
+  // Guardar didDocument
+  const didFilePath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'data',
+    'dids',
+    `did_${issuerLabel}.json`
+  );
+  fs.writeFileSync(didFilePath, JSON.stringify(didDocument, null, 2));
+  logger.info(`DID Document guardado en did_${issuerLabel}.json`);
+
+  // Guardar issuerKey
+  const issuerKeyFilePath = path.join(
+    __dirname,
+    '..',
+    '..',
+    'data',
+    'dids',
+    `issuerKey_${issuerLabel}.json`
+  );
+  fs.writeFileSync(issuerKeyFilePath, JSON.stringify(issuerKey, null, 2));
+  logger.info(`Issuer Key guardado en issuerKey_${issuerLabel}.json`);
+
+  return { issuerDid, issuerKey };
+}
+
 /**
- * Crea un DID (Decentralized Identifier) utilizando el servicio walt.id.
- * @param _req - Objeto de solicitud de Express.
- * @param res - Objeto de respuesta de Express.
+ * Crea 3 DIDs diferentes, cada uno con sus propias keys, usando las
+ * variables ROLE_ID_ISSUER1, SECRET_ID_ISSUER1, etc.
  */
 export const cr_did = async (_req: Request, res: Response) => {
   try {
-    // **1. Construcción de la URL del Emisor**
-    const issuer_url: string = process.env.ISS_URL!;
-    const parsedUrl = new URL(issuer_url);
-    let domain = parsedUrl.hostname;
-    if (parsedUrl.port) {
-      domain += `:${parsedUrl.port}`;
+    const roleIdIssuer1 = process.env.ROLE_ID_ISSUER1;
+    console.log(roleIdIssuer1)
+    const secretIdIssuer1 = process.env.SECRET_ID_ISSUER1;
+
+    const roleIdIssuer2 = process.env.ROLE_ID_ISSUER2;
+    console.log(roleIdIssuer2)
+    const secretIdIssuer2 = process.env.SECRET_ID_ISSUER2;
+
+    const roleIdIssuer3 = process.env.ROLE_ID_ISSUER3;
+    console.log(roleIdIssuer3)
+    const secretIdIssuer3 = process.env.SECRET_ID_ISSUER3;
+
+    if (!roleIdIssuer1 || !secretIdIssuer1 || !roleIdIssuer2 || !secretIdIssuer2 || !roleIdIssuer3 || !secretIdIssuer3) {
+      throw new Error('Faltan variables de entorno para ROLE_ID y SECRET_ID de los 3 issuers');
     }
-    const pathUrl = parsedUrl.pathname.replace(/^\//, '');
 
-    // **2. Preparación del Cuerpo de la Petición para walt.id**
+    const issuer1Data = await createDidForIssuer(roleIdIssuer1, secretIdIssuer1, 'issuer1');
+    const issuer2Data = await createDidForIssuer(roleIdIssuer2, secretIdIssuer2, 'issuer2');
+    const issuer3Data = await createDidForIssuer(roleIdIssuer3, secretIdIssuer3, 'issuer3');
 
-    const roleId = process.env.ROLE_ID;
-    const secredId = process.env.SECRET_ID;
-
-    const requestBody = {
-      key: {
-        backend: 'tse',
-        keyType: 'Ed25519',
-        config: {
-          server: vaultTransitUrl, // URL del engine transit
-          auth: {
-            roleId: roleId,    // Poner aquí el role_id leído de Vault
-            secretId: secredId // Poner aquí el secret_id obtenido de Vault
-          }
-        }
-      },
-      did: {
-        method: 'key'
-      }
-    };
-    
-    const onboardUrl = `${waltidUrl}/onboard/issuer`;
-    
-    const response = await fetch(onboardUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+    res.status(201).json({
+      issuer1Did: issuer1Data.issuerDid,
+      issuer2Did: issuer2Data.issuerDid,
+      issuer3Did: issuer3Data.issuerDid
     });
-    
-    if (!response.ok) {
-      throw new Error(`Error al crear el DID: ${response.statusText}`);
-    }
-    
-    const data = await response.json();
-    const issuerDid = data.issuerDid;
-    const issuerKey = data.issuerKey;
+  } catch (error: any) {
+    logger.error('Ocurrió un error al crear los DIDs:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
 
-    // **4. Construcción del Documento DID**
-    const publicKeyJwk = { ...issuerKey.jwk };
-    delete publicKeyJwk.d; // Eliminamos la clave privada del publicKeyJwk
-
-    const verificationMethod = {
-      id: `${issuerDid}#key-1`,
-      type: 'JsonWebKey2020',
-      controller: issuerDid,
-      publicKeyJwk: publicKeyJwk,
-    };
-
-    const didDocument = {
-      '@context': 'https://www.w3.org/ns/did/v1',
-      id: issuerDid,
-      verificationMethod: [verificationMethod],
-      authentication: [verificationMethod.id],
-      assertionMethod: [verificationMethod.id],
-    };
-
-    logger.info('Documento DID creado exitosamente');
-    logger.debug('Documento DID:', didDocument);
-
-    // **5. Guardar el Documento DID en 'did.json'**
+/**
+ * Retorna el DID Document de un issuer específico.
+ * Ejemplo: /didweb?issuer=issuer1, issuer2 o issuer3
+ */
+export const didweb = async (req: Request, res: Response) => {
+  try {
+    const issuer = req.query.issuer as string || 'issuer1';
     const didFilePath: string = path.join(
       __dirname,
       '..',
       '..',
       'data',
       'dids',
-      'did.json'
+      `did_${issuer}.json`
     );
-    fs.writeFileSync(didFilePath, JSON.stringify(didDocument, null, 2));
-
-    logger.info('Documento DID guardado exitosamente en did.json');
-
-    // **6. Guardar el 'issuerKey' en 'issuerKey.json'**
-    const issuerKeyFilePath: string = path.join(
-      __dirname,
-      '..',
-      '..',
-      'data',
-      'dids',
-      'issuerKey.json'
-    );
-    fs.writeFileSync(issuerKeyFilePath, JSON.stringify(issuerKey, null, 2));
-
-    logger.info('Issuer Key guardado exitosamente en issuerKey.json');
-
-    // **7. Devolver el DID Creado**
-    res.status(201).json({ issuerDid });
-  } catch (error: any) {
-    logger.error('Ocurrió un error al crear el DID:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-/**
- * Recupera el documento DID almacenado.
- * @param _req - Objeto de solicitud de Express.
- * @param res - Objeto de respuesta de Express.
- */
-export const didweb = async (_req: Request, res: Response) => {
-  try {
-    const tempFilePath: string = path.join(
-      __dirname,
-      '..',
-      '..',
-      'data',
-      'dids',
-      'did.json'
-    );
-    const data = checkdoc(tempFilePath);
-    logger.info('DID Document accessed successfully');
+    const data = checkdoc(didFilePath);
+    logger.info(`DID Document para ${issuer} accedido con éxito`);
     res.status(200).json(JSON.parse(data));
   } catch (error: any) {
     logger.error('Error occurred:', error);
@@ -159,11 +162,57 @@ export const didweb = async (_req: Request, res: Response) => {
   }
 };
 
-/**
- * Proporciona el esquema JSON para la validación de credenciales.
- * @param _req - Objeto de solicitud de Express.
- * @param res - Objeto de respuesta de Express.
- */
+function readDidFromFile(issuerLabel: string): string | null {
+  try {
+    const didFilePath: string = path.join(
+      __dirname,
+      '..',
+      '..',
+      'data',
+      'dids',
+      `did_${issuerLabel}.json`
+    );
+    const data = fs.readFileSync(didFilePath, 'utf8');
+    const didDocument = JSON.parse(data);
+    return didDocument.id;
+  } catch (e) {
+    logger.error(`Error leyendo DID de ${issuerLabel}:`, e);
+    return null;
+  }
+}
+
+
+function getIssuersDids(): string[] {
+  const issuer1Did = readDidFromFile('issuer1');
+  const issuer2Did = readDidFromFile('issuer2');
+  const issuer3Did = readDidFromFile('issuer3');
+
+  const dids: string[] = [];
+  if (issuer1Did) dids.push(issuer1Did);
+  if (issuer2Did) dids.push(issuer2Did);
+  if (issuer3Did) dids.push(issuer3Did);
+
+  return dids;
+}
+
+
+export const getIssuersDidsEndpoint = (req: Request, res: Response) => {
+  try {
+    const dids = getIssuersDids();
+    if (dids.length < 3) {
+      return res.status(500).json({ error: "No se pudieron obtener los 3 DIDs de los issuers" });
+    }
+    return res.status(200).json({ issuers: dids });
+  } catch (error: any) {
+    logger.error('Error al obtener los DIDs de los issuers:', error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
+
 export const schema = (_req: Request, res: Response) => {
   const schema = {
     $schema: 'http://json-schema.org/draft-07/schema#',
@@ -184,43 +233,57 @@ export const schema = (_req: Request, res: Response) => {
 };
 
 /**
- * Emite una credencial basada en los datos proporcionados, soportando modos OpenID y Directo.
- * @param req - Objeto de solicitud de Express que contiene los datos para emitir la credencial.
- * @param res - Objeto de respuesta de Express que devuelve la URL de emisión o la credencial firmada.
+ * Emite una credencial. Dependiendo del tipo (Work, Identity, Passport),
+ * usa el DID y Keys del issuer correspondiente.
+ * 
+ * - Identity -> issuer1
+ * - Passport -> issuer2
+ * - Work -> issuer3
  */
 export const issue = async (req: Request, res: Response) => {
   try {
-    // Cargar el issuerDid desde did.json
-    const didFilePath: string = path.join(__dirname, '..', '..', 'data', 'dids', 'did.json');
-    let issuerDid: string;
-    try {
-      const didData = fs.readFileSync(didFilePath, 'utf8');
-      const didDocument = JSON.parse(didData);
-      issuerDid = didDocument.id; // El campo 'id' del didDocument es el issuerDid
-    } catch (error) {
-      throw new NotFoundError('No se pudo cargar el DID desde did.json. Asegúrate de haber creado el DID correctamente.');
-    }
-
-    // Cargar issuerKey
-    const issuerKeyPath = path.join(__dirname, '..', '..', 'data', 'dids', 'issuerKey.json');
-    let issuerKey;
-    try {
-      const issuerKeyData = fs.readFileSync(issuerKeyPath, 'utf8');
-      issuerKey = JSON.parse(issuerKeyData);
-    } catch (error) {
-      throw new NotFoundError('Issuer Key no encontrado. Asegúrate de haber creado el DID correctamente.');
-    }
-
-    // Determinar el modo de emisión (open o direct)
+    // Determinar el modo (open o direct)
     const mode = process.env.MODE?.toLowerCase();
     if (!mode || (mode !== 'open' && mode !== 'direct')) {
       throw new Error("MODE no está configurado correctamente en el archivo .env. Debe ser 'open' o 'direct'.");
     }
 
-    // Determinar el tipo de credencial a emitir a partir del body
     const credentialType = req.body.type; 
     if (!credentialType) {
       throw new MissingParameterError('Missing parameter: type. Debe ser "Identity", "Passport" o "Work"');
+    }
+
+    // Seleccionamos el issuer según el tipo
+    let issuerLabel: string;
+    if (credentialType.toLowerCase() === 'identity') {
+      issuerLabel = 'issuer1';
+    } else if (credentialType.toLowerCase() === 'passport') {
+      issuerLabel = 'issuer2';
+    } else if (credentialType.toLowerCase() === 'work') {
+      issuerLabel = 'issuer3';
+    } else {
+      throw new Error('Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".');
+    }
+
+    // Cargar el DID del issuer seleccionado
+    const didFilePath: string = path.join(__dirname, '..', '..', 'data', 'dids', `did_${issuerLabel}.json`);
+    let issuerDid: string;
+    try {
+      const didData = fs.readFileSync(didFilePath, 'utf8');
+      const didDocument = JSON.parse(didData);
+      issuerDid = didDocument.id; 
+    } catch (error) {
+      throw new NotFoundError(`No se pudo cargar el DID de ${issuerLabel}. Asegúrate de haber creado el DID correctamente.`);
+    }
+
+    // Cargar issuerKey del issuer seleccionado
+    const issuerKeyPath = path.join(__dirname, '..', '..', 'data', 'dids', `issuerKey_${issuerLabel}.json`);
+    let issuerKey;
+    try {
+      const issuerKeyData = fs.readFileSync(issuerKeyPath, 'utf8');
+      issuerKey = JSON.parse(issuerKeyData);
+    } catch (error) {
+      throw new NotFoundError(`Issuer Key de ${issuerLabel} no encontrado. Asegúrate de haber creado el DID correctamente.`);
     }
 
     let credentialData: any;
@@ -362,7 +425,7 @@ export const issue = async (req: Request, res: Response) => {
         };
         break;
       default:
-        throw new Error('Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".');
+        throw new Error('Tipo de credencial no soportado.');
     }
 
     let issuanceUrl: string | undefined;
@@ -482,13 +545,6 @@ export const issue = async (req: Request, res: Response) => {
   }
 };
 
-
-
-/**
- * Maneja las callbacks de estado enviadas por ISSUER_SERV.
- * @param req - Objeto de solicitud de Express que contiene los datos del estado.
- * @param res - Objeto de respuesta de Express.
- */
 export const statusCallback = async (req: Request, res: Response) => {
   try {
     const statusData = req.body;
@@ -502,38 +558,31 @@ export const statusCallback = async (req: Request, res: Response) => {
       throw new Error('sessionId not found in the callback URL');
     }
 
-    // **Buscar la credencial almacenada basada en sessionId**
     const credentialFilesDir = path.join(__dirname, '..', '..', 'data', 'credentials');
 
-    // Verificar si el directorio existe
     if (!fs.existsSync(credentialFilesDir)) {
       throw new NotFoundError(`Credential directory not found`);
     }
 
-    // Leer todos los archivos de credenciales
     const credentialFiles = fs.readdirSync(credentialFilesDir);
 
     let credentialFilePath = '';
     let credentialData: any;
 
-    // Buscar el archivo que tiene `issuanceUrl` correspondiente al sessionId
     for (const fileName of credentialFiles) {
       const filePath = path.join(credentialFilesDir, fileName);
       try {
         const fileContent = fs.readFileSync(filePath, 'utf8');
         const fileData = JSON.parse(fileContent);
 
-        // Comparar el `issuanceUrl` con el `sessionId`
-        // Asumiendo que el `sessionId` está incluido en el `issuanceUrl`
-        if (fileData.issuanceUrl.includes(sessionId)) {
-          // Encontramos la credencial correspondiente
+        if (fileData.issuanceUrl && fileData.issuanceUrl.includes(sessionId)) {
           credentialData = fileData;
           credentialFilePath = filePath;
           break;
         }
       } catch (parseError) {
         logger.error(`Error parsing credential file ${fileName}:`, parseError);
-        continue; // Continuar buscando en otros archivos
+        continue;
       }
     }
 
@@ -543,7 +592,6 @@ export const statusCallback = async (req: Request, res: Response) => {
 
     credentialData.status = 'issued';
 
-    // **Guardar los cambios en el archivo**
     fs.writeFileSync(credentialFilePath, JSON.stringify(credentialData, null, 2));
     logger.info(`Credential status updated to '${credentialData.status}' for sessionId ${sessionId}`);
 
@@ -554,11 +602,6 @@ export const statusCallback = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Recupera todas las credenciales almacenadas.
- * @param _req - Objeto de solicitud de Express.
- * @param res - Objeto de respuesta de Express que devuelve una lista de credenciales.
- */
 export const getcred = (_req: Request, res: Response) => {
   try {
     const directoryPath: string = path.join(
@@ -587,11 +630,6 @@ export const getcred = (_req: Request, res: Response) => {
   }
 };
 
-/**
- * Recupera una credencial específica por su ID.
- * @param req - Objeto de solicitud de Express que contiene el ID de la credencial.
- * @param res - Objeto de respuesta de Express que devuelve la credencial solicitada.
- */
 export const getscredx = (req: Request, res: Response) => {
   try {
     const id = req.params.id;
@@ -613,11 +651,6 @@ export const getscredx = (req: Request, res: Response) => {
   }
 };
 
-/**
- * Actualiza el estado de una credencial específica.
- * @param req - Objeto de solicitud de Express que contiene el ID de la credencial y el nuevo estado.
- * @param res - Objeto de respuesta de Express que confirma la actualización del estado.
- */
 export const upstatus = (req: Request, res: Response) => {
   try {
     checkMissing(req.body.credentialId);
@@ -653,11 +686,6 @@ export const upstatus = (req: Request, res: Response) => {
   }
 };
 
-/**
- * Elimina una credencial específica por su ID.
- * @param req - Objeto de solicitud de Express que contiene el ID de la credencial.
- * @param res - Objeto de respuesta de Express que confirma la eliminación de la credencial.
- */
 export const delcred = (req: Request, res: Response) => {
   try {
     const id = req.params.id;
@@ -679,25 +707,13 @@ export const delcred = (req: Request, res: Response) => {
   }
 };
 
-// Helper functions
-
-/**
- * Verifica si un parámetro está ausente y lanza un error si es así.
- * @param param - El parámetro a verificar.
- * @throws {MissingParameterError} Si el parámetro está ausente.
- */
+// Helpers
 function checkMissing(param: any): void {
   if (!param) {
     throw new MissingParameterError('Missing required parameter');
   }
 }
 
-/**
- * Lee y retorna el contenido de un documento.
- * @param document - Ruta al documento a leer.
- * @returns El contenido del documento como una cadena.
- * @throws {NotFoundError} Si el documento no se encuentra.
- */
 function checkdoc(document: string): string {
   try {
     return fs.readFileSync(document, 'utf8');
@@ -706,12 +722,6 @@ function checkdoc(document: string): string {
   }
 }
 
-/**
- * Extrae y retorna el ID de una credencial a partir de su URI completa.
- * @param credentialId - URI completa de la credencial.
- * @returns El ID de la credencial.
- * @throws {CredentialIDError} Si no se puede extraer un ID válido.
- */
 function getId(credentialId: string): string {
   const parts = credentialId.split('/');
   const id = parts.pop();
@@ -721,11 +731,6 @@ function getId(credentialId: string): string {
   return id;
 }
 
-/**
- * Elimina un documento especificado.
- * @param document - Ruta al documento a eliminar.
- * @throws {NotFoundError} Si el documento no se encuentra.
- */
 function deletedoc(document: string): void {
   try {
     fs.unlinkSync(document);
@@ -734,10 +739,6 @@ function deletedoc(document: string): void {
   }
 }
 
-/**
- * Carga y retorna el contador de ID desde un archivo.
- * @returns El contador de ID como número.
- */
 export function loadid(): number {
   const tempFilePath = path.join(
     __dirname,
@@ -748,11 +749,8 @@ export function loadid(): number {
     'id.txt'
   );
 
-  // Verificar si el archivo existe
   if (!fs.existsSync(tempFilePath)) {
-    // Crear el directorio si no existe
     fs.mkdirSync(path.dirname(tempFilePath), { recursive: true });
-    // Inicializar el archivo con el valor '0'
     fs.writeFileSync(tempFilePath, '0', 'utf-8');
     logger.info(`Archivo id.txt creado en ${tempFilePath} con valor inicial 0`);
     return 0;
@@ -762,10 +760,6 @@ export function loadid(): number {
   return parseFloat(data);
 }
 
-/**
- * Guarda el contador de ID en un archivo.
- * @param id - El nuevo valor del contador de ID.
- */
 export function saveid(id: number): void {
   const tempFilePath = path.join(
     __dirname,
@@ -777,37 +771,6 @@ export function saveid(id: number): void {
   );
   fs.writeFileSync(tempFilePath, id.toString(), 'utf-8');
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export const easterEgg = async (req: Request, res: Response) => {
   try {

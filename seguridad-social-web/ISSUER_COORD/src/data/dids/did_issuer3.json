@@ -1,0 +1,18 @@
+{
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:key:z6MkrecQmfZnHhjfrMErys7i3a4LeH9uJPmX2J5S75aJkpKX",
+  "verificationMethod": [
+    {
+      "id": "did:key:z6MkrecQmfZnHhjfrMErys7i3a4LeH9uJPmX2J5S75aJkpKX#key-1",
+      "type": "JsonWebKey2020",
+      "controller": "did:key:z6MkrecQmfZnHhjfrMErys7i3a4LeH9uJPmX2J5S75aJkpKX",
+      "publicKeyJwk": {}
+    }
+  ],
+  "authentication": [
+    "did:key:z6MkrecQmfZnHhjfrMErys7i3a4LeH9uJPmX2J5S75aJkpKX#key-1"
+  ],
+  "assertionMethod": [
+    "did:key:z6MkrecQmfZnHhjfrMErys7i3a4LeH9uJPmX2J5S75aJkpKX#key-1"
+  ]
+}

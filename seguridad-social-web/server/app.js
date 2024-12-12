@@ -231,25 +231,43 @@ app.post('/verification/offer3creds', async (req, res) => {
     }
 
     const stateId = uuidv4();
-    const requestBody = {
-        vp_policies: [
-            { "policy": "minimum-credentials", "args": 3 },
-            { "policy": "maximum-credentials", "args": 100 }
-        ],
-        vc_policies: [
-            "signature",
-            "expired",
-            "not-before",
-            "revoked_status_list"
-        ],
-        request_credentials: [
-            { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
-            { "type": "PassportCredential", "format": "jwt_vc_json" },
-            { "type": "EmployerRegistrationCredential", "format": "jwt_vc_json" }
-        ]
-    };
 
     try {
+        // Primero obtenemos los DIDs desde ISSUER_COORD
+        const issCoordUrl = process.env.ISS_COORD_URL; // Asegúrate de definir esta variable en tu .env
+        if (!issCoordUrl) {
+            return res.status(500).json({ error: 'Falta la variable de entorno ISS_COORD_URL' });
+        }
+
+        const didsResponse = await axios.get(`${issCoordUrl}/did/issuers`);
+        const { issuers } = didsResponse.data;
+        if (!issuers || issuers.length < 3) {
+            return res.status(500).json({ error: 'No se pudieron obtener los 3 DIDs de los issuers' });
+        }
+
+        // Ahora construimos el requestBody para la verificación usando los DIDs obtenidos
+        const requestBody = {
+            vp_policies: [
+                { "policy": "minimum-credentials", "args": 3 },
+                { "policy": "maximum-credentials", "args": 100 }
+            ],
+            vc_policies: [
+                "signature",
+                "expired",
+                "not-before",
+                "revoked_status_list",
+                {
+                    "policy": "allowed-issuer",
+                    "args": issuers // Aquí ponemos los DIDs dinámicamente obtenidos
+                }
+            ],
+            request_credentials: [
+                { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
+                { "type": "PassportCredential", "format": "jwt_vc_json" },
+                { "type": "EmployerRegistrationCredential", "format": "jwt_vc_json" }
+            ]
+        };
+
         const headers = {
             'Content-Type': 'application/json',
             'authorizeBaseUrl': 'openid4vp://authorize',
@@ -271,6 +289,7 @@ app.post('/verification/offer3creds', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 app.post('/verification/statusCallbackAlta/:stateId', async (req, res) => {
     const { stateId } = req.params;

@@ -1400,3 +1400,57 @@
     {
   "stack": "Error: Error al crear el DID: Internal Server Error\n    at cr_did (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:70:13)\n    at processTicksAndRejections (node:internal/process/task_queues:105:5)"
 }
+[INFO]: 14:10:33 HTTP server listening on http://localhost:5500
+[ERROR]:14:10:40 Ocurrió un error al crear el DID issuer1: request to http://issuer-api:7002/onboard/issuer failed, reason: getaddrinfo EAI_AGAIN issuer-api
+    {
+  "type": "system",
+  "errno": "EAI_AGAIN",
+  "code": "EAI_AGAIN",
+  "stack": "FetchError: request to http://issuer-api:7002/onboard/issuer failed, reason: getaddrinfo EAI_AGAIN issuer-api\n    at ClientRequest.<anonymous> (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/node-fetch/lib/index.js:1501:11)\n    at ClientRequest.emit (node:events:518:28)\n    at emitErrorEvent (node:_http_client:103:11)\n    at Socket.socketErrorListener (node:_http_client:506:5)\n    at Socket.emit (node:events:518:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"
+}
+[INFO]: 14:10:59 HTTP server listening on http://localhost:5500
+[INFO]: 14:11:00 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:11:00 DID Document guardado en did_issuer1.json
+[INFO]: 14:11:00 Issuer Key guardado en issuerKey_issuer1.json
+[ERROR]:14:11:36 Error leyendo DID de issuer2: ENOENT: no such file or directory, open '/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer2.json'
+    {
+  "errno": -2,
+  "code": "ENOENT",
+  "syscall": "open",
+  "path": "/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer2.json",
+  "stack": "Error: ENOENT: no such file or directory, open '/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer2.json'\n    at Object.readFileSync (node:fs:441:20)\n    at readDidFromFile (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:163:21)\n    at getIssuersDids (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:174:22)\n    at getIssuersDidsEndpoint (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:188:18)\n    at Layer.handle [as handle_request] (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)"
+}
+[ERROR]:14:11:36 Error leyendo DID de issuer3: ENOENT: no such file or directory, open '/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer3.json'
+    {
+  "errno": -2,
+  "code": "ENOENT",
+  "syscall": "open",
+  "path": "/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer3.json",
+  "stack": "Error: ENOENT: no such file or directory, open '/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/data/dids/did_issuer3.json'\n    at Object.readFileSync (node:fs:441:20)\n    at readDidFromFile (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:163:21)\n    at getIssuersDids (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:175:22)\n    at getIssuersDidsEndpoint (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/controllers/maincontroller.ts:188:18)\n    at Layer.handle [as handle_request] (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at next (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/route.js:149:13)\n    at Route.dispatch (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/route.js:119:3)\n    at Layer.handle [as handle_request] (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/layer.js:95:5)\n    at /home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/index.js:284:15\n    at Function.process_params (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/express/lib/router/index.js:346:12)"
+}
+[INFO]: 14:12:47 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:12:47 DID Document guardado en did_issuer1.json
+[INFO]: 14:12:47 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:13:18 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:13:18 DID Document guardado en did_issuer1.json
+[INFO]: 14:13:18 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:13:35 HTTP server listening on http://localhost:5500
+[INFO]: 14:13:37 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:13:37 DID Document guardado en did_issuer1.json
+[INFO]: 14:13:37 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:13:46 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:13:46 DID Document guardado en did_issuer1.json
+[INFO]: 14:13:46 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:13:47 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:13:47 DID Document guardado en did_issuer1.json
+[INFO]: 14:13:47 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:15:07 HTTP server listening on http://localhost:5500
+[INFO]: 14:15:11 Documento DID para issuer1 creado exitosamente
+[INFO]: 14:15:11 DID Document guardado en did_issuer1.json
+[INFO]: 14:15:11 Issuer Key guardado en issuerKey_issuer1.json
+[INFO]: 14:15:11 Documento DID para issuer2 creado exitosamente
+[INFO]: 14:15:11 DID Document guardado en did_issuer2.json
+[INFO]: 14:15:11 Issuer Key guardado en issuerKey_issuer2.json
+[INFO]: 14:15:11 Documento DID para issuer3 creado exitosamente
+[INFO]: 14:15:11 DID Document guardado en did_issuer3.json
+[INFO]: 14:15:11 Issuer Key guardado en issuerKey_issuer3.json

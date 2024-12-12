@@ -11,7 +11,8 @@ import {
   didweb,
   schema,
   statusCallback,
-  easterEgg
+  easterEgg,
+  getIssuersDidsEndpoint
 } from './../controllers/maincontroller';
 
 const router = express.Router();
@@ -25,6 +26,8 @@ router.get('/.well-known/did.json', didweb);
 router.get('/issuer/entity/did.json', didweb);
 
 router.get('/schema', schema);
+
+router.get('/did/issuers',getIssuersDidsEndpoint);
 
 // VC API CONTROLLERS
 
