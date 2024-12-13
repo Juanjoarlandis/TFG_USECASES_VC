@@ -1,3 +1,22 @@
+docker run --cap-add=IPC_LOCK --name vault -d \
+  -v $(pwd)/config.hcl:/vault/config/config.hcl \
+  -v $(pwd)/data:/vault/file \
+  --network my_network \
+  -p 8200:8200 \
+  hashicorp/vault server
+
+
+export VAULT_ADDR='http://127.0.0.1:8200'
+
+vault operator init
+
+vault login
+# Pega el root token generado.
+
+vault secrets enable transit
+
+
+
 Primero construir vault-init
 
 docker-compose build vault-init
