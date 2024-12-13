@@ -5,6 +5,7 @@ const requestLogger = require('./src/middleware/requestLogger');
 const errorHandler = require('./src/middleware/errorHandler');
 const corsConfig = require('./src/middleware/corsConfig');
 
+
 // Conexión a la base de datos
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('Conectado a MongoDB'))
@@ -24,11 +25,13 @@ const verificationRoutes = require('./src/routes/verificationRoutes');
 const issuanceRoutes = require('./src/routes/issuanceRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const revocationRoutes = require('./src/routes/revocationRoutes');
+const authRoutes = require('./src/routes/authRoutes');
 
 app.use('/verification', verificationRoutes);
 app.use('/issuance', issuanceRoutes);
 app.use('/user', userRoutes);
 app.use('/revocar', revocationRoutes);
+app.use('/auth', authRoutes);
 
 // Middleware de errores global
 app.use(errorHandler);

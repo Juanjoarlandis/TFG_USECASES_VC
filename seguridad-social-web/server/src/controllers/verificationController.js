@@ -4,6 +4,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { findOrCreateOrUpdateUser, checkCredentialsRevocation, extractUserDataFromDecodedCredentialSubject, sessions } = require('../utils/validations');
 const User = require('../models/User');
+const { generateTokens } = require('../utils/jwtUtils');
 
 const OFFER_EXPIRATION_MS = 60 * 1000; // 1 minuto
 const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = process.env;
@@ -241,9 +242,15 @@ module.exports = {
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
                 const user = await findOrCreateOrUpdateUser(userData);
 
-                const token = "ejemplo-de-token";
+                // Generamos tokens JWT
+                const { accessToken, refreshToken } = generateTokens(user._id.toString());
+
+                // Guardar el refreshToken en el usuario
+                user.refreshTokens.push(refreshToken);
+                await user.save();
+
                 sessions[stateId].user = user;
-                sessions[stateId].token = token;
+                sessions[stateId].token = accessToken; // Ahora el token es el JWT de acceso
             }
 
             res.status(200).send('Status callback processed successfully');
@@ -292,6 +299,7 @@ module.exports = {
                 }
             }
 
+            // Devolvemos el access token y el usuario si está verificado
             res.status(200).json({
                 status: sessionData.status,
                 token: sessionData.token || null,

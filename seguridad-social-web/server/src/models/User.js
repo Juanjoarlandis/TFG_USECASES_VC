@@ -1,3 +1,5 @@
+// server/src/models/User.js
+
 const mongoose = require('mongoose');
 const encrypt = require('mongoose-encryption');
 
@@ -6,7 +8,6 @@ const UserSchema = new mongoose.Schema({
     familyName: String,
     documentNumber: { type: String, unique: true },
     currentAddress: [String],
-
     gender: String,
     nationality: String,
     birthDate: Date,
@@ -29,7 +30,8 @@ const UserSchema = new mongoose.Schema({
     hasAltaCredential: { type: Boolean, default: false },
     altaIssueDate: { type: Date, default: null },
     altaCredentialJti: { type: String, default: null },
-    altaCredentialData: { type: Object, default: null }
+    altaCredentialData: { type: Object, default: null },
+    refreshTokens: [String]
 }, { timestamps: true });
 
 const encKey = process.env.ENCRYPTION_KEY;
