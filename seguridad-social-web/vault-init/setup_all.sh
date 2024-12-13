@@ -60,8 +60,8 @@ docker build -f Dockerfile.vault-init -t $INIT_IMAGE .
 # Montar unseal-keys.txt, hcl de policies, vault-init.sh y la carpeta env
 docker run --rm -d --name $VAULT_INIT_CONTAINER_NAME \
   --network $VAULT_NETWORK \
-  -v $(pwd)/unseal-keys.txt:/work/unseal-keys.txt:ro \
-  -v $(pwd)/root-token.txt:/work/root-token.txt:ro \
+  -v $(pwd)/credentials/unseal-keys.txt:/work/unseal-keys.txt:ro \
+  -v $(pwd)/credentials/root-token.txt:/work/root-token.txt:ro \
   -v $(pwd)/issuer1-policy.hcl:/work/issuer1-policy.hcl:ro \
   -v $(pwd)/issuer2-policy.hcl:/work/issuer2-policy.hcl:ro \
   -v $(pwd)/issuer3-policy.hcl:/work/issuer3-policy.hcl:ro \
@@ -70,7 +70,7 @@ docker run --rm -d --name $VAULT_INIT_CONTAINER_NAME \
   $INIT_IMAGE sleep 3600
 
 # Ejecutar vault-init.sh dentro del contenedor vault-init-container
-docker exec $VAULT_INIT_CONTAINER_NAME bash /work/vault-init.sh
+docker exec $VAULT_INIT_CONTAINER_NAME bash /work/vault-init.sh DEBUG_LOGS=false
 
 echo "Script vault-init.sh ejecutado en el contenedor $VAULT_INIT_CONTAINER_NAME."
 echo "Comprueba env/vault_approle.env en el host para las credenciales AppRole."

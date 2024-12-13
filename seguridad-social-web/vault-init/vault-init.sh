@@ -1,19 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
-#set -x  # Descomenta esta línea si quieres mostrar cada comando ejecutado
+# set -x  # Descomenta esta línea si quieres mostrar cada comando ejecutado
+
+# Función auxiliar para imprimir logs de depuración solo si DEBUG_LOGS=true
+log_debug() {
+  if [ "${DEBUG_LOGS:-}" = "true" ]; then
+    echo "[DEBUG] $*"
+  fi
+}
 
 VAULT_ADDR="http://vault:8200"
 export VAULT_ADDR
-echo "[DEBUG] VAULT_ADDR set to $VAULT_ADDR"
+log_debug "VAULT_ADDR set to $VAULT_ADDR"
 
 # Esperar a que Vault esté accesible
 for i in {1..30}; do
-  echo "[DEBUG] Intento $i: comprobando estado de Vault"
+  log_debug "Intento $i: comprobando estado de Vault"
   if curl -s ${VAULT_ADDR}/v1/sys/health | grep '"initialized":true' > /dev/null; then
-    echo "[DEBUG] Vault inicializado y accesible"
+    log_debug "Vault inicializado y accesible"
     break
   fi
-  echo "[DEBUG] Vault no accesible aún, esperando 2s..."
+  log_debug "Vault no accesible aún, esperando 2s..."
   sleep 2
 done
 
@@ -22,28 +29,29 @@ if [ ! -f unseal-keys.txt ]; then
   exit 1
 fi
 
-echo "[DEBUG] Leyendo unseal-keys.txt"
+log_debug "Leyendo unseal-keys.txt"
 UNSEAL_KEYS=($(cat unseal-keys.txt))
-echo "[DEBUG] Unseal Keys obtenidas:"
-for k in "${UNSEAL_KEYS[@]}"; do
-  echo "[DEBUG] KEY: $k"
-done
+if [ "${DEBUG_LOGS:-}" = "true" ]; then
+  for k in "${UNSEAL_KEYS[@]}"; do
+    log_debug "KEY: $k"
+  done
+fi
 
-echo "[DEBUG] Procediendo a unseal con las primeras 3 llaves"
+log_debug "Procediendo a unseal con las primeras 3 llaves"
 for key in "${UNSEAL_KEYS[@]:0:3}"; do
-  echo "[DEBUG] Unsealing con key: $key"
+  log_debug "Unsealing con key: $key"
   vault operator unseal "$key"
 done
 
-echo "[DEBUG] Comprobando si Vault sigue sellado"
+log_debug "Comprobando si Vault sigue sellado"
 SEALED=$(vault status -format=json | jq -r .sealed)
-echo "[DEBUG] Valor de SEALED: $SEALED"
+log_debug "Valor de SEALED: $SEALED"
 if [ "$SEALED" = "true" ]; then
   echo "[ERROR] Vault sigue sellado. Revisa las unseal keys."
   exit 1
 fi
 
-echo "[DEBUG] Vault unsealed con éxito."
+log_debug "Vault unsealed con éxito."
 
 # Login con el token root
 if [ ! -f root-token.txt ]; then
@@ -52,51 +60,51 @@ if [ ! -f root-token.txt ]; then
 fi
 
 ROOT_TOKEN=$(cat root-token.txt)
-echo "[DEBUG] Root token leído: $ROOT_TOKEN"
-echo "[DEBUG] Logueándose con el root token"
+log_debug "Root token leído: $ROOT_TOKEN"
+log_debug "Logueándose con el root token"
 vault login $ROOT_TOKEN
 
-echo "[DEBUG] Aplicando policies"
+log_debug "Aplicando policies"
 vault policy write issuer1-policy issuer1-policy.hcl
-echo "[DEBUG] issuer1-policy aplicada"
+log_debug "issuer1-policy aplicada"
 vault policy write issuer2-policy issuer2-policy.hcl
-echo "[DEBUG] issuer2-policy aplicada"
+log_debug "issuer2-policy aplicada"
 vault policy write issuer3-policy issuer3-policy.hcl
-echo "[DEBUG] issuer3-policy aplicada"
+log_debug "issuer3-policy aplicada"
 
-echo "[DEBUG] Creando roles AppRole"
+log_debug "Creando roles AppRole"
 vault write auth/approle/role/issuer1-role token_policies="issuer1-policy"
-echo "[DEBUG] issuer1-role creado"
+log_debug "issuer1-role creado"
 vault write auth/approle/role/issuer2-role token_policies="issuer2-policy"
-echo "[DEBUG] issuer2-role creado"
+log_debug "issuer2-role creado"
 vault write auth/approle/role/issuer3-role token_policies="issuer3-policy"
-echo "[DEBUG] issuer3-role creado"
+log_debug "issuer3-role creado"
 
 ISSUERS=("issuer1" "issuer2" "issuer3")
 
 OUT_FILE=/work/env/vault_approle.env
-echo "[DEBUG] Guardando credenciales AppRole en $OUT_FILE"
+log_debug "Guardando credenciales AppRole en $OUT_FILE"
 echo "# Variables AppRole" > $OUT_FILE
 
 for ISSUER in "${ISSUERS[@]}"; do
-  echo "[DEBUG] Procesando $ISSUER"
+  log_debug "Procesando $ISSUER"
   ROLE_ID_JSON=$(vault read -format=json auth/approle/role/${ISSUER}-role/role-id)
-  echo "[DEBUG] ROLE_ID_JSON: $ROLE_ID_JSON"
+  log_debug "ROLE_ID_JSON: $ROLE_ID_JSON"
   ROLE_ID=$(echo "$ROLE_ID_JSON" | jq -r .data.role_id)
-  echo "[DEBUG] ROLE_ID para $ISSUER: $ROLE_ID"
+  log_debug "ROLE_ID para $ISSUER: $ROLE_ID"
 
   SECRET_ID_JSON=$(vault write -f -format=json auth/approle/role/${ISSUER}-role/secret-id)
-  echo "[DEBUG] SECRET_ID_JSON: $SECRET_ID_JSON"
+  log_debug "SECRET_ID_JSON: $SECRET_ID_JSON"
   SECRET_ID=$(echo "$SECRET_ID_JSON" | jq -r .data.secret_id)
-  echo "[DEBUG] SECRET_ID para $ISSUER: $SECRET_ID"
+  log_debug "SECRET_ID para $ISSUER: $SECRET_ID"
 
   UPPER_ISSUER=$(echo "$ISSUER" | tr '[:lower:]' '[:upper:]')
-  echo "[DEBUG] UPPER_ISSUER: $UPPER_ISSUER"
+  log_debug "UPPER_ISSUER: $UPPER_ISSUER"
   echo "ROLE_ID_${UPPER_ISSUER}=$ROLE_ID" >> $OUT_FILE
   echo "SECRET_ID_${UPPER_ISSUER}=$SECRET_ID" >> $OUT_FILE
 done
 
-echo "[DEBUG] ROLE_ID y SECRET_ID guardados en $OUT_FILE."
-echo "[DEBUG] Script completado con éxito."
+log_debug "ROLE_ID y SECRET_ID guardados en $OUT_FILE."
+log_debug "Script completado con éxito."
 
 exit 0
