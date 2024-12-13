@@ -1,4 +1,3 @@
-// src/pages/Alta/Alta.js
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -6,9 +5,12 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaIdCard, FaCheckCircle, FaQrcode, FaRedoAlt } from 'react-icons/fa';
+import { userSchema } from '../../utils/validation';
+import { useDispatch } from 'react-redux';
+import { verifyUser } from '../../store/authSlice';
+import { offerThreeCredsVerification, checkThreeCredsVerificationStatus, offerIssuance, checkIssuanceSessionStatus } from '../../services/api';
 
 const BASE_URL = process.env.REACT_APP_BACKEND_URL;
-
 
 const Alta = () => {
     const [verificationUrl, setVerificationUrl] = useState('');
@@ -22,13 +24,13 @@ const Alta = () => {
 
     const [issuanceAccepted, setIssuanceAccepted] = useState(false);
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const startThreeCredsVerification = async () => {
         try {
-            // Cambiamos el endpoint de 2 a 3 credenciales
-            const response = await axios.post(`${BASE_URL}/verification/offer3creds`, {});
-            setVerificationUrl(response.data.verificationUrl);
-            setSessionId(response.data.state);
+            const { verificationUrl, stateId } = await offerThreeCredsVerification();
+            setVerificationUrl(verificationUrl);
+            setSessionId(stateId);
             setQrVisible(true);
             setTimeLeft(180);
             setQrExpired(false);
@@ -38,15 +40,16 @@ const Alta = () => {
         }
     };
 
+
     const checkStatus = useCallback(async () => {
         if (!sessionId || !qrVisible || qrExpired || issuanceQrVisible) return;
         try {
-            const statusRes = await axios.get(`${BASE_URL}/verification/session/${sessionId}`);
-            const { status } = statusRes.data;
+            const statusRes = await checkThreeCredsVerificationStatus(sessionId);
+            const { status } = statusRes;
             if (status === 'verified') {
                 toast.success('¡Verificación completada! Emisión de credencial en proceso...');
-                const issuanceRes = await axios.post(`${BASE_URL}/issuance/offer`, { stateId: sessionId });
-                setIssuanceOfferUrl(issuanceRes.data.issuanceOfferUrl);
+                const { issuanceOfferUrl } = await offerIssuance(sessionId);
+                setIssuanceOfferUrl(issuanceOfferUrl);
                 setIssuanceQrVisible(true);
             } else if (status === 'failed') {
                 toast.error('La verificación ha fallado.');

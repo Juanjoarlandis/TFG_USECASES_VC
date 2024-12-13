@@ -25,7 +25,7 @@ const Dashboard = () => {
     const handleDarseBaja = async () => {
         try {
             const dni = userData.documentNumber;
-            const response = await axios.post(`${BASE_URL}/revocar-credencial`, { dni });
+            const response = await axios.post(`${BASE_URL}/revocar/credencial`, { dni });
             if (response.status === 200) {
                 toast.success('Credencial revocada con éxito.');
                 refreshUserData();

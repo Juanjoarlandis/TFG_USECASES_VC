@@ -250,7 +250,8 @@ module.exports = {
                 await user.save();
 
                 sessions[stateId].user = user;
-                sessions[stateId].token = accessToken; // Ahora el token es el JWT de acceso
+                sessions[stateId].token = accessToken; // token de acceso
+                sessions[stateId].refreshToken = refreshToken; // guarda también el refresh token
             }
 
             res.status(200).send('Status callback processed successfully');
@@ -303,6 +304,7 @@ module.exports = {
             res.status(200).json({
                 status: sessionData.status,
                 token: sessionData.token || null,
+                refreshToken: sessionData.refreshToken || null,
                 user: userResponse
             });
         } catch (err) {

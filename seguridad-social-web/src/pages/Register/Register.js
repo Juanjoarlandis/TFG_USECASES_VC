@@ -18,7 +18,7 @@ const Register = () => {
   const [isVerifiedAnimation, setIsVerifiedAnimation] = useState(false);
 
   // Estados para el temporizador y expiración del QR
-  const [timeLeft, setTimeLeft] = useState(60); // 3 minutos (180s)
+  const [timeLeft, setTimeLeft] = useState(60);
   const [qrExpired, setQrExpired] = useState(false);
 
   const dispatch = useDispatch();
@@ -33,7 +33,7 @@ const Register = () => {
         setSessionId(sessionId);
         setIsLoadingQRCode(false);
         setQrVisible(true);
-        setTimeLeft(120); // Reiniciamos el tiempo al generar un nuevo QR
+        setTimeLeft(120);
         setQrExpired(false);
         toast.info('Escanee el código QR con su wallet');
       }, 3000);
@@ -47,9 +47,9 @@ const Register = () => {
     if (!sessionId || !qrVisible || qrExpired) return;
     try {
       const data = await checkSessionStatus(sessionId);
-      const { status, token, user } = data;
+      const { status, token, user, refreshToken } = data;  // Asegúrate que el backend envíe refreshToken
 
-      if (status === 'verified' && token && user) {
+      if (status === 'verified' && token && user && refreshToken) {
         const result = userSchema.safeParse(user);
         if (!result.success) {
           toast.error('Datos de usuario inválidos recibidos del backend.');
@@ -59,6 +59,7 @@ const Register = () => {
         toast.success('Verificación exitosa!');
         setTimeout(() => {
           localStorage.setItem('token', token);
+          localStorage.setItem('refreshToken', refreshToken);
           localStorage.setItem('user', JSON.stringify(user));
           dispatch(verifyUser({ user, token }));
           navigate('/dashboard');
@@ -243,4 +244,3 @@ const Register = () => {
 };
 
 export default Register;
-
