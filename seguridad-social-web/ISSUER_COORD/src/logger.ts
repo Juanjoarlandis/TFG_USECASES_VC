@@ -4,7 +4,11 @@ import path from 'path';
 
 const allpath: string = path.join(__dirname, 'data', 'logs', 'logs.log');
 
-// Función para serializar JSON evitando referencias circulares
+/**
+ * Serializa un objeto a JSON de forma segura evitando referencias circulares.
+ * @param obj Objeto a serializar.
+ * @returns Cadena JSON sin referencias circulares.
+ */
 function safeStringify(obj: any): string {
   const seen = new WeakSet();
   return JSON.stringify(obj, function (key, value) {
@@ -24,6 +28,11 @@ interface RequestLike {
   headers?: object;
 }
 
+/**
+ * Limpia metadatos de la información de log, removiendo datos sensibles o innecesarios.
+ * @param meta Metadatos del log.
+ * @returns Metadatos saneados sin información sensible.
+ */
 function sanitizeMeta(meta: Record<string, unknown>): Record<string, unknown> {
   const sanitized = { ...meta };
   
@@ -64,6 +73,12 @@ const customFileFormat = winston.format.printf(({ level, message, timestamp, ...
     return `${aux.padEnd(8, ' ')}${timestamp} ${message}`;
   }
 });
+
+
+/**
+ * Logger principal de la aplicación, configurado con transportes a consola y archivo.
+ * Niveles de log, formato y ubicación de archivos se gestionan aquí.
+ */
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',

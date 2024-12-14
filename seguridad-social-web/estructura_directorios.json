@@ -9,10 +9,34 @@
                         "name": "App",
                         "dirs": [
                             {
+                                "name": "models",
+                                "dirs": [],
+                                "files": [
+                                    "models.ts",
+                                    "DIDModel.ts"
+                                ]
+                            },
+                            {
                                 "name": "routes",
                                 "dirs": [],
                                 "files": [
                                     "routes.ts"
+                                ]
+                            },
+                            {
+                                "name": "services",
+                                "dirs": [],
+                                "files": [
+                                    "CredentialService.ts",
+                                    "DIDService.ts"
+                                ]
+                            },
+                            {
+                                "name": "repositories",
+                                "dirs": [],
+                                "files": [
+                                    "DIDRepository.ts",
+                                    "FileRepository.ts"
                                 ]
                             },
                             {
@@ -28,17 +52,17 @@
                                 "files": [
                                     "errors.ts"
                                 ]
+                            },
+                            {
+                                "name": "db",
+                                "dirs": [],
+                                "files": [
+                                    "mongoose.ts"
+                                ]
                             }
                         ],
                         "files": [
                             "app.ts"
-                        ]
-                    },
-                    {
-                        "name": "models",
-                        "dirs": [],
-                        "files": [
-                            "models.ts"
                         ]
                     }
                 ],

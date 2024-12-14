@@ -5,14 +5,19 @@ services:
     container_name: issuer_coord
     build: ./ISSUER_COORD
     env_file:
-      - ./ISSUER_COORD/.env       # Variables estáticas propias del issuer_coord
-      - ./vault-init/env/vault_approle.env    # Variables generadas por el proceso anterior (ROLE_ID, SECRET_ID)
+      - ./ISSUER_COORD/.env
+      - ./vault-init/env/vault_approle.env
+    environment:
+      # Agregamos la variable de entorno para conectar a la nueva BBDD de issuer_coord
+      MONGODB_URI: "mongodb://mongo-issuer_coord:27017/issuercoord?authSource=admin"
+      # Si deseas añadir autenticación, puedes configurar usuario/contraseña en mongo-issuer_coord y en la URI.
     ports:
       - "5500:5500"
     networks:
       - my_network
     depends_on:
       - backend
+      - mongo-issuer_coord   # Ahora depende también de su propia instancia de Mongo
 
   backend:
     container_name: backend
@@ -32,6 +37,17 @@ services:
     networks:
       - my_network
 
+  # Nuevo servicio Mongo para issuer_coord
+  mongo-issuer_coord:
+    container_name: mongo-issuer_coord
+    image: mongo:5.0
+    # Opcionalmente, puedes agregar variables de entorno para usuario/contraseña
+    # environment:
+    #   MONGO_INITDB_ROOT_USERNAME: root
+    #   MONGO_INITDB_ROOT_PASSWORD: example
+    networks:
+      - my_network
+
   frontend:
     container_name: frontend
     build: ./
@@ -48,4 +64,3 @@ networks:
   my_network:
     external: true
     name: my_network
-

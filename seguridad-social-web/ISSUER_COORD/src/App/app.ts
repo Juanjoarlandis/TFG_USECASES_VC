@@ -9,81 +9,64 @@ import express from 'express';
 import http from 'http';
 import path from 'path';
 import cors from 'cors';
-
 import fs from 'fs';
-import routes from './routes/routes'; // Este archivo debe exportar un router de Express.
+import routes from './routes/routes';
 import logger from '../logger';
 import './../shim';
+import { connectToMongo } from './db/mongoose';
+
+/**
+ * Configura el servidor Express, conectando middlewares, rutas y base de datos.
+ * Arranca el servidor HTTP en el puerto especificado.
+ */
 
 const app = express();
 const PORT = process.env.PORT || 5500;
 
-// Verificación y creación de carpetas y archivos necesarios:
-(function initDirectoriesAndFiles() {
-  const dataDir = path.join(__dirname, '..', 'data');
-  const dirs = ['count', 'credentials', 'dids', 'logs', 'status'];
+(async () => {
+  /**
+ * Establece la conexión con la base de datos MongoDB.
+ * Finaliza el proceso si no se puede conectar.
+ */
+  await connectToMongo();
+  
+  /**
+ * Verifica y crea directorios y ficheros necesarios para el correcto funcionamiento
+ * del servicio, tales como el contador de IDs y directorios de credenciales y logs.
+ */
 
-  // Crear las carpetas si no existen
-  for (const dirName of dirs) {
-    const dirPath = path.join(dataDir, dirName);
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-      logger.info(`Directorio creado: ${dirPath}`);
-    }
-  }
+  (function initDirectoriesAndFiles() {
+    const dataDir = path.join(__dirname, '..', 'data');
+    const dirs = ['count', 'credentials', 'logs', 'status'];
 
-  // Verificar id.txt en count
-  const countDir = path.join(dataDir, 'count');
-  const idTxtPath = path.join(countDir, 'id.txt');
-  if (!fs.existsSync(idTxtPath)) {
-    fs.writeFileSync(idTxtPath, '0', 'utf-8');
-    logger.info(`Archivo id.txt creado con "0" en ${idTxtPath}`);
-  }
-
-  // Verificar did.json e issuerKey.json en dids
-  const didsDir = path.join(dataDir, 'dids');
-  const didJsonPath = path.join(didsDir, 'did.json');
-  if (!fs.existsSync(didJsonPath)) {
-    const defaultDid = {
-      "@context": "https://www.w3.org/ns/did/v1",
-      "id": "did:web:placeholder",
-      "verificationMethod": [],
-      "authentication": [],
-      "assertionMethod": []
-    };
-    fs.writeFileSync(didJsonPath, JSON.stringify(defaultDid, null, 2), 'utf-8');
-    logger.info(`Archivo did.json creado en ${didJsonPath}`);
-  }
-
-  const issuerKeyJsonPath = path.join(didsDir, 'issuerKey.json');
-  if (!fs.existsSync(issuerKeyJsonPath)) {
-    const defaultIssuerKey = {
-      "type": "jwk",
-      "jwk": {
-        "kty": "OKP",
-        "crv": "Ed25519",
-        "x": "",
-        "d": "",
-        "kid": ""
+    for (const dirName of dirs) {
+      const dirPath = path.join(dataDir, dirName);
+      if (!fs.existsSync(dirPath)) {
+        fs.mkdirSync(dirPath, { recursive: true });
+        logger.info(`Directorio creado: ${dirPath}`);
       }
-    };
-    fs.writeFileSync(issuerKeyJsonPath, JSON.stringify(defaultIssuerKey, null, 2), 'utf-8');
-    logger.info(`Archivo issuerKey.json creado en ${issuerKeyJsonPath}`);
-  }
+    }
+
+    const countDir = path.join(dataDir, 'count');
+    const idTxtPath = path.join(countDir, 'id.txt');
+    if (!fs.existsSync(idTxtPath)) {
+      fs.writeFileSync(idTxtPath, '0', 'utf-8');
+      logger.info(`Archivo id.txt creado con "0" en ${idTxtPath}`);
+    }
+  })();
+
+  app.set('view engine', 'ejs');
+  app.set('views', path.join(__dirname, 'views'));
+
+  app.use(cors());
+  app.use(bodyParser.urlencoded({ extended: true }));
+  app.use(bodyParser.json());
+  app.use(express.static(path.join(__dirname, 'public')));
+
+  app.use('/', routes);
+
+  http.createServer(app).listen(PORT, () => {
+    logger.info(`HTTP server listening on http://localhost:${PORT}`);
+  });
 
 })();
-
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-
-app.use(cors());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Utiliza el router de Express.
-app.use('/', routes);
-
-http.createServer(app).listen(PORT, () => {
-  logger.info(`HTTP server listening on http://localhost:${PORT}`);
-});

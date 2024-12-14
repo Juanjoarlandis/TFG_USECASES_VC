@@ -1454,3 +1454,56 @@
 [INFO]: 14:15:11 Documento DID para issuer3 creado exitosamente
 [INFO]: 14:15:11 DID Document guardado en did_issuer3.json
 [INFO]: 14:15:11 Issuer Key guardado en issuerKey_issuer3.json
+[INFO]: 11:25:02 HTTP server listening on http://localhost:5500
+[ERROR]:11:25:07 Ocurrió un error al crear los DIDs: request to http://issuer-api:7002/onboard/issuer failed, reason: getaddrinfo EAI_AGAIN issuer-api
+    {
+  "type": "system",
+  "errno": "EAI_AGAIN",
+  "code": "EAI_AGAIN",
+  "stack": "FetchError: request to http://issuer-api:7002/onboard/issuer failed, reason: getaddrinfo EAI_AGAIN issuer-api\n    at ClientRequest.<anonymous> (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/node-fetch/lib/index.js:1501:11)\n    at ClientRequest.emit (node:events:518:28)\n    at emitErrorEvent (node:_http_client:103:11)\n    at Socket.socketErrorListener (node:_http_client:506:5)\n    at Socket.emit (node:events:518:28)\n    at emitErrorNT (node:internal/streams/destroy:170:8)\n    at emitErrorCloseNT (node:internal/streams/destroy:129:3)\n    at processTicksAndRejections (node:internal/process/task_queues:90:21)"
+}
+[ERROR]:11:53:16 Error connecting to MongoDB: getaddrinfo EAI_AGAIN mongo
+    {
+  "reason": {
+    "type": "Unknown",
+    "servers": {
+      "mongo:27017": {
+        "address": "mongo:27017",
+        "type": "Unknown",
+        "hosts": [],
+        "passives": [],
+        "arbiters": [],
+        "tags": {},
+        "minWireVersion": 0,
+        "maxWireVersion": 0,
+        "roundTripTime": -1,
+        "minRoundTripTime": 0,
+        "lastUpdateTime": 24135327,
+        "lastWriteDate": 0,
+        "error": {},
+        "topologyVersion": null,
+        "setName": null,
+        "setVersion": null,
+        "electionId": null,
+        "logicalSessionTimeoutMinutes": null,
+        "maxMessageSizeBytes": null,
+        "maxWriteBatchSize": null,
+        "maxBsonObjectSize": null,
+        "primary": null,
+        "me": null,
+        "$clusterTime": null,
+        "iscryptd": false
+      }
+    },
+    "stale": false,
+    "compatible": true,
+    "heartbeatFrequencyMS": 10000,
+    "localThresholdMS": 15,
+    "setName": null,
+    "maxElectionId": null,
+    "maxSetVersion": null,
+    "commonWireVersion": 0,
+    "logicalSessionTimeoutMinutes": null
+  },
+  "stack": "MongooseServerSelectionError: getaddrinfo EAI_AGAIN mongo\n    at _handleConnectionErrors (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/mongoose/lib/connection.js:1089:11)\n    at NativeConnection.openUri (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/node_modules/mongoose/lib/connection.js:1040:11)\n    at connectToMongo (/home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/db/mongoose.ts:8:5)\n    at /home/juanjo/Escritorio/TFG_USECASES_VC/seguridad-social-web/ISSUER_COORD/src/App/app.ts:22:3"
+}

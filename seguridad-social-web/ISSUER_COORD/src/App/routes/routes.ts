@@ -1,5 +1,4 @@
 import express from 'express';
-
 import {
   getscredx,
   upstatus,
@@ -27,22 +26,20 @@ router.get('/issuer/entity/did.json', didweb);
 
 router.get('/schema', schema);
 
-router.get('/did/issuers',getIssuersDidsEndpoint);
+router.get('/did/issuers', getIssuersDidsEndpoint);
 
 // VC API CONTROLLERS
-
 router.post('/credentials/issue', issue);
 
 router.post('/statusCallback/:sessionId', statusCallback);
 
-
-router.get('/credentials', getcred); // Should an issuer store ALL credentials that has been issued?
+router.get('/credentials', getcred);
 
 router.get('/credentials/:id(\\d+)', getscredx);
 
 router.post('/credentials/status', upstatus);
 
-router.delete('/credentials/:id(\\d+)', delcred); // IS IT WORTH INCLUING? In first place should an issuer store ALL credentials that has been issued?
+router.delete('/credentials/:id(\\d+)', delcred);
 
 router.get('/.hidden-easter-egg', easterEgg);
 

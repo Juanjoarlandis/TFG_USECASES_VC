@@ -1,6 +1,5 @@
 export class MissingParameterError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'MissingParameterError';
@@ -11,7 +10,6 @@ export class MissingParameterError extends Error {
 
 export class WrongFormatError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'WrongFormatError';
@@ -21,7 +19,6 @@ export class WrongFormatError extends Error {
 
 export class ForbiddenError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'ForbiddenError';
@@ -31,7 +28,6 @@ export class ForbiddenError extends Error {
 
 export class NotFoundError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'NotFoundError';
@@ -41,7 +37,6 @@ export class NotFoundError extends Error {
 
 export class CredentialIDError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'CredentialIDError';
@@ -51,7 +46,6 @@ export class CredentialIDError extends Error {
 
 export class IssuerCoordError extends Error {
   code: number;
-
   constructor(message: string) {
     super(message);
     this.name = 'IssuerCoordError';
