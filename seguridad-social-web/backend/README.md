@@ -1,42 +1,42 @@
 # Verifier Backend
 
-## Descripción
-Este proyecto implementa un backend para la verificación de credenciales verificables en el contexto de la Seguridad Social. Permite la verificación de credenciales, la emisión de credenciales de alta en la Seguridad Social, la revocación de credenciales y la gestión de usuarios.
+## Description
+This project implements a backend for the verification of verifiable credentials in the context of Social Security. It enables credential verification, issuance of Social Security registration credentials, credential revocation, and user management.
 
-## Características principales
-- **Verificación de credenciales verificables** utilizando OpenID for Verifiable Credentials (OID4VC).
-- **Emisión de credenciales verificables** en formato JWT.
-- **Gestión de usuarios**: registro y actualización de datos de los usuarios con datos cifrados.
-- **Revocación de credenciales**: gestión de credenciales revocadas.
+## Key Features
+- **Verification of Verifiable Credentials** using OpenID for Verifiable Credentials (OID4VC).
+- **Issuance of Verifiable Credentials** in JWT format.
+- **User Management**: Registration and update of user data with encrypted fields.
+- **Credential Revocation**: Management of revoked credentials.
 
-## Dependencias principales
-- **Express**: Framework web para Node.js.
-- **Mongoose**: ORM para MongoDB.
-- **jsonwebtoken**: Generación y verificación de JWTs.
-- **axios**: Cliente HTTP para realizar peticiones externas.
-- **dotenv**: Manejo de variables de entorno.
-- **mongoose-encryption**: Cifrado de campos sensibles en MongoDB.
-- **uuid**: Generación de identificadores únicos.
+## Main Dependencies
+- **Express**: Web framework for Node.js.
+- **Mongoose**: ORM for MongoDB.
+- **jsonwebtoken**: JWT generation and verification.
+- **axios**: HTTP client for external requests.
+- **dotenv**: Environment variable management.
+- **mongoose-encryption**: Encryption for sensitive fields in MongoDB.
+- **uuid**: Unique identifier generation.
 
-## Requisitos previos
-1. **Node.js** (versión 16 o superior).
-2. **MongoDB** (versión 4.0 o superior).
-3. **Docker** (opcional para ejecutar la imagen del backend).
+## Prerequisites
+1. **Node.js** (version 16 or higher).
+2. **MongoDB** (version 4.0 or higher).
+3. **Docker** (optional for running the backend image).
 
-## Instalación
+## Installation
 
-1. Clonar este repositorio:
+1. Clone this repository:
    ```bash
-   git clone https://github.com/tu-repositorio/verifier-backend.git
+   git clone https://github.com/your-repository/verifier-backend.git
    cd verifier-backend/backend
    ```
 
-2. Instalar las dependencias:
+2. Install the dependencies:
    ```bash
    npm install
    ```
 
-3. Configurar las variables de entorno. Crear un archivo `.env` basado en el archivo `.env.example` y rellenar los valores necesarios:
+3. Configure the environment variables. Create a `.env` file based on the `.env.example` file and fill in the required values:
    ```env
    WALTID_VERIFIER_URL=http://verifier-api:7003
    WALTID_ISSUER_URL=http://issuer-api:7002
@@ -53,69 +53,69 @@ Este proyecto implementa un backend para la verificación de credenciales verifi
    CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
    ```
 
-4. Ejecutar el servidor:
+4. Start the server:
    ```bash
    npm start
    ```
 
-5. Acceder al servidor en: [http://localhost:3001](http://localhost:3001).
+5. Access the server at: [http://localhost:3001](http://localhost:3001).
 
-## Uso
-### Rutas principales
-- **Verificación de credenciales**
-  - POST `/verification/offer`: Genera una URL de oferta de verificación.
-  - POST `/verification/statusCallback/:stateId`: Callback para el estado de verificación.
-  - GET `/verification/session/:stateId`: Recupera el estado de una sesión de verificación.
+## Usage
+### Main Routes
+- **Credential Verification**
+  - POST `/verification/offer`: Generates a verification offer URL.
+  - POST `/verification/statusCallback/:stateId`: Callback for verification status.
+  - GET `/verification/session/:stateId`: Retrieves the status of a verification session.
 
-- **Emisión de credenciales**
-  - POST `/issuance/offer`: Genera una oferta de emisión de credencial.
-  - POST `/issuance/statusCallback/:stateId`: Callback para el estado de emisión.
-  - GET `/issuance/session/:stateId`: Recupera el estado de una sesión de emisión.
+- **Credential Issuance**
+  - POST `/issuance/offer`: Generates a credential issuance offer.
+  - POST `/issuance/statusCallback/:stateId`: Callback for issuance status.
+  - GET `/issuance/session/:stateId`: Retrieves the status of an issuance session.
 
-- **Gestión de usuarios**
-  - GET `/user/:dni`: Recupera los datos de un usuario por DNI.
+- **User Management**
+  - GET `/user/:dni`: Retrieves user data by DNI.
 
-- **Revocación de credenciales**
-  - POST `/revocar/credencial`: Revoca una credencial específica.
+- **Credential Revocation**
+  - POST `/revocar/credencial`: Revokes a specific credential.
 
-- **Autenticación**
-  - POST `/auth/refresh`: Genera nuevos tokens de acceso y refresco.
+- **Authentication**
+  - POST `/auth/refresh`: Generates new access and refresh tokens.
 
-## Estructura del proyecto
+## Project Structure
 ```
 backend/
-├── app.js                # Archivo principal
-├── package.json          # Configuración del proyecto
-├── Dockerfile            # Archivo para la creación de imágenes Docker
-├── .env                  # Variables de entorno
+├── app.js                # Main file
+├── package.json          # Project configuration
+├── Dockerfile            # File for Docker image creation
+├── .env                  # Environment variables
 ├── src/
-│   ├── controllers/      # Controladores para manejar la lógica de negocio
-│   ├── middleware/       # Middlewares personalizados
-│   ├── models/           # Modelos de datos (Mongoose)
-│   ├── routes/           # Definición de rutas
-│   └── utils/            # Utilidades y helpers
+│   ├── controllers/      # Controllers for business logic
+│   ├── middleware/       # Custom middlewares
+│   ├── models/           # Data models (Mongoose)
+│   ├── routes/           # Route definitions
+│   └── utils/            # Utilities and helpers
 └── signing_key_base64.txt
 ```
 
 ## Docker
-El backend incluye un archivo `Dockerfile` para ejecutar el proyecto en un contenedor Docker. Para construir y ejecutar la imagen:
+The backend includes a `Dockerfile` for running the project in a Docker container. To build and run the image:
 
-1. Construir la imagen:
+1. Build the image:
    ```bash
    docker build -t verifier-backend .
    ```
 
-2. Ejecutar el contenedor:
+2. Run the container:
    ```bash
    docker run -p 3001:3001 --env-file .env verifier-backend
    ```
 
-## Contribuciones
-Si deseas contribuir al proyecto, por favor sigue los pasos habituales:
-1. Haz un fork del repositorio.
-2. Crea una nueva rama para tu característica (`git checkout -b feature/nueva-caracteristica`).
-3. Realiza tus cambios y haz commit (`git commit -m 'Añadir nueva característica'`).
-4. Envía un pull request.
+## Contributing
+If you wish to contribute to the project, please follow these steps:
+1. Fork the repository.
+2. Create a new branch for your feature (`git checkout -b feature/new-feature`).
+3. Make your changes and commit (`git commit -m 'Add new feature'`).
+4. Submit a pull request.
 
-## Licencia
-Este proyecto está bajo la licencia MIT. Para más información, revisa el archivo LICENSE.
+## License
+This project is licensed under the MIT License. For more details, see the LICENSE file.
