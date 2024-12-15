@@ -1,126 +1,126 @@
-# Seguridad Social Web - Frontend
+# Social Security Web - Frontend
 
-Este proyecto es el frontend de la aplicación web para la gestión de trámites en la Seguridad Social. Está desarrollado en React con soporte para TailwindCSS, Redux y múltiples idiomas mediante i18next.
+This project serves as the frontend of the web application for managing procedures in Social Security. It is developed using React with support for TailwindCSS, Redux, and multiple languages through i18next.
 
-## Requisitos Previos
+## Prerequisites
 
-Antes de comenzar, asegúrate de tener instalado:
+Before starting, ensure you have installed:
 
-- Node.js (versión 16 o superior)
-- npm (versión 8 o superior)
-- Docker (opcional, para despliegue)
+- Node.js (version 16 or higher)
+- npm (version 8 or higher)
+- Docker (optional, for deployment)
 
-## Instalación
+## Installation
 
-1. Clona este repositorio:
+1. Clone this repository:
 
    ```bash
-   git clone <url-del-repositorio>
-   cd seguridad-social-web
+   git clone <repository-url>
+   cd social-security-web
    ```
 
-2. Instala las dependencias:
+2. Install the dependencies:
 
    ```bash
    npm install
    ```
 
-3. Configura las variables de entorno en el archivo `.env` (por defecto ya existe uno):
+3. Configure the environment variables in the `.env` file (a default is provided):
 
    ```env
    REACT_APP_BACKEND_URL=https://localhost/backend
    ```
 
-4. (Opcional) Configura los certificados SSL para un despliegue local seguro en la carpeta `certs`.
+4. (Optional) Configure SSL certificates for secure local deployment in the `certs` folder.
 
-## Scripts Disponibles
+## Available Scripts
 
-En el directorio del proyecto, puedes ejecutar:
+In the project directory, you can run:
 
 ### `npm start`
 
-Ejecuta la aplicación en modo de desarrollo. Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
+Runs the application in development mode. Open [http://localhost:3000](http://localhost:3000) in your browser to view the app.
 
-La página se recargará automáticamente si haces cambios en el código.
+The page will automatically reload if you make edits to the code.
 
 ### `npm run build`
 
-Crea una versión optimizada de la aplicación para producción en la carpeta `build`. Los archivos generados están listos para ser desplegados.
+Builds the app for production to the `build` folder. The build is optimized and ready for deployment.
 
 ### `npm test`
 
-Ejecuta las pruebas en modo interactivo.
+Runs tests in interactive mode.
 
 ## Docker
 
-### Construcción de la Imagen
+### Build the Image
 
-Para crear una imagen Docker del frontend:
-
-```bash
-docker build -t seguridad-social-web:latest .
-```
-
-### Ejecución de la Imagen
-
-Ejecuta el contenedor:
+To create a Docker image of the frontend:
 
 ```bash
-docker run -d -p 3000:3000 seguridad-social-web:latest
+docker build -t social-security-web:latest .
 ```
 
-Accede a la aplicación en [http://localhost:3000](http://localhost:3000).
+### Run the Image
 
-## Estructura del Proyecto
+Execute the container:
+
+```bash
+docker run -d -p 3000:3000 social-security-web:latest
+```
+
+Access the application at [http://localhost:3000](http://localhost:3000).
+
+## Project Structure
 
 - `src/`
-  - `components/`: Componentes reutilizables como el Header y Footer.
-  - `pages/`: Páginas principales de la aplicación (e.g., Home, Register, Dashboard).
-  - `store/`: Configuración de Redux y slices.
-  - `services/`: Funciones para interactuar con la API backend.
-  - `utils/`: Utilidades y validaciones comunes.
-  - `i18n.js`: Configuración para la internacionalización.
-- `public/`: Archivos estáticos como `index.html` y manifest.json.
+  - `components/`: Reusable components like Header and Footer.
+  - `pages/`: Main pages of the application (e.g., Home, Register, Dashboard).
+  - `store/`: Redux configuration and slices.
+  - `services/`: Functions for interacting with the backend API.
+  - `utils/`: Common utilities and validations.
+  - `i18n.js`: Configuration for internationalization.
+- `public/`: Static files like `index.html` and `manifest.json`.
 
-## Funcionalidades Principales
+## Key Features
 
-- **Registro y Verificación**: Los usuarios pueden verificar su identidad escaneando un código QR con su wallet WaltId.
-- **Dashboard Personal**: Acceso a información y servicios personalizados, como credenciales y prestaciones activas.
-- **Alta en Seguridad Social**: Proceso guiado para darse de alta mediante credenciales verificables.
-- **Internacionalización**: Disponible en múltiples idiomas.
-- **Diseño Responsivo**: Adaptado para dispositivos móviles y de escritorio.
+- **Registration and Verification**: Users can verify their identity by scanning a QR code with their WaltId wallet.
+- **Personal Dashboard**: Access to personalized information and services, such as credentials and active benefits.
+- **Social Security Registration**: Guided process for registering using verifiable credentials.
+- **Internationalization**: Available in multiple languages.
+- **Responsive Design**: Adapted for mobile and desktop devices.
 
-## Tecnologías Usadas
+## Technologies Used
 
 - React
 - Redux Toolkit
 - TailwindCSS
-- i18next (internacionalización)
-- Axios (para peticiones HTTP)
+- i18next (internationalization)
+- Axios (for HTTP requests)
 - QRCode.react
-- Framer Motion (animaciones)
+- Framer Motion (animations)
 - React Router
-- Docker (para despliegue)
+- Docker (for deployment)
 
-## Contribuir
+## Contributing
 
-Si deseas contribuir al desarrollo, por favor:
+If you wish to contribute to the development, please:
 
-1. Realiza un fork del repositorio.
-2. Crea una rama para tu feature o corrección de bug:
+1. Fork the repository.
+2. Create a branch for your feature or bug fix:
    ```bash
-   git checkout -b feature/nueva-funcionalidad
+   git checkout -b feature/new-feature
    ```
-3. Realiza tus cambios y haz commit:
+3. Make your changes and commit:
    ```bash
-   git commit -m "Descripción de los cambios realizados"
+   git commit -m "Description of changes made"
    ```
-4. Haz un push de tus cambios a tu fork:
+4. Push your changes to your fork:
    ```bash
-   git push origin feature/nueva-funcionalidad
+   git push origin feature/new-feature
    ```
-5. Crea un Pull Request.
+5. Create a Pull Request.
 
-## Licencia
+## License
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
