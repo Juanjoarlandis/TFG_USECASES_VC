@@ -1,0 +1,1190 @@
+--- backend/package.json ---
+{
+  "name": "verifier-backend",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": {
+    "axios": "^1.7.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "jsonwebtoken": "^9.0.2",
+    "jwt-decode": "^4.0.0",
+    "mongoose": "^8.8.4",
+    "mongoose-encryption": "^2.1.2",
+    "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "start": "node app.js"
+  }
+}
+
+
+--- backend/signing_key_base64.txt ---
+rvdE6chvJDhST2dArMVtcz+1nNfyheVjdrkW+V+3uLXrIvYA1H42kH26mh6Ae4NG
+5hPaZMF7/FGmEVsz6goRJA==
+
+
+--- backend/.env ---
+WALTID_VERIFIER_URL=http://verifier-api:7003
+WALTID_ISSUER_URL=http://issuer-api:7002
+VERIFIER_COORD_PUBLIC_URL=http://backend:3001
+MONGO_URI=mongodb://mongo-backend:27017/seguridadSocial
+PORT=3001
+ISS_COORD_URL=http://issuer_coord:5500
+NODE_ENV=production
+
+JWT_SECRET='2e31LA9Ersv4eAk4Uk7oAv/rCO7caS1OC8w5835hzkU='
+JWT_REFRESH_SECRET='IVXrhhmS1rF+f65wYu1f+0Y1poILab5NogbR+yYI1DM='
+
+ENCRYPTION_KEY='xauOwDA0Qmmn1Eo5wbx0CwCAi5CdBOXq+4VZ/DLW4rc='
+SIGNING_KEY='rvdE6chvJDhST2dArMVtcz+1nNfyheVjdrkW+V+3uLXrIvYA1H42kH26mh6Ae4NG
+5hPaZMF7/FGmEVsz6goRJA=='
+
+
+ISSUER_KEY_JWK={
+  "type": "jwk",
+  "jwk": {
+    "kty": "OKP",
+    "d": "Zk642_cCJ8tsjq6NChuUaTYd7vrau_TJWHwFWztKC5o",
+    "crv": "Ed25519",
+    "kid": "2QWiNPYYfC_igo6oUFwFZJw3FetuMJOEwAXJGUfI7zM",
+    "x": "VZh9SqJzal91mfiu8ILA47lf6yYJ_6rS7xucXeYiRCg"
+  }
+} 
+CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
+
+
+--- backend/Dockerfile ---
+FROM node:16
+WORKDIR /app
+COPY package*.json .
+RUN npm install
+COPY . .
+EXPOSE 3001
+CMD ["node", "app.js"]
+
+
+--- backend/encryption_key_base64.txt ---
+xauOwDA0Qmmn1Eo5wbx0CwCAi5CdBOXq+4VZ/DLW4rc=
+
+
+--- backend/app.js ---
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const requestLogger = require('./src/middleware/requestLogger');
+const errorHandler = require('./src/middleware/errorHandler');
+const corsConfig = require('./src/middleware/corsConfig');
+
+
+// Conexión a la base de datos
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('Conectado a MongoDB'))
+    .catch(err => console.error('Error conectando a MongoDB:', err));
+
+const app = express();
+
+// CORS restrictivo (en producción establecer el origen en una lista blanca)
+app.use(corsConfig);
+
+// Middlewares
+app.use(express.json());
+app.use(requestLogger);
+
+// Rutas
+const verificationRoutes = require('./src/routes/verificationRoutes');
+const issuanceRoutes = require('./src/routes/issuanceRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+const revocationRoutes = require('./src/routes/revocationRoutes');
+const authRoutes = require('./src/routes/authRoutes');
+
+app.use('/verification', verificationRoutes);
+app.use('/issuance', issuanceRoutes);
+app.use('/user', userRoutes);
+app.use('/revocar', revocationRoutes);
+app.use('/auth', authRoutes);
+
+// Middleware de errores global
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Backend escuchando en http://localhost:${PORT}`);
+});
+
+
+--- backend/src/index.js ---
+
+
+--- backend/src/models/User.js ---
+// server/src/models/User.js
+
+const mongoose = require('mongoose');
+const encrypt = require('mongoose-encryption');
+
+const UserSchema = new mongoose.Schema({
+    firstName: String,
+    familyName: String,
+    documentNumber: { type: String, unique: true },
+    currentAddress: [String],
+    gender: String,
+    nationality: String,
+    birthDate: Date,
+    nss: String,
+    personalNumber: String,
+    dniIssueDate: Date,
+    canNumber: String,
+    sex: String,
+    placeOfBirth: {
+        locality: String,
+        province: String,
+        country: String
+    },
+    ascendants: [
+        {
+            givenName: String,
+            familyName: String
+        }
+    ],
+    hasAltaCredential: { type: Boolean, default: false },
+    altaIssueDate: { type: Date, default: null },
+    altaCredentialJti: { type: String, default: null },
+    altaCredentialData: { type: Object, default: null },
+    refreshTokens: [String]
+}, { timestamps: true });
+
+const encKey = process.env.ENCRYPTION_KEY;
+const sigKey = process.env.SIGNING_KEY;
+
+const encKeyBuf = Buffer.from(encKey, 'base64');
+const sigKeyBuf = Buffer.from(sigKey, 'base64');
+
+UserSchema.plugin(encrypt, {
+    encryptionKey: encKeyBuf,
+    signingKey: sigKeyBuf,
+    encryptedFields: [
+        'nss',
+        'personalNumber',
+        'dniIssueDate',
+        'canNumber',
+        'sex',
+        'placeOfBirth',
+        'ascendants'
+    ]
+});
+
+module.exports = mongoose.model('User', UserSchema);
+
+
+--- backend/src/models/RevokedCredential.js ---
+const mongoose = require('mongoose');
+
+const RevokedCredentialSchema = new mongoose.Schema({
+    credentialId: { type: String, unique: true, required: true }
+});
+
+module.exports = mongoose.model('RevokedCredential', RevokedCredentialSchema);
+
+
+--- backend/src/routes/issuanceRoutes.js ---
+// src/routes/issuanceRoutes.js
+const express = require('express');
+const router = express.Router();
+const {
+    offerIssuance,
+    issuanceStatusCallback,
+    getIssuanceSessionStatus
+} = require('../controllers/issuanceController');
+
+router.post('/offer', offerIssuance);
+router.post('/statusCallback/:stateId', issuanceStatusCallback);
+router.get('/session/:stateId', getIssuanceSessionStatus);
+
+module.exports = router;
+
+
+--- backend/src/routes/userRoutes.js ---
+// src/routes/userRoutes.js
+const express = require('express');
+const router = express.Router();
+const { getUserByDni } = require('../controllers/userController');
+
+router.get('/:dni', getUserByDni);
+
+module.exports = router;
+
+
+--- backend/src/routes/authRoutes.js ---
+// server/src/routes/authRoutes.js
+const express = require('express');
+const router = express.Router();
+const { verifyRefreshToken, generateTokens } = require('../utils/jwtUtils');
+const User = require('../models/User');
+
+router.post('/refresh', async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ error: 'No refresh token provided' });
+        }
+
+        let decoded;
+        try {
+            decoded = verifyRefreshToken(refreshToken);
+        } catch (err) {
+            return res.status(401).json({ error: 'Invalid refresh token' });
+        }
+
+        const user = await User.findById(decoded.sub);
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Verificamos que el refreshToken esté en su lista
+        if (!user.refreshTokens.includes(refreshToken)) {
+            return res.status(401).json({ error: 'Refresh token not recognized' });
+        }
+
+        // Generar nuevo par de tokens
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id.toString());
+        // Reemplazar el refresh token viejo por uno nuevo si se quiere, o mantener ambos.
+        // Aqui removemos el viejo y agregamos el nuevo
+        user.refreshTokens = user.refreshTokens.filter(rt => rt !== refreshToken);
+        user.refreshTokens.push(newRefreshToken);
+        await user.save();
+
+        return res.status(200).json({ accessToken, refreshToken: newRefreshToken });
+    } catch (err) {
+        next(err);
+    }
+});
+
+module.exports = router;
+
+
+--- backend/src/routes/verificationRoutes.js ---
+// src/routes/verificationRoutes.js
+const express = require('express');
+const router = express.Router();
+const {
+    offerVerification,
+    offerVerification3Creds,
+    statusCallbackAlta,
+    statusCallback,
+    getVerificationSession
+} = require('../controllers/verificationController');
+
+router.post('/offer', offerVerification);
+router.post('/offer3creds', offerVerification3Creds);
+router.post('/statusCallbackAlta/:stateId', statusCallbackAlta);
+router.post('/statusCallback/:stateId', statusCallback);
+router.get('/session/:stateId', getVerificationSession);
+
+module.exports = router;
+
+
+--- backend/src/routes/revocationRoutes.js ---
+// src/routes/revocationRoutes.js
+const express = require('express');
+const router = express.Router();
+const { revokeCredential } = require('../controllers/revocationController');
+
+router.post('/credencial', revokeCredential);
+
+module.exports = router;
+
+
+--- backend/src/utils/jwtUtils.js ---
+// server/src/utils/jwtUtils.js
+
+const jwt = require('jsonwebtoken');
+
+const ACCESS_TOKEN_EXPIRATION = '15m';
+const REFRESH_TOKEN_EXPIRATION = '7d';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'refresh_secret';
+
+function generateTokens(userId) {
+    const accessToken = jwt.sign({ sub: userId }, JWT_SECRET, {
+        expiresIn: ACCESS_TOKEN_EXPIRATION
+    });
+    const refreshToken = jwt.sign({ sub: userId }, JWT_REFRESH_SECRET, {
+        expiresIn: REFRESH_TOKEN_EXPIRATION
+    });
+    return { accessToken, refreshToken };
+}
+
+function verifyAccessToken(token) {
+    return jwt.verify(token, JWT_SECRET);
+}
+
+function verifyRefreshToken(token) {
+    return jwt.verify(token, JWT_REFRESH_SECRET);
+}
+
+module.exports = { generateTokens, verifyAccessToken, verifyRefreshToken };
+
+
+--- backend/src/utils/sessionStore.js ---
+// server/src/utils/sessionStore.js
+const sessions = {};
+
+module.exports = { sessions };
+
+
+--- backend/src/utils/validations.js ---
+// src/utils/validations.js
+const User = require('../models/User');
+const RevokedCredential = require('../models/RevokedCredential');
+const jwt = require('jsonwebtoken');
+const { sessions } = require('./sessionStore');
+
+// Extraer datos del subject de la credencial
+function extractUserDataFromDecodedCredentialSubject(cs) {
+    let firstName = '';
+    let familyName = '';
+    let documentNumber = '';
+    let currentAddress = [];
+
+    let gender = '';
+    let nationality = '';
+    let birthDate = null;
+    let nss = '';
+
+    let personalNumber = '';
+    let laserEngravedSerial = '';
+    let dniIssueDate = null;
+    let canNumber = '';
+    let sex = '';
+
+    let placeOfBirth = {};
+    let ascendants = [];
+    let issuingTeamCode = '';
+
+    if (cs.dni) {
+        documentNumber = cs.dni.identifier || '';
+        firstName = cs.dni.givenName || '';
+        familyName = cs.dni.familyName || '';
+        gender = cs.dni.gender || '';
+        nationality = cs.dni.nationality || '';
+        nss = cs.dni.nss || '';
+        if (cs.dni.birthDate) {
+            birthDate = new Date(cs.dni.birthDate);
+        }
+
+        if (cs.dni.frontSide) {
+            personalNumber = cs.dni.frontSide.personalNumber || '';
+            laserEngravedSerial = cs.dni.frontSide.laserEngravedSerial || '';
+            canNumber = cs.dni.frontSide.canNumber || '';
+            sex = cs.dni.frontSide.sex || '';
+            if (cs.dni.frontSide.issueDate) {
+                dniIssueDate = new Date(cs.dni.frontSide.issueDate);
+            }
+        }
+
+        if (cs.dni.backSide) {
+            if (cs.dni.backSide.address) {
+                const addr = cs.dni.backSide.address;
+                currentAddress = [
+                    addr.street || '',
+                    addr.locality || '',
+                    addr.province || '',
+                    addr.country || '',
+                    addr.postalCode || ''
+                ].filter(Boolean);
+            }
+            if (cs.dni.backSide.placeOfBirth) {
+                placeOfBirth = {
+                    locality: cs.dni.backSide.placeOfBirth.locality || '',
+                    province: cs.dni.backSide.placeOfBirth.province || '',
+                    country: cs.dni.backSide.placeOfBirth.country || ''
+                };
+            }
+            if (Array.isArray(cs.dni.backSide.ascendants)) {
+                ascendants = cs.dni.backSide.ascendants.map(a => ({
+                    givenName: a.givenName || '',
+                    familyName: a.familyName || ''
+                }));
+            }
+            issuingTeamCode = cs.dni.backSide.issuingTeamCode || '';
+        }
+    }
+
+    return {
+        firstName,
+        familyName,
+        documentNumber,
+        currentAddress,
+        gender,
+        nationality,
+        birthDate,
+        nss,
+        personalNumber,
+        laserEngravedSerial,
+        dniIssueDate,
+        canNumber,
+        sex,
+        placeOfBirth,
+        ascendants,
+        issuingTeamCode
+    };
+}
+
+// Decodificar un JWT sin verificar, ya que se asume verificación externa
+function decodeVC(jwtCredential) {
+    return jwt.decode(jwtCredential);
+}
+
+async function isCredentialRevoked(credentialId) {
+    const revoked = await RevokedCredential.findOne({ credentialId });
+    return !!revoked;
+}
+
+async function checkCredentialsRevocation(credentialsJwtArray) {
+    for (let jwtCred of credentialsJwtArray) {
+        const vcDecoded = decodeVC(jwtCred);
+        if (!vcDecoded) {
+            return true;
+        }
+        let credId = vcDecoded.jti || (vcDecoded.vc && vcDecoded.vc.id ? vcDecoded.vc.id : null);
+        if (!credId) {
+            return true;
+        }
+        const revoked = await isCredentialRevoked(credId);
+        if (revoked) return true;
+    }
+    return false;
+}
+
+async function findOrCreateOrUpdateUser(userData) {
+    let user = await User.findOne({ documentNumber: userData.documentNumber });
+    if (!user) {
+        user = new User({
+            firstName: userData.firstName,
+            familyName: userData.familyName,
+            documentNumber: userData.documentNumber,
+            currentAddress: userData.currentAddress || [],
+            gender: userData.gender,
+            nationality: userData.nationality,
+            birthDate: userData.birthDate,
+            nss: userData.nss,
+            personalNumber: userData.personalNumber,
+            laserEngravedSerial: userData.laserEngravedSerial,
+            dniIssueDate: userData.dniIssueDate,
+            canNumber: userData.canNumber,
+            sex: userData.sex,
+            placeOfBirth: userData.placeOfBirth,
+            ascendants: userData.ascendants,
+            issuingTeamCode: userData.issuingTeamCode,
+            hasAltaCredential: false,
+            altaIssueDate: null,
+            altaCredentialJti: null,
+            altaCredentialData: null
+        });
+    } else {
+        user.firstName = userData.firstName;
+        user.familyName = userData.familyName;
+        user.currentAddress = userData.currentAddress || user.currentAddress;
+        user.gender = userData.gender;
+        user.nationality = userData.nationality;
+        user.birthDate = userData.birthDate;
+        user.nss = userData.nss;
+        user.personalNumber = userData.personalNumber;
+        user.laserEngravedSerial = userData.laserEngravedSerial;
+        user.dniIssueDate = userData.dniIssueDate;
+        user.canNumber = userData.canNumber;
+        user.sex = userData.sex;
+        user.placeOfBirth = userData.placeOfBirth;
+        user.ascendants = userData.ascendants;
+        user.issuingTeamCode = userData.issuingTeamCode;
+    }
+    await user.save();
+    return user;
+}
+
+module.exports = {
+    extractUserDataFromDecodedCredentialSubject,
+    checkCredentialsRevocation,
+    findOrCreateOrUpdateUser,
+    sessions
+};
+
+
+--- backend/src/middleware/corsConfig.js ---
+// src/middleware/corsConfig.js
+const cors = require('cors');
+
+const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? ['https://tudominio.com'] // ajustar dominio real
+    : ['https://localhost'];
+
+module.exports = cors({
+    origin: allowedOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+});
+
+
+--- backend/src/middleware/errorHandler.js ---
+// src/middleware/errorHandler.js
+
+module.exports = (err, req, res, next) => {
+    console.error('--- Error Handler Log Start ---');
+    console.error(`Time: ${new Date().toISOString()}`);
+    console.error('Original Error:', err);
+
+    // Aquí definimos valores por defecto
+    let statusCode = err.status || 500;
+    let message = err.message || 'Internal Server Error';
+    let errorType = 'InternalServerError';
+
+    // Manejo de errores de Mongoose
+    if (err.name === 'ValidationError') {
+        // Errores de validación Mongoose
+        statusCode = 400;
+        message = 'Datos inválidos: ' + Object.values(err.errors).map(e => e.message).join(', ');
+        errorType = 'ValidationError';
+    } else if (err.name === 'CastError') {
+        // Errores de casteo, por ejemplo, id inválido
+        statusCode = 400;
+        message = `El formato del parámetro ${err.path} es inválido: ${err.value}`;
+        errorType = 'CastError';
+    } else if (err.code && err.code === 11000) {
+        // Error de índice único en Mongoose
+        statusCode = 400;
+        const field = Object.keys(err.keyValue);
+        message = `El campo ${field} debe ser único. Valor duplicado: ${err.keyValue[field]}`;
+        errorType = 'DuplicateKeyError';
+    }
+
+    // Manejo de errores de Axios (peticiones externas)
+    if (err.isAxiosError) {
+        // Podríamos agregar lógica para errores de axios
+        // err.response?.status puede ayudarnos
+        statusCode = err.response && err.response.status ? err.response.status : 500;
+        message = `Error en servicio externo: ${err.message}`;
+        errorType = 'ExternalServiceError';
+    }
+
+    // Manejo de errores de JWT (si se hace verificación interna)
+    if (err.name === 'TokenExpiredError') {
+        statusCode = 401;
+        message = 'Token expirado';
+        errorType = 'TokenExpiredError';
+    } else if (err.name === 'JsonWebTokenError') {
+        statusCode = 401;
+        message = 'Token inválido';
+        errorType = 'JsonWebTokenError';
+    }
+
+    // Si el error viene ya con un status predefinido por el controlador, lo respetamos
+    // (por ejemplo: 400, 404, etc.)
+    if (err.status) {
+        statusCode = err.status;
+    }
+
+    // Podemos añadir lógica adicional para errores no cubiertos, o errores personalizados
+    // con más contexto
+
+    // Log detallado para debug (en producción podrías omitir ciertos detalles)
+    console.error('Status Code:', statusCode);
+    console.error('Message:', message);
+    console.error('--- Error Handler Log End ---');
+
+    // Respuesta con JSON
+    res.status(statusCode).json({
+        error: {
+            type: errorType,
+            message: message,
+            // Podemos dar detalles adicionales para debug si no es producción
+            ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
+        }
+    });
+};
+
+
+--- backend/src/middleware/requestLogger.js ---
+// src/middleware/requestLogger.js
+module.exports = (req, res, next) => {
+    console.log(`\n[${new Date().toISOString()}] Request: ${req.method} ${req.originalUrl}`);
+    console.log('Headers:', req.headers);
+    console.log('Body:', Object.keys(req.body).length > 0 ? JSON.stringify(req.body, null, 2) : '{}');
+    next();
+};
+
+
+--- backend/src/controllers/issuanceController.js ---
+// src/controllers/issuanceController.js
+const axios = require('axios');
+const { v4: uuidv4 } = require('uuid');
+const { sessions } = require('../utils/validations');
+const User = require('../models/User');
+
+const { VERIFIER_COORD_PUBLIC_URL, WALTID_ISSUER_URL } = process.env;
+
+module.exports = {
+    async offerIssuance(req, res, next) {
+        try {
+            const { stateId } = req.body;
+            if (!sessions[stateId] || !sessions[stateId].user) {
+                return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
+            }
+
+            const user = sessions[stateId].user;
+            if (!user.hasAltaCredential) {
+                return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
+            }
+
+            const employerData = sessions[stateId].employerData || {
+                employerName: "Empresa de Servicios S.A.",
+                contributionAccountCode: "0111-2222-33-4444444444",
+                socialSecurityRegime: "Régimen General",
+                collectiveAgreements: [
+                    "Convenio Colectivo de Empresas de Servicios Generales",
+                    "Convenio Colectivo Sectorial"
+                ]
+            };
+            const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
+
+            const apellidos = user.familyName || "Perez";
+            const nombre = user.firstName || "Mario";
+            const dni = user.documentNumber || "12345678A";
+            const nss = user.nss || "123456789012";
+            const domicilio = userAddress;
+            const fechaInicioActividad = "2024-12-08";
+            const grupoCotizacion = "Grupo 4";
+            const tipoContrato = "Indefinido tiempo completo";
+            const coeficienteJornada = "100%";
+            const ocupacion = "Administrativo";
+            const codigoCuentaCotizacion = employerData.contributionAccountCode;
+
+            const revocationId = uuidv4();
+
+            const altaCredential = {
+                "@context": [
+                    "https://www.w3.org/ns/credentials/v2",
+                    "https://www.w3.org/ns/credentials/examples/v2"
+                ],
+                "id": `urn:uuid:${revocationId}`,
+                "type": ["VerifiableCredential", "SocialSecurityRegistrationCredential"],
+                "issuer": {
+                    "id": "did:web:tesoreria.seguridadsocial.gob.es",
+                    "name": "Tesorería General de la Seguridad Social - España",
+                    "description": "Entidad emisora de la credencial de alta en la Seguridad Social"
+                },
+                "name": "Credencial de Alta en la Seguridad Social",
+                "description": "Credencial verificable de alta en el régimen de la Seguridad Social del trabajador",
+                "validFrom": "2024-12-08T10:19:28Z",
+                "expirationDate": "2025-12-08T10:19:28Z",
+                "category": "SocialSecurityEnrollment",
+                "credentialSubject": {
+                    "id": "did:web:trabajador.example.com",
+                    "employer": {
+                        "employerName": employerData.employerName,
+                        "contributionAccountCode": employerData.contributionAccountCode,
+                        "socialSecurityRegime": employerData.socialSecurityRegime,
+                        "collectiveAgreements": employerData.collectiveAgreements
+                    },
+                    "worker": {
+                        "apellidos": apellidos,
+                        "nombre": nombre,
+                        "dni": dni,
+                        "nss": nss,
+                        "domicilio": domicilio,
+                        "fechaInicioActividad": fechaInicioActividad,
+                        "grupoCotizacion": grupoCotizacion,
+                        "tipoContrato": tipoContrato,
+                        "coeficienteJornada": coeficienteJornada,
+                        "ocupacion": ocupacion,
+                        "codigoCuentaCotizacion": codigoCuentaCotizacion
+                    }
+                }
+            };
+
+            const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
+            const issuerKey = {
+                "type": "jwk",
+                "jwk": {
+                    "kty": "OKP",
+                    "d": "MQiwQ0LRJwY3_E6Hio4HXqb-owk8pNd_7lgBO1p6tac",
+                    "crv": "Ed25519",
+                    "kid": "SD44Rn7TCc8o8eWlOz-_G_pdBXhqufvAPiclQzsjP8w",
+                    "x": "xXmUTXp7JyH9EMtjnObS7lZVtFPe0zEJKqrXxmElaCY"
+                }
+            };
+            const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
+
+            const dbUser = await User.findOne({ documentNumber: user.documentNumber });
+            if (dbUser) {
+                dbUser.altaCredentialJti = revocationId;
+                dbUser.altaCredentialData = altaCredential;
+                await dbUser.save();
+            }
+
+            const callbackUrl = `${VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
+            const issuanceRequestBody = {
+                issuerKey: issuerKey,
+                issuerDid: issuerDid,
+                credentialConfigurationId,
+                credentialData: altaCredential,
+                "mapping": {
+                    "id": "<uuid>",
+                    "issuer": {
+                        "id": "<issuerDid>"
+                    },
+                    "credentialSubject": {
+                        "id": "<subjectDid>"
+                    },
+                    "issuanceDate": "<timestamp>",
+                    "expirationDate": "<timestamp-in:365d>"
+                },
+                "authenticationMethod": "PRE_AUTHORIZED"
+            };
+
+            const issueResponse = await axios.post(`${WALTID_ISSUER_URL}/openid4vc/jwt/issue`, issuanceRequestBody, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'statusCallbackUri': callbackUrl
+                }
+            });
+
+            sessions[stateId].user = dbUser;
+            sessions[stateId].issuanceOfferUrl = issueResponse.data;
+            sessions[stateId].issuanceStatus = 'offered';
+
+            res.status(200).json({ issuanceOfferUrl: issueResponse.data, state: stateId });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async issuanceStatusCallback(req, res, next) {
+        try {
+            const { stateId } = req.params;
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            sessions[stateId].issuanceStatus = 'accepted';
+            res.status(200).json({ message: 'Issuance callback processed successfully' });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async getIssuanceSessionStatus(req, res, next) {
+        try {
+            const { stateId } = req.params;
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            const { issuanceStatus } = sessions[stateId];
+            res.status(200).json({ issuanceStatus: issuanceStatus || 'unknown' });
+        } catch (err) {
+            next(err);
+        }
+    }
+};
+
+
+--- backend/src/controllers/verificationController.js ---
+// src/controllers/verificationController.js
+const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const { findOrCreateOrUpdateUser, checkCredentialsRevocation, extractUserDataFromDecodedCredentialSubject, sessions } = require('../utils/validations');
+const User = require('../models/User');
+const { generateTokens } = require('../utils/jwtUtils');
+
+const OFFER_EXPIRATION_MS = 60 * 1000; // 1 minuto
+const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = process.env;
+
+module.exports = {
+    async offerVerification(req, res, next) {
+        try {
+            if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+                return res.status(500).json({ error: 'Faltan variables de entorno' });
+            }
+            const stateId = uuidv4();
+            const requestBody = req.body;
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'authorizeBaseUrl': 'openid4vp://authorize',
+                'responseMode': 'direct_post',
+                'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallback/${stateId}`
+            };
+
+            const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+            sessions[stateId] = {
+                status: 'pending',
+                verificationUrl: response.data,
+                verificationResult: null
+            };
+            res.status(200).json({ verificationUrl: response.data, state: stateId });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async offerVerification3Creds(req, res, next) {
+        try {
+            if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+                return res.status(500).json({ error: 'Faltan variables de entorno' });
+            }
+
+            if (!ISS_COORD_URL) {
+                return res.status(500).json({ error: 'Falta la variable de entorno ISS_COORD_URL' });
+            }
+
+            const stateId = uuidv4();
+            const didsResponse = await axios.get(`${ISS_COORD_URL}/did/issuers`);
+            const { issuers } = didsResponse.data;
+            if (!issuers || issuers.length < 3) {
+                return res.status(500).json({ error: 'No se pudieron obtener los 3 DIDs de los issuers' });
+            }
+
+            const requestBody = {
+                vp_policies: [
+                    { "policy": "minimum-credentials", "args": 3 },
+                    { "policy": "maximum-credentials", "args": 100 }
+                ],
+                vc_policies: [
+                    "signature",
+                    "expired",
+                    "not-before",
+                    "revoked_status_list",
+                    {
+                        "policy": "allowed-issuer",
+                        "args": issuers
+                    }
+                ],
+                request_credentials: [
+                    { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
+                    { "type": "PassportCredential", "format": "jwt_vc_json" },
+                    { "type": "EmployerRegistrationCredential", "format": "jwt_vc_json" }
+                ]
+            };
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'authorizeBaseUrl': 'openid4vp://authorize',
+                'responseMode': 'direct_post',
+                'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
+            };
+
+            const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+            sessions[stateId] = {
+                status: 'pending',
+                verificationUrl: response.data,
+                verificationResult: null,
+                type: 'alta',
+                expiresAt: Date.now() + OFFER_EXPIRATION_MS
+            };
+            res.status(200).json({ verificationUrl: response.data, state: stateId });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async statusCallbackAlta(req, res, next) {
+        try {
+            const { stateId } = req.params;
+            const verificationData = req.body;
+
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            const { verificationResult, tokenResponse } = verificationData;
+            sessions[stateId].verificationResult = verificationResult;
+            sessions[stateId].status = verificationResult === true ? 'verified' : 'failed';
+
+            if (verificationResult === true) {
+                const vpToken = tokenResponse && tokenResponse.vp_token;
+                if (!vpToken) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se encontró el vp_token' });
+                }
+
+                const vpDecoded = jwt.decode(vpToken);
+                const credentialsJwt = vpDecoded?.vp?.verifiableCredential;
+                if (!credentialsJwt || credentialsJwt.length < 3) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
+                }
+
+                const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
+
+                const hasIdentity = decodedCreds.some(c => c?.vc?.type?.includes('CustomIdentityCredential'));
+                const hasPassport = decodedCreds.some(c => c?.vc?.type?.includes('PassportCredential'));
+                const hasEmployer = decodedCreds.some(c => c?.vc?.type?.includes('EmployerRegistrationCredential'));
+
+                if (!hasIdentity || !hasPassport || !hasEmployer) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Faltan credenciales requeridas (Identidad, Pasaporte, Empleador)' });
+                }
+
+                const revoked = await checkCredentialsRevocation(credentialsJwt);
+                if (revoked) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Una de las credenciales está revocada' });
+                }
+
+                const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
+                const passportCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('PassportCredential'));
+                const employerCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('EmployerRegistrationCredential'));
+
+                if (!identityCredDecoded) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se encontró la credencial de identidad' });
+                }
+
+                // Extraer datos de identidad
+                const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
+
+                // Procesar dirección
+                let fullAddress = '';
+                if (passportCredDecoded && passportCredDecoded.vc?.credentialSubject) {
+                    if (idData.currentAddress && idData.currentAddress.length > 0) {
+                        fullAddress = idData.currentAddress.join(', ');
+                    } else {
+                        const ps = passportCredDecoded.vc.credentialSubject;
+                        fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
+                    }
+                } else {
+                    if (idData.currentAddress && idData.currentAddress.length > 0) {
+                        fullAddress = idData.currentAddress.join(', ');
+                    } else {
+                        fullAddress = "Calle Ejemplo 123, Madrid";
+                    }
+                }
+
+                // Datos empleador
+                if (!employerCredDecoded || !employerCredDecoded.vc?.credentialSubject) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
+                }
+
+                const employerSubject = employerCredDecoded.vc.credentialSubject;
+                const employerName = employerSubject.employerName || "Empresa de Servicios S.A.";
+                const contributionAccountCode = employerSubject.employerContributionAccountCode || "0111-2222-33-4444444444";
+                const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
+                const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
+
+                const user = await findOrCreateOrUpdateUser(idData);
+                user.hasAltaCredential = true;
+                user.altaIssueDate = new Date();
+                await user.save();
+
+                const token = "ejemplo-de-token-alta";
+                sessions[stateId].user = user;
+                sessions[stateId].token = token;
+                sessions[stateId].employerData = {
+                    employerName,
+                    contributionAccountCode,
+                    socialSecurityRegime,
+                    collectiveAgreements
+                };
+                sessions[stateId].userAddress = fullAddress;
+            }
+
+            res.status(200).send('Status callback alta processed successfully');
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async statusCallback(req, res, next) {
+        try {
+            const { stateId } = req.params;
+            const verificationData = req.body;
+
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            const { verificationResult } = verificationData;
+            sessions[stateId].verificationResult = verificationResult;
+            sessions[stateId].status = verificationResult ? 'verified' : 'failed';
+
+            if (verificationResult) {
+                const vpToken = verificationData.tokenResponse && verificationData.tokenResponse.vp_token;
+                if (!vpToken) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No vp_token' });
+                }
+
+                const vpDecoded = jwt.decode(vpToken);
+                const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
+                if (credentialsJwt.length < 1) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Falta la credencial requerida' });
+                }
+
+                const revoked = await checkCredentialsRevocation(credentialsJwt);
+                if (revoked) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'La credencial está revocada' });
+                }
+
+                const vcDecoded = jwt.decode(credentialsJwt[0]);
+                const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
+                const user = await findOrCreateOrUpdateUser(userData);
+
+                // Generamos tokens JWT
+                const { accessToken, refreshToken } = generateTokens(user._id.toString());
+
+                // Guardar el refreshToken en el usuario
+                user.refreshTokens.push(refreshToken);
+                await user.save();
+
+                sessions[stateId].user = user;
+                sessions[stateId].token = accessToken; // token de acceso
+                sessions[stateId].refreshToken = refreshToken; // guarda también el refresh token
+            }
+
+            res.status(200).send('Status callback processed successfully');
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    async getVerificationSession(req, res, next) {
+        try {
+            const { stateId } = req.params;
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            const sessionData = sessions[stateId];
+            if (sessionData.expiresAt && Date.now() > sessionData.expiresAt && sessionData.status === 'pending') {
+                sessionData.status = 'expired';
+            }
+
+            let userResponse = null;
+            if (sessionData.user && sessionData.user.documentNumber) {
+                const u = await User.findOne({ documentNumber: sessionData.user.documentNumber });
+                if (u) {
+                    userResponse = {
+                        firstName: u.firstName,
+                        familyName: u.familyName,
+                        documentNumber: u.documentNumber,
+                        currentAddress: u.currentAddress,
+                        hasAltaCredential: u.hasAltaCredential,
+                        altaIssueDate: u.altaIssueDate,
+                        gender: u.gender,
+                        nationality: u.nationality,
+                        birthDate: u.birthDate,
+                        nss: u.nss,
+                        personalNumber: u.personalNumber,
+                        laserEngravedSerial: u.laserEngravedSerial,
+                        dniIssueDate: u.dniIssueDate,
+                        canNumber: u.canNumber,
+                        sex: u.sex,
+                        placeOfBirth: u.placeOfBirth,
+                        ascendants: u.ascendants,
+                        issuingTeamCode: u.issuingTeamCode,
+                        altaCredentialData: u.altaCredentialData || null
+                    };
+                }
+            }
+
+            // Devolvemos el access token y el usuario si está verificado
+            res.status(200).json({
+                status: sessionData.status,
+                token: sessionData.token || null,
+                refreshToken: sessionData.refreshToken || null,
+                user: userResponse
+            });
+        } catch (err) {
+            next(err);
+        }
+    }
+};
+
+
+--- backend/src/controllers/revocationController.js ---
+// src/controllers/revocationController.js
+const User = require('../models/User');
+const RevokedCredential = require('../models/RevokedCredential');
+
+module.exports = {
+    async revokeCredential(req, res, next) {
+        try {
+            const { dni } = req.body;
+            const user = await User.findOne({ documentNumber: dni });
+            if (!user) {
+                return res.status(404).json({ error: 'Usuario no encontrado' });
+            }
+
+            user.hasAltaCredential = false;
+            user.altaIssueDate = null;
+            user.altaCredentialData = null;
+            await user.save();
+
+            if (user.altaCredentialJti) {
+                try {
+                    await RevokedCredential.create({ credentialId: user.altaCredentialJti });
+                } catch (e) {
+                    if (e.code !== 11000) {
+                        console.error('Error añadiendo a la lista negra:', e);
+                    }
+                }
+            } else {
+                console.warn('No se encontró altaCredentialJti en el usuario.');
+            }
+
+            return res.status(200).json({ message: 'Credencial revocada con éxito', user });
+        } catch (err) {
+            next(err);
+        }
+    }
+};
+
+
+--- backend/src/controllers/userController.js ---
+// src/controllers/userController.js
+const User = require('../models/User');
+
+module.exports = {
+    async getUserByDni(req, res, next) {
+        try {
+            const { dni } = req.params;
+            const user = await User.findOne({ documentNumber: dni });
+            if (!user) {
+                return res.status(404).json({ error: 'Usuario no encontrado' });
+            }
+
+            const userResponse = {
+                firstName: user.firstName,
+                familyName: user.familyName,
+                documentNumber: user.documentNumber,
+                currentAddress: user.currentAddress,
+                hasAltaCredential: user.hasAltaCredential,
+                altaIssueDate: user.altaIssueDate,
+                gender: user.gender,
+                nationality: user.nationality,
+                birthDate: user.birthDate,
+                nss: user.nss,
+                personalNumber: user.personalNumber,
+                laserEngravedSerial: user.laserEngravedSerial,
+                dniIssueDate: user.dniIssueDate,
+                canNumber: user.canNumber,
+                sex: user.sex,
+                placeOfBirth: user.placeOfBirth,
+                ascendants: user.ascendants,
+                issuingTeamCode: user.issuingTeamCode,
+                altaCredentialData: user.altaCredentialData || null
+            };
+
+            return res.status(200).json({ user: userResponse });
+        } catch (err) {
+            next(err);
+        }
+    }
+};
+
+

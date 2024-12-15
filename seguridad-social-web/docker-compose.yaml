@@ -8,24 +8,22 @@ services:
       - ./issuer_coord/.env
       - ./vault-init/env/vault_approle.env
     environment:
-      # Agregamos la variable de entorno para conectar a la nueva BBDD de issuer_coord
       MONGODB_URI: "mongodb://mongo-issuer_coord:27017/issuercoord?authSource=admin"
-      # Si deseas añadir autenticación, puedes configurar usuario/contraseña en mongo-issuer_coord y en la URI.
     ports:
       - "5500:5500"
     networks:
       - my_network
     depends_on:
       - backend
-      - mongo-issuer_coord   # Ahora depende también de su propia instancia de Mongo
+      - mongo-issuer_coord
 
   backend:
     container_name: backend
     build: ./backend
     environment:
       MONGO_URI: "mongodb://mongo-backend:27017/seguridadSocial"
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     networks:
       - my_network
     depends_on:
@@ -37,14 +35,9 @@ services:
     networks:
       - my_network
 
-  # Nuevo servicio Mongo para issuer_coord
   mongo-issuer_coord:
     container_name: mongo-issuer_coord
     image: mongo:5.0
-    # Opcionalmente, puedes agregar variables de entorno para usuario/contraseña
-    # environment:
-    #   MONGO_INITDB_ROOT_USERNAME: root
-    #   MONGO_INITDB_ROOT_PASSWORD: example
     networks:
       - my_network
 
@@ -52,13 +45,31 @@ services:
     container_name: frontend
     build: ./frontend
     environment:
-      REACT_APP_BACKEND_URL: "http://backend:3001"
-    ports:
-      - "3000:3000"
+      # El frontend consumirá el backend a través de nginx, en https://localhost/backend
+      REACT_APP_BACKEND_URL: "https://localhost/backend"
+    expose:
+      - "3000"
     networks:
       - my_network
     depends_on:
       - backend
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    # Montamos los certificados y la configuración de Nginx desde el directorio frontend
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/certs:/etc/nginx/certs:ro
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - my_network
+    restart: unless-stopped
 
 networks:
   my_network:
