@@ -3,9 +3,9 @@ version: "3.8"
 services:
   issuer_coord:
     container_name: issuer_coord
-    build: ./ISSUER_COORD
+    build: ./issuer_coord
     env_file:
-      - ./ISSUER_COORD/.env
+      - ./issuer_coord/.env
       - ./vault-init/env/vault_approle.env
     environment:
       # Agregamos la variable de entorno para conectar a la nueva BBDD de issuer_coord
@@ -21,7 +21,7 @@ services:
 
   backend:
     container_name: backend
-    build: ./server
+    build: ./backend
     environment:
       MONGO_URI: "mongodb://mongo-backend:27017/seguridadSocial"
     ports:
@@ -50,7 +50,7 @@ services:
 
   frontend:
     container_name: frontend
-    build: ./
+    build: ./frontend
     environment:
       REACT_APP_BACKEND_URL: "http://backend:3001"
     ports:
