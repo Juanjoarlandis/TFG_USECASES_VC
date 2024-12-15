@@ -1,130 +1,118 @@
-# Seguridad Social Web - Proyecto Global
+# Social Security Web - Global Project
 
-## Descripción General
+## Overview
 
-Este proyecto proporciona una solución integral para la gestión de credenciales verificables en el contexto de la Seguridad Social. Consiste en varios módulos independientes que interactúan entre sí para proporcionar servicios como emisión de credenciales, verificación de identidad y una interfaz web accesible.
+This project provides a comprehensive solution for managing verifiable credentials in the context of Social Security. It consists of several independent modules that interact with each other to provide services such as credential issuance, identity verification, and an accessible web interface.
 
-## Arquitectura del Proyecto
-El proyecto consta de los siguientes módulos:
+## Project Architecture
+The project consists of the following modules:
 
 ### 1. **Frontend**
-   - **Descripción**: Interfaz web desarrollada con React para la interacción del usuario.
-   - **Tecnologías**: React, Redux, TailwindCSS, Axios.
-   - **Características principales**:
-     - Registro y verificación de credenciales.
-     - Dashboard personal para la gestión de datos.
-     - Diseño responsivo.
+   - **Description**: Web interface developed with React for user interaction.
+   - **Technologies**: React, Redux, TailwindCSS, Axios.
+   - **Key Features**:
+     - Credential registration and verification.
+     - Personal dashboard for data management.
+     - Responsive design.
 
 ### 2. **Backend**
-   - **Descripción**: Servidor que gestiona la lógica de negocio, como la verificación de credenciales y el almacenamiento de datos de usuarios.
-   - **Tecnologías**: Node.js, Express, MongoDB.
+   - **Description**: Server managing business logic such as credential verification and user data storage.
+   - **Technologies**: Node.js, Express, MongoDB.
 
 ### 3. **Issuer Coordinator**
-   - **Descripción**: Servicio dedicado a la emisión de credenciales verificables.
-   - **Tecnologías**: Node.js, MongoDB.
+   - **Description**: Service dedicated to issuing verifiable credentials.
+   - **Technologies**: Node.js, MongoDB.
 
 ### 4. **Vault**
-   - **Descripción**: Sistema seguro de gestión de claves utilizado para almacenar información sensible y realizar operaciones criptográficas.
-   - **Configuraciones principales**:
-     - Configurado con políticas específicas para diferentes roles.
-     - Soporte para AppRoles utilizados por los módulos.
+   - **Description**: Secure key management system used for storing sensitive information and performing cryptographic operations.
+   - **Key Configurations**:
+     - Configured with specific policies for different roles.
+     - Support for AppRoles used by the modules.
 
-### 5. **APIs de Walt.id**
-   - **Descripción**: Conjunto de servicios para la emisión, verificación y manejo de wallets.
-   - **Tecnologías**: Servicios proporcionados por Walt.id mediante Docker Compose.
+### 5. **Walt.id APIs**
+   - **Description**: Set of services for credential issuance, verification, and wallet management.
+   - **Technologies**: Services provided by Walt.id via Docker Compose.
 
-## Lanzamiento del Proyecto
-### Requisitos Previos
+## Project Launch
+### Prerequisites
 
-1. **Software Necesario**:
-   - Docker y Docker Compose.
-   - Node.js y npm (opcional para desarrollo local del frontend).
+1. **Required Software**:
+   - Docker and Docker Compose.
+   - Node.js and npm (optional for local frontend development).
 
-2. **Configuraciones Iniciales**:
-   - Crear una red Docker externa llamada `my_network`:
+2. **Initial Configurations**:
+   - Create an external Docker network named `my_network`:
      ```bash
      docker network create my_network
      ```
 
-   - Configurar los certificados SSL para el frontend en `frontend/certs/`.
+   - Configure SSL certificates for the frontend in `frontend/certs/`.
 
-   - Configurar las variables de entorno necesarias para cada módulo.
+   - Set up the required environment variables for each module.
 
-### Pasos para Lanzar el Proyecto
-1. **Configurar y Lanzar Vault**
-   - Construir la imagen de inicialización de Vault:
+### Steps to Launch the Project
+1. **Configure and Launch Vault**
+   - Navigate to the Vault initialization directory:
+     ```bash
+     cd vault-init
+     ```
+   - Build the Vault initialization image:
      ```bash
      docker-compose build vault-init
      ```
-   - Iniciar Vault:
+   - Start Vault:
      ```bash
      docker-compose up -d vault
      ```
-   - Ejecutar el contenedor de inicialización:
+   - Run the initialization container:
      ```bash
      docker-compose up vault-init
      ```
+   - **Important Note**: After completing these steps, return to the root directory to launch the next set of services.
 
-2. **Lanzar los Servicios del Proyecto Principal**
-   - Iniciar todos los módulos utilizando el archivo `docker-compose.yaml` principal:
+2. **Launch the Main Project Services**
+   - Start all modules using the main `docker-compose.yaml` file:
      ```bash
+     cd ..
      docker-compose up -d
      ```
 
-3. **Lanzar las APIs de Walt.id**
-   - Navegar al directorio de Docker Compose de Walt.id:
+3. **Launch Walt.id APIs**
+   - Navigate to the Walt.id Docker Compose directory:
      ```bash
      cd waltid-identity/docker-compose
      ```
-   - Iniciar los servicios:
+   - Start the services:
      ```bash
      docker compose up -d
      ```
+   - **Important Note**: Ensure that you return to this directory after completing the steps in the root directory to effectively launch the Walt.id APIs.
 
-4. **Acceso a la Aplicación**
+4. **Access the Application**
    - Frontend: [https://localhost](https://localhost)
-   - Backend: Disponible en [http://localhost:3001](http://localhost:3001) para consumo interno por otros servicios.
-   - APIs de Walt.id: [Issuer API](http://localhost:8080), [Verifier API](http://localhost:8081), [Wallet API](http://localhost:8082).
+   - Backend: Available at [http://localhost:3001](http://localhost:3001) for internal consumption by other services.
+   - Walt.id APIs: [Issuer API], [Verifier API], [Wallet API].
 
-### Configuración Adicional de Vault
-Si necesitas realizar configuraciones adicionales de Vault, puedes usar los siguientes comandos:
+## Project Structure
+- **frontend/**: Contains the frontend source code.
+- **backend/**: Contains the backend source code.
+- **issuer_coord/**: Issuer coordination service.
+- **vault-init/**: Vault initialization configurations and scripts.
+- **waltid-identity/**: Contains configurations for Walt.id APIs.
 
-- **Iniciar sesión en Vault**:
-  ```bash
-  export VAULT_ADDR='http://127.0.0.1:8200'
-  vault login <root-token>
-  ```
+## Contributing
+If you want to contribute:
 
-- **Aplicar políticas**:
-  ```bash
-  vault policy write issuer1-policy ./vault-init/issuer1-policy.hcl
-  ```
-
-- **Crear AppRoles**:
-  ```bash
-  vault write auth/approle/role/issuer1-role token_policies="issuer1-policy"
-  ```
-
-## Estructura del Proyecto
-- **frontend/**: Contiene el código fuente del frontend.
-- **backend/**: Contiene el código fuente del backend.
-- **issuer_coord/**: Servicio de coordinación de emisores.
-- **vault-init/**: Configuraciones y scripts para la inicialización de Vault.
-- **waltid-identity/**: Contiene las configuraciones para las APIs de Walt.id.
-
-## Contribuir
-Si deseas contribuir:
-
-1. Haz un fork del repositorio.
-2. Crea una rama para tus cambios:
+1. Fork the repository.
+2. Create a branch for your changes:
    ```bash
-   git checkout -b feature/nueva-funcionalidad
+   git checkout -b feature/new-feature
    ```
-3. Realiza tus cambios y haz commit:
+3. Make your changes and commit:
    ```bash
-   git commit -m "Descripción de los cambios"
+   git commit -m "Description of changes"
    ```
-4. Haz un push de tus cambios y crea un Pull Request.
+4. Push your changes and create a Pull Request.
 
-## Licencia
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for more details.
