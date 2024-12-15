@@ -3,7 +3,7 @@ const cors = require('cors');
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
     ? ['https://tudominio.com'] // ajustar dominio real
-    : ['http://localhost:3000'];
+    : ['https://localhost'];
 
 module.exports = cors({
     origin: allowedOrigins,

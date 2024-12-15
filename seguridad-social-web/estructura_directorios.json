@@ -1,0 +1,70 @@
+[
+    {
+        "name": "backend",
+        "dirs": [
+            {
+                "name": "src",
+                "dirs": [
+                    {
+                        "name": "models",
+                        "dirs": [],
+                        "files": [
+                            "User.js",
+                            "RevokedCredential.js"
+                        ]
+                    },
+                    {
+                        "name": "routes",
+                        "dirs": [],
+                        "files": [
+                            "issuanceRoutes.js",
+                            "userRoutes.js",
+                            "authRoutes.js",
+                            "verificationRoutes.js",
+                            "revocationRoutes.js"
+                        ]
+                    },
+                    {
+                        "name": "utils",
+                        "dirs": [],
+                        "files": [
+                            "jwtUtils.js",
+                            "sessionStore.js",
+                            "validations.js"
+                        ]
+                    },
+                    {
+                        "name": "middleware",
+                        "dirs": [],
+                        "files": [
+                            "corsConfig.js",
+                            "errorHandler.js",
+                            "requestLogger.js"
+                        ]
+                    },
+                    {
+                        "name": "controllers",
+                        "dirs": [],
+                        "files": [
+                            "issuanceController.js",
+                            "verificationController.js",
+                            "revocationController.js",
+                            "userController.js"
+                        ]
+                    }
+                ],
+                "files": [
+                    "index.js"
+                ]
+            }
+        ],
+        "files": [
+            "package.json",
+            "signing_key_base64.txt",
+            ".env",
+            "Dockerfile",
+            "encryption_key_base64.txt",
+            "app.js"
+        ]
+    }
+]
