@@ -29,6 +29,10 @@ El proyecto consta de los siguientes módulos:
      - Configurado con políticas específicas para diferentes roles.
      - Soporte para AppRoles utilizados por los módulos.
 
+### 5. **APIs de Walt.id**
+   - **Descripción**: Conjunto de servicios para la emisión, verificación y manejo de wallets.
+   - **Tecnologías**: Servicios proporcionados por Walt.id mediante Docker Compose.
+
 ## Lanzamiento del Proyecto
 ### Requisitos Previos
 
@@ -61,15 +65,26 @@ El proyecto consta de los siguientes módulos:
      docker-compose up vault-init
      ```
 
-2. **Lanzar los Servicios**
+2. **Lanzar los Servicios del Proyecto Principal**
    - Iniciar todos los módulos utilizando el archivo `docker-compose.yaml` principal:
      ```bash
      docker-compose up -d
      ```
 
-3. **Acceso a la Aplicación**
+3. **Lanzar las APIs de Walt.id**
+   - Navegar al directorio de Docker Compose de Walt.id:
+     ```bash
+     cd waltid-identity/docker-compose
+     ```
+   - Iniciar los servicios:
+     ```bash
+     docker compose up -d
+     ```
+
+4. **Acceso a la Aplicación**
    - Frontend: [https://localhost](https://localhost)
    - Backend: Disponible en [http://localhost:3001](http://localhost:3001) para consumo interno por otros servicios.
+   - APIs de Walt.id: [Issuer API](http://localhost:8080), [Verifier API](http://localhost:8081), [Wallet API](http://localhost:8082).
 
 ### Configuración Adicional de Vault
 Si necesitas realizar configuraciones adicionales de Vault, puedes usar los siguientes comandos:
@@ -95,6 +110,7 @@ Si necesitas realizar configuraciones adicionales de Vault, puedes usar los sigu
 - **backend/**: Contiene el código fuente del backend.
 - **issuer_coord/**: Servicio de coordinación de emisores.
 - **vault-init/**: Configuraciones y scripts para la inicialización de Vault.
+- **waltid-identity/**: Contiene las configuraciones para las APIs de Walt.id.
 
 ## Contribuir
 Si deseas contribuir:
