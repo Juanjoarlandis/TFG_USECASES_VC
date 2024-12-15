@@ -1,70 +1,126 @@
-# Getting Started with Create React App
+# Seguridad Social Web - Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Este proyecto es el frontend de la aplicación web para la gestión de trámites en la Seguridad Social. Está desarrollado en React con soporte para TailwindCSS, Redux y múltiples idiomas mediante i18next.
 
-## Available Scripts
+## Requisitos Previos
 
-In the project directory, you can run:
+Antes de comenzar, asegúrate de tener instalado:
+
+- Node.js (versión 16 o superior)
+- npm (versión 8 o superior)
+- Docker (opcional, para despliegue)
+
+## Instalación
+
+1. Clona este repositorio:
+
+   ```bash
+   git clone <url-del-repositorio>
+   cd seguridad-social-web
+   ```
+
+2. Instala las dependencias:
+
+   ```bash
+   npm install
+   ```
+
+3. Configura las variables de entorno en el archivo `.env` (por defecto ya existe uno):
+
+   ```env
+   REACT_APP_BACKEND_URL=https://localhost/backend
+   ```
+
+4. (Opcional) Configura los certificados SSL para un despliegue local seguro en la carpeta `certs`.
+
+## Scripts Disponibles
+
+En el directorio del proyecto, puedes ejecutar:
 
 ### `npm start`
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Ejecuta la aplicación en modo de desarrollo. Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la aplicación.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+La página se recargará automáticamente si haces cambios en el código.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Crea una versión optimizada de la aplicación para producción en la carpeta `build`. Los archivos generados están listos para ser desplegados.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### `npm test`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Ejecuta las pruebas en modo interactivo.
 
-### `npm run eject`
+## Docker
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Construcción de la Imagen
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Para crear una imagen Docker del frontend:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```bash
+docker build -t seguridad-social-web:latest .
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Ejecución de la Imagen
 
-## Learn More
+Ejecuta el contenedor:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+```bash
+docker run -d -p 3000:3000 seguridad-social-web:latest
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Accede a la aplicación en [http://localhost:3000](http://localhost:3000).
 
-### Code Splitting
+## Estructura del Proyecto
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- `src/`
+  - `components/`: Componentes reutilizables como el Header y Footer.
+  - `pages/`: Páginas principales de la aplicación (e.g., Home, Register, Dashboard).
+  - `store/`: Configuración de Redux y slices.
+  - `services/`: Funciones para interactuar con la API backend.
+  - `utils/`: Utilidades y validaciones comunes.
+  - `i18n.js`: Configuración para la internacionalización.
+- `public/`: Archivos estáticos como `index.html` y manifest.json.
 
-### Analyzing the Bundle Size
+## Funcionalidades Principales
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- **Registro y Verificación**: Los usuarios pueden verificar su identidad escaneando un código QR con su wallet WaltId.
+- **Dashboard Personal**: Acceso a información y servicios personalizados, como credenciales y prestaciones activas.
+- **Alta en Seguridad Social**: Proceso guiado para darse de alta mediante credenciales verificables.
+- **Internacionalización**: Disponible en múltiples idiomas.
+- **Diseño Responsivo**: Adaptado para dispositivos móviles y de escritorio.
 
-### Making a Progressive Web App
+## Tecnologías Usadas
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- React
+- Redux Toolkit
+- TailwindCSS
+- i18next (internacionalización)
+- Axios (para peticiones HTTP)
+- QRCode.react
+- Framer Motion (animaciones)
+- React Router
+- Docker (para despliegue)
 
-### Advanced Configuration
+## Contribuir
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Si deseas contribuir al desarrollo, por favor:
 
-### Deployment
+1. Realiza un fork del repositorio.
+2. Crea una rama para tu feature o corrección de bug:
+   ```bash
+   git checkout -b feature/nueva-funcionalidad
+   ```
+3. Realiza tus cambios y haz commit:
+   ```bash
+   git commit -m "Descripción de los cambios realizados"
+   ```
+4. Haz un push de tus cambios a tu fork:
+   ```bash
+   git push origin feature/nueva-funcionalidad
+   ```
+5. Crea un Pull Request.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## Licencia
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
