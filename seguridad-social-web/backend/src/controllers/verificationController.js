@@ -239,6 +239,7 @@ module.exports = {
                 }
 
                 const vcDecoded = jwt.decode(credentialsJwt[0]);
+                console.log(vcDecoded)
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
                 const user = await findOrCreateOrUpdateUser(userData);
 
