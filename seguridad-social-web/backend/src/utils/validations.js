@@ -9,22 +9,11 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
     let firstName = '';
     let familyName = '';
     let documentNumber = '';
-    let currentAddress = [];
-
     let gender = '';
     let nationality = '';
     let birthDate = null;
     let nss = '';
-
-    let personalNumber = '';
-    let laserEngravedSerial = '';
-    let dniIssueDate = null;
-    let canNumber = '';
-    let sex = '';
-
-    let placeOfBirth = {};
-    let ascendants = [];
-    let issuingTeamCode = '';
+    let photo = '';
 
     if (cs.dni) {
         documentNumber = cs.dni.identifier || '';
@@ -36,64 +25,21 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
         if (cs.dni.birthDate) {
             birthDate = new Date(cs.dni.birthDate);
         }
-
-        if (cs.dni.frontSide) {
-            personalNumber = cs.dni.frontSide.personalNumber || '';
-            laserEngravedSerial = cs.dni.frontSide.laserEngravedSerial || '';
-            canNumber = cs.dni.frontSide.canNumber || '';
-            sex = cs.dni.frontSide.sex || '';
-            if (cs.dni.frontSide.issueDate) {
-                dniIssueDate = new Date(cs.dni.frontSide.issueDate);
-            }
-        }
-
-        if (cs.dni.backSide) {
-            if (cs.dni.backSide.address) {
-                const addr = cs.dni.backSide.address;
-                currentAddress = [
-                    addr.street || '',
-                    addr.locality || '',
-                    addr.province || '',
-                    addr.country || '',
-                    addr.postalCode || ''
-                ].filter(Boolean);
-            }
-            if (cs.dni.backSide.placeOfBirth) {
-                placeOfBirth = {
-                    locality: cs.dni.backSide.placeOfBirth.locality || '',
-                    province: cs.dni.backSide.placeOfBirth.province || '',
-                    country: cs.dni.backSide.placeOfBirth.country || ''
-                };
-            }
-            if (Array.isArray(cs.dni.backSide.ascendants)) {
-                ascendants = cs.dni.backSide.ascendants.map(a => ({
-                    givenName: a.givenName || '',
-                    familyName: a.familyName || ''
-                }));
-            }
-            issuingTeamCode = cs.dni.backSide.issuingTeamCode || '';
-        }
+        photo = cs.dni.photo || '';
     }
 
     return {
         firstName,
         familyName,
         documentNumber,
-        currentAddress,
         gender,
         nationality,
         birthDate,
         nss,
-        personalNumber,
-        laserEngravedSerial,
-        dniIssueDate,
-        canNumber,
-        sex,
-        placeOfBirth,
-        ascendants,
-        issuingTeamCode
+        photo
     };
 }
+
 
 // Decodificar un JWT sin verificar, ya que se asume verificación externa
 function decodeVC(jwtCredential) {
@@ -128,40 +74,25 @@ async function findOrCreateOrUpdateUser(userData) {
             firstName: userData.firstName,
             familyName: userData.familyName,
             documentNumber: userData.documentNumber,
-            currentAddress: userData.currentAddress || [],
             gender: userData.gender,
             nationality: userData.nationality,
             birthDate: userData.birthDate,
             nss: userData.nss,
-            personalNumber: userData.personalNumber,
-            laserEngravedSerial: userData.laserEngravedSerial,
-            dniIssueDate: userData.dniIssueDate,
-            canNumber: userData.canNumber,
-            sex: userData.sex,
-            placeOfBirth: userData.placeOfBirth,
-            ascendants: userData.ascendants,
-            issuingTeamCode: userData.issuingTeamCode,
+            photo: userData.photo || '',
             hasAltaCredential: false,
             altaIssueDate: null,
             altaCredentialJti: null,
             altaCredentialData: null
         });
     } else {
+        // Actualizamos sólo los campos relevantes
         user.firstName = userData.firstName;
         user.familyName = userData.familyName;
-        user.currentAddress = userData.currentAddress || user.currentAddress;
         user.gender = userData.gender;
         user.nationality = userData.nationality;
         user.birthDate = userData.birthDate;
         user.nss = userData.nss;
-        user.personalNumber = userData.personalNumber;
-        user.laserEngravedSerial = userData.laserEngravedSerial;
-        user.dniIssueDate = userData.dniIssueDate;
-        user.canNumber = userData.canNumber;
-        user.sex = userData.sex;
-        user.placeOfBirth = userData.placeOfBirth;
-        user.ascendants = userData.ascendants;
-        user.issuingTeamCode = userData.issuingTeamCode;
+        user.photo = userData.photo || user.photo;
     }
     await user.save();
     return user;

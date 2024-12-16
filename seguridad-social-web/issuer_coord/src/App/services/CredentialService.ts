@@ -68,7 +68,7 @@ export class CredentialService {
               "nationality": "ES",
               "birthDate": "1990-01-01",
               "nss": "123456789012",
-              "photo": "https://example.com/images/12345678A_dni.jpg"
+              "photo": "/dni.webp"
             }
           }
         };
