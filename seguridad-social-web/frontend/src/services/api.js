@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Funciones ya existentes
+// Funciones existentes...
 export const startVerification = async () => {
   const response = await axios.post(`${BASE_URL}/verification/offer`, {
     request_credentials: [
@@ -23,10 +23,9 @@ export const checkSessionStatus = async (stateId) => {
 
 export const fetchUserDataByDni = async (dni) => {
   const response = await axios.get(`${BASE_URL}/user/${dni}`);
-  return response.data; // Debe devolver {user: {...}}
+  return response.data; // {user: {...}}
 };
 
-// Nuevas funciones para Alta.js
 export const offerThreeCredsVerification = async () => {
   const response = await axios.post(`${BASE_URL}/verification/offer3creds`, {});
   return { verificationUrl: response.data.verificationUrl, stateId: response.data.state };
@@ -38,7 +37,7 @@ export const checkThreeCredsVerificationStatus = async (stateId) => {
 };
 
 export const offerIssuance = async (stateId) => {
-  const response = await axios.post(`${BASE_URL}/issuance/offer`, { stateId });
+  const response = await axios.post(`${BASE_URL}/issuance/offerIssuance`, { stateId });
   return { issuanceOfferUrl: response.data.issuanceOfferUrl };
 };
 
@@ -47,8 +46,14 @@ export const checkIssuanceSessionStatus = async (stateId) => {
   return response.data; // {issuanceStatus}
 };
 
-// Para Dashboard.js (revocar credencial)
 export const revokeCredential = async (dni) => {
-  const response = await axios.post(`${BASE_URL}/revocar-credencial`, { dni });
-  return response.data; // { message: 'Credencial revocada con éxito', user: ... } o similar
+  const response = await axios.post(`${BASE_URL}/revocar/credencial`, { dni });
+  return response.data;
+};
+
+// Nueva función para login con wallet
+export const walletLogin = async (email, password) => {
+  const response = await axios.post(`${BASE_URL}/auth/wallet-login`, { email, password });
+  // El backend debería devolver { message, accessToken, refreshToken, user? }
+  return response.data;
 };

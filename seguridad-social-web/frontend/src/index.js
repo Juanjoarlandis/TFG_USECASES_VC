@@ -10,8 +10,10 @@ import './i18n';
 // Inicializar estado desde localStorage
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user'));
+const flow = localStorage.getItem('flow') || 'manual';
+
 if (token && user) {
-  store.dispatch(initializeFromStorage({ token, user }));
+  store.dispatch(initializeFromStorage({ token, user, flow }));
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

@@ -61,8 +61,8 @@ export class CredentialService {
           "credentialSubject": {
             "id": "did:web:localhost:6000",
             "dni": {
-              "identifier": "12345678A",
-              "givenName": "Mario",
+              "identifier": "12345678ABB",
+              "givenName": "Julio",
               "familyName": "Perez",
               "gender": "M",
               "nationality": "ES",

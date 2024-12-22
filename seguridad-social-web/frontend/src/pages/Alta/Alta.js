@@ -1,3 +1,4 @@
+// src/pages/Alta/index.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -5,10 +6,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaIdCard, FaCheckCircle, FaQrcode, FaRedoAlt } from 'react-icons/fa';
-import { userSchema } from '../../utils/validation';
 import { useDispatch } from 'react-redux';
-import { verifyUser } from '../../store/authSlice';
-import { offerThreeCredsVerification, checkThreeCredsVerificationStatus, offerIssuance, checkIssuanceSessionStatus } from '../../services/api';
+import { offerThreeCredsVerification, checkThreeCredsVerificationStatus, offerIssuance } from '../../services/api';
 
 const BASE_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -39,7 +38,6 @@ const Alta = () => {
             toast.error('Error iniciando verificación para el alta.');
         }
     };
-
 
     const checkStatus = useCallback(async () => {
         if (!sessionId || !qrVisible || qrExpired || issuanceQrVisible) return;
@@ -106,7 +104,7 @@ const Alta = () => {
                 toast.success('¡Credencial aceptada! Redirigiendo al dashboard...');
                 setTimeout(() => {
                     navigate('/dashboard');
-                }, 2000);
+                }, 3000); // Delay 3s para que se aprecie la animación
             }
         } catch (error) {
             console.error(error);
@@ -146,7 +144,11 @@ const Alta = () => {
             animate="visible"
             variants={containerVariants}
         >
-            <div className="absolute bottom-0 right-0 opacity-10 pointer-events-none" style={{ fontSize: '10rem', lineHeight: '1' }}>
+            {/* Icono grande de fondo */}
+            <div
+                className="absolute bottom-0 right-0 opacity-10 pointer-events-none"
+                style={{ fontSize: '10rem', lineHeight: '1' }}
+            >
                 <FaIdCard className="text-primary" />
             </div>
 
@@ -162,26 +164,30 @@ const Alta = () => {
                 Una vez validadas estas 3 credenciales, procederemos a la emisión de su credencial de Alta en la Seguridad Social.
             </p>
 
+            {/* Botón inicial */}
             {!qrVisible && !issuanceQrVisible && !issuanceAccepted && (
                 <motion.button
                     onClick={startThreeCredsVerification}
-                    className="px-7 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition font-body text-lg font-semibold focus:outline-none z-10 relative"
+                    className="px-7 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition font-body text-lg font-semibold focus:outline-none z-10 relative flex items-center gap-2"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                 >
+                    <FaQrcode />
                     Iniciar verificación (3 Credenciales)
                 </motion.button>
             )}
 
+            {/* QR para verificación */}
             {qrVisible && !issuanceQrVisible && (
                 <motion.div
-                    className={`flex flex-col items-center mt-7 p-7 rounded-xl shadow-lg z-10 relative ${qrExpired ? 'opacity-50' : ''}`}
+                    className={`flex flex-col items-center mt-7 p-7 rounded-xl shadow-lg z-10 relative ${qrExpired ? 'opacity-50' : ''
+                        }`}
                     variants={cardVariants}
                     initial="hidden"
                     animate="visible"
                     style={{
                         border: '2px solid #004080',
-                        background: 'linear-gradient(to right, #e0f7fa, #e0f0fa)'
+                        background: 'linear-gradient(to right, #e0f7fa, #f0f7fa)'
                     }}
                 >
                     {!qrExpired && (
@@ -190,12 +196,18 @@ const Alta = () => {
                                 <FaQrcode className="inline-block mr-1 text-primary" /> Escanee este código QR con su wallet y presente las 3 credenciales requeridas:
                             </p>
                             <div className="hover:scale-105 transition-transform duration-200 ease-in-out">
-                                <QRCodeCanvas value={verificationUrl} size={256} className="mb-4" />
+                                <QRCodeCanvas
+                                    value={verificationUrl}
+                                    size={256}
+                                    className="mb-4 border-4 border-white shadow-md"
+                                />
                             </div>
                             <p className="font-body text-sm text-neutralDark animate-pulse">
                                 Esperando verificación...
                             </p>
-                            <p className="font-body text-xs text-neutralDark mt-2">Tiempo restante: {timeLeft}s</p>
+                            <p className="font-body text-xs text-neutralDark mt-2">
+                                Tiempo restante: {timeLeft}s
+                            </p>
                         </>
                     )}
                     {qrExpired && (
@@ -214,6 +226,7 @@ const Alta = () => {
                 </motion.div>
             )}
 
+            {/* QR para emisión de la credencial */}
             {issuanceQrVisible && !issuanceAccepted && (
                 <motion.div
                     className="flex flex-col items-center mt-6 p-6 rounded-xl shadow-lg z-10 relative"
@@ -222,7 +235,7 @@ const Alta = () => {
                     animate="visible"
                     style={{
                         border: '2px solid #004080',
-                        background: 'linear-gradient(to right, #e0f7fa, #e0f0fa)'
+                        background: 'linear-gradient(to right, #e6fffa, #f0ffff)'
                     }}
                 >
                     <p className="font-body mb-4 text-neutralDark text-base flex items-center gap-2">
@@ -230,13 +243,22 @@ const Alta = () => {
                         Ahora escanee este QR para recibir su credencial <strong>Alta_Seguridad_Social</strong>:
                     </p>
                     <div className="hover:scale-105 transition-transform duration-200 ease-in-out">
-                        <QRCodeCanvas value={issuanceOfferUrl} size={256} className="mb-4" />
+                        <QRCodeCanvas
+                            value={issuanceOfferUrl}
+                            size={256}
+                            className="mb-4 border-4 border-white shadow-md"
+                        />
                     </div>
-                    <p className="font-body text-sm text-neutralDark mb-4">Escanee para emitir la credencial en su wallet.</p>
-                    <p className="font-body text-sm text-neutralDark">Esperando que aceptes la credencial...</p>
+                    <p className="font-body text-sm text-neutralDark mb-4">
+                        Escanee para emitir la credencial en su wallet.
+                    </p>
+                    <p className="font-body text-sm text-neutralDark">
+                        Esperando que aceptes la credencial...
+                    </p>
                 </motion.div>
             )}
 
+            {/* Mensaje final si la credencial fue aceptada */}
             {issuanceAccepted && (
                 <motion.div
                     className="flex flex-col items-center mt-6 p-6 rounded-xl shadow-lg z-10 relative"
@@ -254,6 +276,7 @@ const Alta = () => {
                 </motion.div>
             )}
 
+            {/* Sombra degrade en la parte superior */}
             <div className="absolute top-0 left-0 w-full h-1/3 bg-gradient-to-b from-neutralLight to-transparent pointer-events-none"></div>
         </motion.div>
     );

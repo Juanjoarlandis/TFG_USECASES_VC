@@ -67,7 +67,7 @@ async function checkCredentialsRevocation(credentialsJwtArray) {
     return false;
 }
 
-async function findOrCreateOrUpdateUser(userData) {
+async function findOrCreateOrUpdateUser(userData, flow) {
     let user = await User.findOne({ documentNumber: userData.documentNumber });
     if (!user) {
         user = new User({
@@ -82,10 +82,11 @@ async function findOrCreateOrUpdateUser(userData) {
             hasAltaCredential: false,
             altaIssueDate: null,
             altaCredentialJti: null,
-            altaCredentialData: null
+            altaCredentialData: null,
+            flow: flow  // Establecemos el flujo actual (manual si no se especifica otro)
         });
     } else {
-        // Actualizamos sólo los campos relevantes
+        // Usuario ya existente. Actualizamos datos relevantes
         user.firstName = userData.firstName;
         user.familyName = userData.familyName;
         user.gender = userData.gender;
@@ -93,10 +94,17 @@ async function findOrCreateOrUpdateUser(userData) {
         user.birthDate = userData.birthDate;
         user.nss = userData.nss;
         user.photo = userData.photo || user.photo;
+
+        if (flow === 'manual') {
+            user.flow = 'manual';
+        } else if (flow === 'automatic') {
+            user.flow = 'automatic';
+        }
     }
     await user.save();
     return user;
 }
+
 
 module.exports = {
     extractUserDataFromDecodedCredentialSubject,
