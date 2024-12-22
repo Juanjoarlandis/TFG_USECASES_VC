@@ -22,7 +22,14 @@ const Dashboard = () => {
     const [showCredentials, setShowCredentials] = useState(false);
 
     const handleDarseAlta = async () => {
-        navigate('/alta');
+        const flow = userData?.flow || 'manual';
+
+        if (flow === 'automatic') {
+            // Primero mostrar la información detallada
+            navigate('/alta-automatica-info');
+        } else {
+            navigate('/alta');
+        }
     };
 
     const handleDarseBaja = async () => {
@@ -172,65 +179,77 @@ const Dashboard = () => {
                                     </div>
 
                                     <div className="relative z-10">
-                                        <div className="flex items-center gap-2 mb-4 group" title="Esta credencial acredita su alta en la Seguridad Social">
-                                            <FaShieldAlt className="text-primary text-3xl" />
+                                        <div className="flex items-center gap-2 mb-6 group" title="Esta credencial acredita su alta en la Seguridad Social">
+                                            <FaShieldAlt className="text-primary text-4xl" />
                                             <h3 className="font-headings text-2xl text-primary font-bold">
                                                 Credencial de Alta
                                             </h3>
-                                            <span className="bg-green-600 text-white text-sm font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                                            <span className="bg-green-600 text-white text-sm font-semibold px-2 py-1 rounded-full flex items-center gap-1 shadow-sm">
                                                 VERIFICADO <FaCheckCircle />
                                             </span>
                                         </div>
 
-                                        <p className="font-body text-base text-neutralDark leading-relaxed mb-4">
-                                            Esta credencial le acredita como trabajador dado de alta en la Seguridad Social,
-                                            otorgándole acceso a prestaciones, servicios y derechos asociados a su afiliación.
+                                        <p className="font-body text-base text-neutralDark leading-relaxed mb-6">
+                                            Esta credencial le acredita como trabajador dado de alta en la Seguridad Social, otorgándole acceso a prestaciones, servicios y derechos asociados a su afiliación.
                                         </p>
-                                        <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow flex flex-col gap-2 relative">
-                                            <p className="font-body text-sm text-neutralDark flex items-center">
-                                                <FaFileAlt className="mr-1" /> <strong>Tipo de Credencial:</strong> {altaData.type?.join(', ')}
-                                            </p>
-                                            <p className="font-body text-sm text-neutralDark">
-                                                <strong>Emisor:</strong> {altaData.issuer?.name} ({altaData.issuer?.id})
-                                            </p>
-                                            <p className="font-body text-sm text-neutralDark">
-                                                <strong>Válida desde:</strong> {altaData.validFrom || 'N/A'}
-                                            </p>
-                                            <p className="font-body text-sm text-neutralDark">
-                                                <strong>Expira el:</strong> {altaData.expirationDate || 'N/A'}
-                                            </p>
 
-                                            <div className="mt-4">
-                                                <h4 className="font-headings text-lg text-primary font-semibold mb-2">Datos del Empleador</h4>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Nombre:</strong> {altaData.credentialSubject?.employer?.employerName}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.employer?.contributionAccountCode}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Régimen:</strong> {altaData.credentialSubject?.employer?.socialSecurityRegime}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Convenios Colectivos:</strong></p>
-                                                <ul className="list-disc pl-5">
-                                                    {altaData.credentialSubject?.employer?.collectiveAgreements?.map((acuerdo, i) => (
-                                                        <li key={i} className="font-body text-sm text-neutralDark">{acuerdo}</li>
-                                                    ))}
-                                                </ul>
+                                        <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow relative overflow-hidden">
+                                            <div className="absolute top-2 right-2 bg-primary text-white text-xs px-2 py-1 rounded-full shadow-sm">
+                                                Credencial Oficial
+                                            </div>
+                                            <h4 className="font-headings text-lg text-primary font-semibold mb-3 flex items-center gap-2">
+                                                <FaFileAlt className="text-primary" /> Detalles de la Credencial
+                                            </h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <p className="font-body text-sm text-neutralDark">
+                                                    <strong>Tipo:</strong> {altaData.type?.join(', ')}
+                                                </p>
+                                                <p className="font-body text-sm text-neutralDark">
+                                                    <strong>Emisor:</strong> {altaData.issuer?.name} ({altaData.issuer?.id})
+                                                </p>
+                                                <p className="font-body text-sm text-neutralDark">
+                                                    <strong>Válida desde:</strong> {altaData.validFrom || 'N/A'}
+                                                </p>
+                                                <p className="font-body text-sm text-neutralDark">
+                                                    <strong>Expira el:</strong> {altaData.expirationDate || 'N/A'}
+                                                </p>
                                             </div>
 
-                                            <div className="mt-4">
-                                                <h4 className="font-headings text-lg text-primary font-semibold mb-2">Datos del Trabajador</h4>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Nombre y Apellidos:</strong> {altaData.credentialSubject?.worker?.nombre} {altaData.credentialSubject?.worker?.apellidos}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>DNI:</strong> {altaData.credentialSubject?.worker?.dni}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>NSS:</strong> {altaData.credentialSubject?.worker?.nss}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Domicilio:</strong> {altaData.credentialSubject?.worker?.domicilio}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Fecha Inicio Actividad:</strong> {altaData.credentialSubject?.worker?.fechaInicioActividad}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Grupo Cotización:</strong> {altaData.credentialSubject?.worker?.grupoCotizacion}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Tipo Contrato:</strong> {altaData.credentialSubject?.worker?.tipoContrato}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Coeficiente Jornada:</strong> {altaData.credentialSubject?.worker?.coeficienteJornada}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Ocupación:</strong> {altaData.credentialSubject?.worker?.ocupacion}</p>
-                                                <p className="font-body text-sm text-neutralDark"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.worker?.codigoCuentaCotizacion}</p>
-                                            </div>
+                                            <hr className="my-4 border-gray-300" />
+
+                                            <h4 className="font-headings text-lg text-primary font-semibold mb-3">
+                                                Datos del Empleador
+                                            </h4>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Nombre:</strong> {altaData.credentialSubject?.employer?.employerName}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.employer?.contributionAccountCode}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Régimen:</strong> {altaData.credentialSubject?.employer?.socialSecurityRegime}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Convenios Colectivos:</strong></p>
+                                            <ul className="list-disc pl-5 mb-4">
+                                                {altaData.credentialSubject?.employer?.collectiveAgreements?.map((acuerdo, i) => (
+                                                    <li key={i} className="font-body text-sm text-neutralDark">{acuerdo}</li>
+                                                ))}
+                                            </ul>
+
+                                            <hr className="my-4 border-gray-300" />
+
+                                            <h4 className="font-headings text-lg text-primary font-semibold mb-3">
+                                                Datos del Trabajador
+                                            </h4>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Nombre y Apellidos:</strong> {altaData.credentialSubject?.worker?.nombre} {altaData.credentialSubject?.worker?.apellidos}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>DNI:</strong> {altaData.credentialSubject?.worker?.dni}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>NSS:</strong> {altaData.credentialSubject?.worker?.nss}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Domicilio:</strong> {altaData.credentialSubject?.worker?.domicilio}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Fecha Inicio Actividad:</strong> {altaData.credentialSubject?.worker?.fechaInicioActividad}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Grupo Cotización:</strong> {altaData.credentialSubject?.worker?.grupoCotizacion}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Tipo Contrato:</strong> {altaData.credentialSubject?.worker?.tipoContrato}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Coeficiente Jornada:</strong> {altaData.credentialSubject?.worker?.coeficienteJornada}</p>
+                                            <p className="font-body text-sm text-neutralDark mb-2"><strong>Ocupación:</strong> {altaData.credentialSubject?.worker?.ocupacion}</p>
+                                            <p className="font-body text-sm text-neutralDark"><strong>Código Cuenta Cotización:</strong> {altaData.credentialSubject?.worker?.codigoCuentaCotizacion}</p>
                                         </div>
 
                                         <button
                                             onClick={handleDarseBaja}
-                                            className="mt-4 px-6 py-3 bg-red-600 text-white rounded-full hover:bg-red-500 hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
+                                            className="mt-6 px-6 py-3 bg-red-600 text-white rounded-full hover:bg-red-500 hover:scale-105 transition-transform duration-200 font-body font-semibold text-base"
                                             title="Revocar esta credencial"
                                         >
                                             Darse de Baja (Revocar Credencial)

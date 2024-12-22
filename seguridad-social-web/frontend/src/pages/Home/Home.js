@@ -36,7 +36,7 @@ const Home = () => {
         </Link>
 
         <Link
-          to="/verification-tutorial"
+          to="/verification-mode"
           className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold flex items-center gap-2"
           title="Verificar su identidad con credencial DNI"
         >

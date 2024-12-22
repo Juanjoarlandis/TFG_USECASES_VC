@@ -26,12 +26,16 @@ const issuanceRoutes = require('./src/routes/issuanceRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const revocationRoutes = require('./src/routes/revocationRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const walletRoutes = require('./src/routes/walletRoutes');
+const didRoutes = require('./src/routes/didRoutes');
 
 app.use('/verification', verificationRoutes);
 app.use('/issuance', issuanceRoutes);
 app.use('/user', userRoutes);
 app.use('/revocar', revocationRoutes);
 app.use('/auth', authRoutes);
+app.use('/wallet-api', walletRoutes);
+app.use('/wallet-api', didRoutes);
 
 // Middleware de errores global
 app.use(errorHandler);

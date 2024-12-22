@@ -17,14 +17,14 @@ docker network inspect $VAULT_NETWORK >/dev/null 2>&1 || docker network create $
 docker volume create $VAULT_VOLUME
 
 # Copiar datos al volumen
-docker run --rm -d --name vault-temp -v $VAULT_VOLUME:/vault/file alpine sleep 3600
+docker run -d --name vault-temp -v $VAULT_VOLUME:/vault/file alpine sleep 3600
 docker cp vault-data/. vault-temp:/vault/file/
 # Después de cp:
 docker exec vault-temp chown -R 100:100 /vault/file
 docker exec vault-temp chmod -R 700 /vault/file
 docker stop vault-temp
 
-docker stop vault-temp
+
 
 # Lanzar Vault
 docker run --cap-add=IPC_LOCK --name $VAULT_CONTAINER_NAME -d \

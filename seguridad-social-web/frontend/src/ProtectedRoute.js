@@ -6,7 +6,7 @@ const ProtectedRoute = ({ children }) => {
   const isVerified = useSelector(state => state.auth.isVerified);
 
   if (!isVerified) {
-    return <Navigate to="/register" replace />;
+    return <Navigate to="/verification-mode" replace />;
   }
 
   return children;

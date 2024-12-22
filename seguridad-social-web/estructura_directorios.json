@@ -19,9 +19,21 @@
                         "files": [
                             "issuanceRoutes.js",
                             "userRoutes.js",
+                            "walletRoutes.js",
                             "authRoutes.js",
+                            "didRoutes.js",
                             "verificationRoutes.js",
                             "revocationRoutes.js"
+                        ]
+                    },
+                    {
+                        "name": "services",
+                        "dirs": [],
+                        "files": [
+                            "presentationService.js",
+                            "authService.js",
+                            "HolderSessionManager.js",
+                            "walletService.js"
                         ]
                     },
                     {
@@ -46,7 +58,14 @@
                         "name": "controllers",
                         "dirs": [],
                         "files": [
+                            "offerController.js",
+                            "userInfoController.js",
                             "issuanceController.js",
+                            "pingController.js",
+                            "presentationController.js",
+                            "didController.js",
+                            "authController.js",
+                            "credentialsController.js",
                             "verificationController.js",
                             "revocationController.js",
                             "userController.js"
@@ -60,6 +79,7 @@
         ],
         "files": [
             "package.json",
+            "logger.js",
             "signing_key_base64.txt",
             ".env",
             "Dockerfile",
