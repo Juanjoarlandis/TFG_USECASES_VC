@@ -16,7 +16,8 @@ const UserSchema = new mongoose.Schema({
     altaIssueDate: { type: Date, default: null },
     altaCredentialJti: { type: String, default: null },
     altaCredentialData: { type: Object, default: null },
-    refreshTokens: [String]
+    refreshTokens: [String],
+    flow: { type: String, default: 'manual' }
 }, { timestamps: true });
 
 const encKey = process.env.ENCRYPTION_KEY;

@@ -21,7 +21,8 @@ module.exports = {
                 photo: user.photo,
                 hasAltaCredential: user.hasAltaCredential,
                 altaIssueDate: user.altaIssueDate,
-                altaCredentialData: user.altaCredentialData || null
+                altaCredentialData: user.altaCredentialData || null,
+                flow: user.flow
             };
 
             return res.status(200).json({ user: userResponse });

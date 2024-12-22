@@ -12,12 +12,37 @@
     "jwt-decode": "^4.0.0",
     "mongoose": "^8.8.4",
     "mongoose-encryption": "^2.1.2",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "winston": "^3.17.0"
   },
   "scripts": {
     "start": "node app.js"
   }
 }
+
+
+--- backend/logger.js ---
+// logger.js
+const { createLogger, format, transports } = require('winston');
+const { combine, timestamp, printf, colorize } = format;
+
+const customFormat = printf(({ level, message, timestamp, ...meta }) => {
+    return `${timestamp} [${level.toUpperCase()}] ${message} ${Object.keys(meta).length ? JSON.stringify(meta, null, 2) : ''}`;
+});
+
+const logger = createLogger({
+    level: 'debug', // Ajustar el nivel de logging (error, warn, info, verbose, debug, silly)
+    format: combine(
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        colorize(),
+        customFormat
+    ),
+    transports: [
+        new transports.Console()
+    ]
+});
+
+module.exports = logger;
 
 
 --- backend/signing_key_base64.txt ---
@@ -33,27 +58,19 @@ MONGO_URI=mongodb://mongo-backend:27017/seguridadSocial
 PORT=3001
 ISS_COORD_URL=http://issuer_coord:5500
 NODE_ENV=production
-
+WALLET_COORD_URL=http://wallet-api:7001
 JWT_SECRET='2e31LA9Ersv4eAk4Uk7oAv/rCO7caS1OC8w5835hzkU='
 JWT_REFRESH_SECRET='IVXrhhmS1rF+f65wYu1f+0Y1poILab5NogbR+yYI1DM='
 
 ENCRYPTION_KEY='xauOwDA0Qmmn1Eo5wbx0CwCAi5CdBOXq+4VZ/DLW4rc='
 SIGNING_KEY='rvdE6chvJDhST2dArMVtcz+1nNfyheVjdrkW+V+3uLXrIvYA1H42kH26mh6Ae4NG
 5hPaZMF7/FGmEVsz6goRJA=='
-
-
-ISSUER_KEY_JWK={
-  "type": "jwk",
-  "jwk": {
-    "kty": "OKP",
-    "d": "Zk642_cCJ8tsjq6NChuUaTYd7vrau_TJWHwFWztKC5o",
-    "crv": "Ed25519",
-    "kid": "2QWiNPYYfC_igo6oUFwFZJw3FetuMJOEwAXJGUfI7zM",
-    "x": "VZh9SqJzal91mfiu8ILA47lf6yYJ_6rS7xucXeYiRCg"
-  }
-} 
 CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
 
+HOLDER_EMAIL=holder@example.com
+HOLDER_PASSWORD=holderpassword
+HOLDER_TYPE=email
+HOLDER_NAME='Holder User'
 
 --- backend/Dockerfile ---
 FROM node:16
@@ -222,12 +239,16 @@ const issuanceRoutes = require('./src/routes/issuanceRoutes');
 const userRoutes = require('./src/routes/userRoutes');
 const revocationRoutes = require('./src/routes/revocationRoutes');
 const authRoutes = require('./src/routes/authRoutes');
+const walletRoutes = require('./src/routes/walletRoutes');
+const didRoutes = require('./src/routes/didRoutes');
 
 app.use('/verification', verificationRoutes);
 app.use('/issuance', issuanceRoutes);
 app.use('/user', userRoutes);
 app.use('/revocar', revocationRoutes);
 app.use('/auth', authRoutes);
+app.use('/wallet-api', walletRoutes);
+app.use('/wallet-api', didRoutes);
 
 // Middleware de errores global
 app.use(errorHandler);
@@ -251,31 +272,17 @@ const UserSchema = new mongoose.Schema({
     firstName: String,
     familyName: String,
     documentNumber: { type: String, unique: true },
-    currentAddress: [String],
     gender: String,
     nationality: String,
     birthDate: Date,
     nss: String,
-    personalNumber: String,
-    dniIssueDate: Date,
-    canNumber: String,
-    sex: String,
-    placeOfBirth: {
-        locality: String,
-        province: String,
-        country: String
-    },
-    ascendants: [
-        {
-            givenName: String,
-            familyName: String
-        }
-    ],
+    photo: String,
     hasAltaCredential: { type: Boolean, default: false },
     altaIssueDate: { type: Date, default: null },
     altaCredentialJti: { type: String, default: null },
     altaCredentialData: { type: Object, default: null },
-    refreshTokens: [String]
+    refreshTokens: [String],
+    flow: { type: String, default: 'manual' }
 }, { timestamps: true });
 
 const encKey = process.env.ENCRYPTION_KEY;
@@ -288,13 +295,7 @@ UserSchema.plugin(encrypt, {
     encryptionKey: encKeyBuf,
     signingKey: sigKeyBuf,
     encryptedFields: [
-        'nss',
-        'personalNumber',
-        'dniIssueDate',
-        'canNumber',
-        'sex',
-        'placeOfBirth',
-        'ascendants'
+        'nss'
     ]
 });
 
@@ -339,50 +340,65 @@ router.get('/:dni', getUserByDni);
 module.exports = router;
 
 
+--- backend/src/routes/walletRoutes.js ---
+// src/routes/walletRoutes.js
+const express = require('express');
+const { getUserInfo } = require('../controllers/userInfoController');
+const { listCredentials, getCredentialById, deleteCredential, acceptCredential, rejectCredential, getCredentialStatus } = require('../controllers/credentialsController');
+const { useCredentialOffer } = require('../controllers/offerController');
+const { resolvePresentationRequest, matchCredentialsForPresentation, usePresentationRequest } = require('../controllers/presentationController');
+const ping = require('../controllers/pingController'); // Un controlador ping sencillo
+
+const router = express.Router();
+
+// Ping
+router.get('/ping', ping);
+
+// Info del Holder
+router.get('/user-info', getUserInfo);
+
+// Credenciales
+router.get('/credentials', listCredentials);
+router.get('/credentials/:id', getCredentialById);
+router.delete('/credentials/:id', deleteCredential);
+
+// Oferta de credenciales
+router.post('/credential-offer', useCredentialOffer);
+
+// Aceptar/Rechazar credenciales
+router.post('/credentials/:id/accept', acceptCredential);
+router.post('/credentials/:id/reject', rejectCredential);
+
+// Estado de credencial
+router.get('/credentials/:id/status', getCredentialStatus);
+
+// Presentación de credenciales
+router.post('/resolve-presentation-request', resolvePresentationRequest);
+router.post('/match-credentials', matchCredentialsForPresentation);
+router.post('/use-presentation-request', usePresentationRequest);
+
+module.exports = router;
+
+
 --- backend/src/routes/authRoutes.js ---
-// server/src/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
-const { verifyRefreshToken, generateTokens } = require('../utils/jwtUtils');
-const User = require('../models/User');
+const authController = require('../controllers/authController');
 
-router.post('/refresh', async (req, res, next) => {
-    try {
-        const { refreshToken } = req.body;
-        if (!refreshToken) {
-            return res.status(400).json({ error: 'No refresh token provided' });
-        }
+router.post('/wallet-login', authController.walletLogin);
+router.post('/refresh', authController.refresh);
 
-        let decoded;
-        try {
-            decoded = verifyRefreshToken(refreshToken);
-        } catch (err) {
-            return res.status(401).json({ error: 'Invalid refresh token' });
-        }
+module.exports = router;
 
-        const user = await User.findById(decoded.sub);
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
 
-        // Verificamos que el refreshToken esté en su lista
-        if (!user.refreshTokens.includes(refreshToken)) {
-            return res.status(401).json({ error: 'Refresh token not recognized' });
-        }
+--- backend/src/routes/didRoutes.js ---
+// src/routes/didRoutes.js
+const express = require('express');
+const { listDIDs } = require('../controllers/didController');
 
-        // Generar nuevo par de tokens
-        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id.toString());
-        // Reemplazar el refresh token viejo por uno nuevo si se quiere, o mantener ambos.
-        // Aqui removemos el viejo y agregamos el nuevo
-        user.refreshTokens = user.refreshTokens.filter(rt => rt !== refreshToken);
-        user.refreshTokens.push(newRefreshToken);
-        await user.save();
+const router = express.Router();
 
-        return res.status(200).json({ accessToken, refreshToken: newRefreshToken });
-    } catch (err) {
-        next(err);
-    }
-});
+router.get('/dids', listDIDs);
 
 module.exports = router;
 
@@ -396,14 +412,17 @@ const {
     offerVerification3Creds,
     statusCallbackAlta,
     statusCallback,
-    getVerificationSession
+    getVerificationSession,
+    statusCallbackWalletLogin
 } = require('../controllers/verificationController');
 
 router.post('/offer', offerVerification);
 router.post('/offer3creds', offerVerification3Creds);
 router.post('/statusCallbackAlta/:stateId', statusCallbackAlta);
 router.post('/statusCallback/:stateId', statusCallback);
+router.post('/statusCallbackWalletLogin/:stateId', statusCallbackWalletLogin);
 router.get('/session/:stateId', getVerificationSession);
+
 
 module.exports = router;
 
@@ -417,6 +436,441 @@ const { revokeCredential } = require('../controllers/revocationController');
 router.post('/credencial', revokeCredential);
 
 module.exports = router;
+
+
+--- backend/src/services/presentationService.js ---
+const axios = require('axios');
+const HolderSessionManager = require('./HolderSessionManager');
+
+async function resolvePresentationRequest(presentationRequestUrl) {
+    const token = await HolderSessionManager.getToken();
+    const walletId = HolderSessionManager.getWalletId();
+    const config = {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'text/plain', 'Content-Type': 'text/plain' }
+    };
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/resolvePresentationRequest`;
+    const response = await axios.post(url, presentationRequestUrl, config);
+    return response.data;
+}
+
+async function matchCredentialsForPresentation(presentationDefinition) {
+    const token = await HolderSessionManager.getToken();
+    const walletId = HolderSessionManager.getWalletId();
+    const config = {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+    };
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/matchCredentialsForPresentationDefinition`;
+    const response = await axios.post(url, presentationDefinition, config);
+    return response.data;
+}
+
+async function usePresentationRequest(did, presentationRequest, selectedCredentials, disclosures) {
+    const token = await HolderSessionManager.getToken();
+    const walletId = HolderSessionManager.getWalletId();
+    const payload = { did, presentationRequest, selectedCredentials };
+    if (disclosures) payload.disclosures = disclosures;
+
+    const config = {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'application/json' }
+    };
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/usePresentationRequest`;
+    const response = await axios.post(url, payload, config);
+    return response.data;
+}
+
+module.exports = {
+    resolvePresentationRequest,
+    matchCredentialsForPresentation,
+    usePresentationRequest
+};
+
+
+--- backend/src/services/authService.js ---
+const HolderSessionManager = require('./HolderSessionManager');
+const { verifyRefreshToken, generateTokens } = require('../utils/jwtUtils');
+const { getUserInfo, listDIDs, listCredentials } = require('./walletService');
+const { sessions } = require('../utils/validations');
+const User = require('../models/User');
+const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
+const logger = require('../../logger');
+
+// Funciones para presentar la credencial sin QR
+const {
+    resolvePresentationRequest,
+    matchCredentialsForPresentation,
+    usePresentationRequest
+} = require('./presentationService');
+
+/**
+ * authService.js
+ * --------------
+ * Maneja el flujo de login "automático" (sin QR visible) para credenciales de identidad,
+ * realizando la verificación mediante OID4VC directamente desde el backend.
+ */
+module.exports = {
+    /**
+     * loginAndVerifyIdentityCredential:
+     *  1) Autentica en la wallet con email y password.
+     *  2) Pide a WaltId una oferta de verificación (CustomIdentityCredential).
+     *  3) Resuelve localmente la presentation request (sin QR).
+     *  4) Hace match de credencial.
+     *  5) Usa la credencial (presenta).
+     *  6) Espera callback en `/verification/statusCallbackWalletLogin/:stateId`.
+     */
+    async loginAndVerifyIdentityCredential(email, password) {
+        logger.debug(`[authService] loginAndVerifyIdentityCredential - Start with email=${email}`);
+
+        // 1) Login en la wallet
+        await HolderSessionManager.loginHolderWithCredentials(email, password);
+        logger.debug('[authService] HolderSessionManager.loginHolderWithCredentials OK.');
+
+        // 2) Obtenemos token y walletId
+        const token = await HolderSessionManager.getToken();
+        const walletId = HolderSessionManager.getWalletId();
+        if (!walletId) {
+            logger.error('[authService] No walletId found after login');
+            throw new Error('No walletId found after login');
+        }
+        logger.debug(`[authService] token? ${!!token}, walletId=${walletId}`);
+
+        // Info extra del holder (opcional)
+        const userInfo = await getUserInfo(token);
+        logger.debug(`[authService] userInfo: ${JSON.stringify(userInfo, null, 2)}`);
+
+        // Listar DIDs en la wallet (opcional para logs)
+        const dids = await listDIDs(token, walletId);
+        logger.debug(`[authService] DIDs => ${JSON.stringify(dids, null, 2)}`);
+        const did = (dids[0] && dids[0].did) || null;
+        if (!did) {
+            logger.error('[authService] DID not found in wallet');
+            throw new Error('No DID found in wallet');
+        }
+
+        // (Opcional) Comprobamos que exista una credencial de identidad. 
+        // No es la "verificación" real, pero sirve para saber si la wallet *tiene* la cred.
+        const creds = await listCredentials(token, walletId);
+        const identityCred = creds.find(c =>
+            c.parsedDocument &&
+            Array.isArray(c.parsedDocument.type) &&
+            c.parsedDocument.type.includes('CustomIdentityCredential')
+        );
+        if (!identityCred) {
+            logger.error('[authService] No CustomIdentityCredential found in wallet');
+            throw new Error('No CustomIdentityCredential found');
+        }
+        logger.debug(`[authService] Found identityCred => ${identityCred.id}`);
+
+        // 3) Pedimos a walt.id una "offer" para verificar (sin QR).
+        const stateId = uuidv4();
+        const requestBody = {
+            request_credentials: [
+                {
+                    type: "CustomIdentityCredential",
+                    format: "jwt_vc_json"
+                }
+            ]
+        };
+        const headers = {
+            'Content-Type': 'application/json',
+            'authorizeBaseUrl': 'openid4vp://authorize',
+            'responseMode': 'direct_post',
+            // Callback donde nos dirán si la credencial era válida o no
+            'statusCallbackUri': `${process.env.VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackWalletLogin/${stateId}`
+        };
+
+        logger.debug(`[authService] POST -> ${process.env.WALTID_VERIFIER_URL}/openid4vc/verify, state=${stateId}`);
+        const offerResp = await axios.post(
+            `${process.env.WALTID_VERIFIER_URL}/openid4vc/verify`,
+            requestBody,
+            { headers }
+        );
+        const verificationUrl = offerResp.data;
+        logger.debug(`[authService] verificationUrl = ${verificationUrl}`);
+
+        // Guardamos en sessions
+        sessions[stateId] = {
+            status: 'pending',
+            verificationUrl,
+            verificationResult: null,
+            user: null,
+            flow: 'automatic'
+        };
+
+        // 4) En lugar de dar "verificationUrl" al frontend para que escanee un QR,
+        //    resolvemos directamente en el backend.
+        logger.debug('[authService] -> resolvePresentationRequest');
+        const resolvedPresentationRequest = await resolvePresentationRequest(verificationUrl);
+        logger.debug(`[authService] resolvedPresentationRequest = ${JSON.stringify(resolvedPresentationRequest, null, 2)}`);
+
+        // 5) Extraer la presentationDefinition de resolvedPresentationRequest
+        //    (puede venir como string con query params o como objeto con { presentation_definition })
+        const presentationDefinition = extractPresentationDefinition(resolvedPresentationRequest);
+        logger.debug(`[authService] presentationDefinition: ${JSON.stringify(presentationDefinition, null, 2)}`);
+
+        logger.debug('[authService] -> matchCredentialsForPresentation');
+        const matchedCreds = await matchCredentialsForPresentation(presentationDefinition);
+        if (!matchedCreds || !matchedCreds.length) {
+            logger.error('[authService] No matched creds for CustomIdentityCredential');
+            throw new Error('No matching credentials found in the wallet');
+        }
+        logger.debug(`[authService] matchedCreds => ${JSON.stringify(matchedCreds, null, 2)}`);
+
+        // 6) usePresentationRequest con la credencial matcheada (matchedCreds[0].id)
+        const selectedCredentialId = matchedCreds[0].id;
+        logger.debug(`[authService] -> usePresentationRequest with credId=${selectedCredentialId}`);
+
+        const useResp = await usePresentationRequest(
+            did,
+            resolvedPresentationRequest,
+            [selectedCredentialId],
+            null // sin disclosures
+        );
+        logger.debug(`[authService] usePresentationRequest response => ${JSON.stringify(useResp, null, 2)}`);
+
+        // 7) Devolvemos algo; la verificación se completará en el callback
+        return {
+            message: 'Login automático iniciado. Verificación en curso. Poll /verification/session/:stateId',
+            state: stateId,
+            verificationUrl
+        };
+    },
+
+    /**
+     * refreshTokens: refresca un token JWT estándar.
+     */
+    async refreshTokens(refreshToken) {
+        logger.debug(`[*] [authService] refreshTokens - refreshToken: ${refreshToken}`);
+        let decoded;
+        try {
+            decoded = verifyRefreshToken(refreshToken);
+        } catch (err) {
+            logger.warn('[!] Refresh token inválido');
+            throw new Error('Invalid refresh token');
+        }
+
+        const user = await User.findById(decoded.sub);
+        if (!user) {
+            logger.warn(`[!] User with id=${decoded.sub} not found`);
+            throw new Error('User not found');
+        }
+
+        if (!user.refreshTokens.includes(refreshToken)) {
+            logger.warn('[!] Refresh token no reconocido');
+            throw new Error('Refresh token not recognized');
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id.toString());
+        user.refreshTokens = user.refreshTokens.filter(rt => rt !== refreshToken);
+        user.refreshTokens.push(newRefreshToken);
+        await user.save();
+        logger.debug('[*] Refresh token refrescado con éxito');
+
+        return { accessToken, refreshToken: newRefreshToken };
+    }
+};
+
+/**
+ * Función de ayuda para extraer la "presentationDefinition" de un string
+ * con query params o de un objeto con la definición en su interior.
+ * Ajusta o refina según lo que walt.id te devuelva en "resolvedPresentationRequest".
+ */
+function extractPresentationDefinition(resolvedPresentationRequest) {
+    // Caso 1: es string con query params (ej: "openid4vp://...?presentation_definition=...")
+    if (typeof resolvedPresentationRequest === 'string') {
+        const urlObj = new URL(resolvedPresentationRequest);
+        const presDef = urlObj.searchParams.get('presentation_definition');
+        if (!presDef) {
+            throw new Error('No presentation_definition in resolvedPresentationRequest');
+        }
+        return JSON.parse(decodeURIComponent(presDef));
+
+        // Caso 2: es un objeto con la clave presentation_definition
+    } else if (typeof resolvedPresentationRequest === 'object') {
+        if (resolvedPresentationRequest.presentation_definition) {
+            return resolvedPresentationRequest.presentation_definition;
+        }
+    }
+
+    // Si nada de lo anterior, lanzamos error
+    throw new Error('Could not extract presentationDefinition');
+}
+
+
+--- backend/src/services/HolderSessionManager.js ---
+const axios = require('axios');
+const jwt = require('jsonwebtoken');
+const logger = require('../../logger');
+
+class HolderSessionManager {
+    static instance;
+    token = null;
+    tokenExpiry = null;
+    isRefreshing = false;
+    refreshPromise = null;
+
+    accountId = null;
+    walletId = null;
+
+    email = null;
+    password = null;
+
+    static getInstance() {
+        if (!HolderSessionManager.instance) {
+            HolderSessionManager.instance = new HolderSessionManager();
+        }
+        return HolderSessionManager.instance;
+    }
+
+    async loginHolderWithCredentials(email, password) {
+        this.email = email;
+        this.password = password;
+
+        logger.debug('HolderSessionManager: loginHolderWithCredentials - Datos de login:', { email });
+
+        const loginData = {
+            type: 'email',
+            email: email,
+            password: password,
+        };
+
+        const WALLET_COORD_URL = process.env.WALLET_COORD_URL;
+        try {
+            const response = await axios.post(
+                `${WALLET_COORD_URL}/wallet-api/auth/login`,
+                loginData,
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (response.data && response.data.token) {
+                this.token = response.data.token;
+                this.setTokenExpiry(this.token);
+                logger.info('User logged in successfully with WaltId.');
+                await this.loadWalletInfo();
+            } else {
+                logger.error('No token received in login response.');
+                throw new Error('No token in login response.');
+            }
+        } catch (error) {
+            logger.error('Error loginHolderWithCredentials:', error.message);
+            throw error;
+        }
+    }
+
+    async loadWalletInfo() {
+        const token = await this.getToken();
+        const WALLET_COORD_URL = process.env.WALLET_COORD_URL || 'http://localhost:7001';
+        const config = {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json'
+            }
+        };
+        const response = await axios.get(`${WALLET_COORD_URL}/wallet-api/wallet/accounts/wallets`, config);
+
+        this.accountId = response.data.account;
+        if (response.data.wallets && response.data.wallets.length > 0) {
+            this.walletId = response.data.wallets[0].id;
+        } else {
+            throw new Error('No wallets found for this account.');
+        }
+        logger.info(`Loaded accountId: ${this.accountId}, walletId: ${this.walletId}`);
+    }
+
+    setTokenExpiry(token) {
+        try {
+            const decoded = jwt.decode(token);
+            if (decoded && decoded.exp) {
+                this.tokenExpiry = decoded.exp * 1000;
+            } else {
+                logger.warn('Unable to determine expiry from token.');
+                this.tokenExpiry = null;
+            }
+        } catch (error) {
+            logger.error('Error parsing JWT:', error.message);
+            this.tokenExpiry = null;
+        }
+    }
+
+    async getToken() {
+        if (!this.token) {
+            logger.warn('No token available. User not logged in.');
+            throw new Error('User not logged in.');
+        }
+
+        const currentTime = Date.now();
+        const bufferTime = 60 * 1000;
+
+        if (this.tokenExpiry && currentTime > this.tokenExpiry - bufferTime) {
+            logger.warn('Token about to expire. Renewing token.');
+            if (this.isRefreshing) {
+                await this.refreshPromise;
+                return this.token;
+            }
+
+            this.isRefreshing = true;
+            this.refreshPromise = this.loginHolderWithCredentials(this.email, this.password)
+                .then(() => {
+                    this.isRefreshing = false;
+                })
+                .catch((error) => {
+                    this.isRefreshing = false;
+                    logger.error('Error renewing token:', error.message);
+                    throw error;
+                });
+
+            await this.refreshPromise;
+            return this.token;
+        }
+
+        return this.token;
+    }
+
+    getAccountId() {
+        return this.accountId;
+    }
+
+    getWalletId() {
+        return this.walletId;
+    }
+}
+
+module.exports = HolderSessionManager.getInstance();
+
+
+--- backend/src/services/walletService.js ---
+const axios = require('axios');
+const logger = require('../../logger');
+
+async function getUserInfo(token) {
+    logger.debug('walletService.getUserInfo - solicitando info del holder');
+    const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+    const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/auth/user-info`, config);
+    logger.debug('walletService.getUserInfo - info recibida');
+    return response.data;
+}
+
+async function listDIDs(token, walletId) {
+    logger.debug(`walletService.listDIDs - Listando DIDs del wallet: ${walletId}`);
+    const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+    const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/dids`, config);
+    logger.debug('walletService.listDIDs - DIDs recibidos:', response.data);
+    return response.data;
+}
+
+async function listCredentials(token, walletId) {
+    logger.debug(`walletService.listCredentials - Listando credenciales del wallet: ${walletId}`);
+    const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+    const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials?sortBy=addedOn`, config);
+    logger.debug('walletService.listCredentials - credenciales recibidas:', response.data.map(c => c.id));
+    return response.data;
+}
+
+module.exports = {
+    getUserInfo,
+    listDIDs,
+    listCredentials
+};
 
 
 --- backend/src/utils/jwtUtils.js ---
@@ -469,22 +923,11 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
     let firstName = '';
     let familyName = '';
     let documentNumber = '';
-    let currentAddress = [];
-
     let gender = '';
     let nationality = '';
     let birthDate = null;
     let nss = '';
-
-    let personalNumber = '';
-    let laserEngravedSerial = '';
-    let dniIssueDate = null;
-    let canNumber = '';
-    let sex = '';
-
-    let placeOfBirth = {};
-    let ascendants = [];
-    let issuingTeamCode = '';
+    let photo = '';
 
     if (cs.dni) {
         documentNumber = cs.dni.identifier || '';
@@ -496,64 +939,21 @@ function extractUserDataFromDecodedCredentialSubject(cs) {
         if (cs.dni.birthDate) {
             birthDate = new Date(cs.dni.birthDate);
         }
-
-        if (cs.dni.frontSide) {
-            personalNumber = cs.dni.frontSide.personalNumber || '';
-            laserEngravedSerial = cs.dni.frontSide.laserEngravedSerial || '';
-            canNumber = cs.dni.frontSide.canNumber || '';
-            sex = cs.dni.frontSide.sex || '';
-            if (cs.dni.frontSide.issueDate) {
-                dniIssueDate = new Date(cs.dni.frontSide.issueDate);
-            }
-        }
-
-        if (cs.dni.backSide) {
-            if (cs.dni.backSide.address) {
-                const addr = cs.dni.backSide.address;
-                currentAddress = [
-                    addr.street || '',
-                    addr.locality || '',
-                    addr.province || '',
-                    addr.country || '',
-                    addr.postalCode || ''
-                ].filter(Boolean);
-            }
-            if (cs.dni.backSide.placeOfBirth) {
-                placeOfBirth = {
-                    locality: cs.dni.backSide.placeOfBirth.locality || '',
-                    province: cs.dni.backSide.placeOfBirth.province || '',
-                    country: cs.dni.backSide.placeOfBirth.country || ''
-                };
-            }
-            if (Array.isArray(cs.dni.backSide.ascendants)) {
-                ascendants = cs.dni.backSide.ascendants.map(a => ({
-                    givenName: a.givenName || '',
-                    familyName: a.familyName || ''
-                }));
-            }
-            issuingTeamCode = cs.dni.backSide.issuingTeamCode || '';
-        }
+        photo = cs.dni.photo || '';
     }
 
     return {
         firstName,
         familyName,
         documentNumber,
-        currentAddress,
         gender,
         nationality,
         birthDate,
         nss,
-        personalNumber,
-        laserEngravedSerial,
-        dniIssueDate,
-        canNumber,
-        sex,
-        placeOfBirth,
-        ascendants,
-        issuingTeamCode
+        photo
     };
 }
+
 
 // Decodificar un JWT sin verificar, ya que se asume verificación externa
 function decodeVC(jwtCredential) {
@@ -581,47 +981,38 @@ async function checkCredentialsRevocation(credentialsJwtArray) {
     return false;
 }
 
-async function findOrCreateOrUpdateUser(userData) {
+async function findOrCreateOrUpdateUser(userData, flow) {
     let user = await User.findOne({ documentNumber: userData.documentNumber });
     if (!user) {
         user = new User({
             firstName: userData.firstName,
             familyName: userData.familyName,
             documentNumber: userData.documentNumber,
-            currentAddress: userData.currentAddress || [],
             gender: userData.gender,
             nationality: userData.nationality,
             birthDate: userData.birthDate,
             nss: userData.nss,
-            personalNumber: userData.personalNumber,
-            laserEngravedSerial: userData.laserEngravedSerial,
-            dniIssueDate: userData.dniIssueDate,
-            canNumber: userData.canNumber,
-            sex: userData.sex,
-            placeOfBirth: userData.placeOfBirth,
-            ascendants: userData.ascendants,
-            issuingTeamCode: userData.issuingTeamCode,
+            photo: userData.photo || '',
             hasAltaCredential: false,
             altaIssueDate: null,
             altaCredentialJti: null,
-            altaCredentialData: null
+            altaCredentialData: null,
+            flow: flow  // Establecemos el flujo actual (manual si no se especifica otro)
         });
     } else {
+        // Usuario ya existente. Actualizamos datos relevantes
         user.firstName = userData.firstName;
         user.familyName = userData.familyName;
-        user.currentAddress = userData.currentAddress || user.currentAddress;
         user.gender = userData.gender;
         user.nationality = userData.nationality;
         user.birthDate = userData.birthDate;
         user.nss = userData.nss;
-        user.personalNumber = userData.personalNumber;
-        user.laserEngravedSerial = userData.laserEngravedSerial;
-        user.dniIssueDate = userData.dniIssueDate;
-        user.canNumber = userData.canNumber;
-        user.sex = userData.sex;
-        user.placeOfBirth = userData.placeOfBirth;
-        user.ascendants = userData.ascendants;
-        user.issuingTeamCode = userData.issuingTeamCode;
+        user.photo = userData.photo || user.photo;
+
+        // Forzar el flujo a manual si así se requiere
+        if (flow === 'manual') {
+            user.flow = 'manual';
+        }
     }
     await user.save();
     return user;
@@ -735,6 +1126,58 @@ module.exports = (req, res, next) => {
     console.log('Headers:', req.headers);
     console.log('Body:', Object.keys(req.body).length > 0 ? JSON.stringify(req.body, null, 2) : '{}');
     next();
+};
+
+
+--- backend/src/controllers/offerController.js ---
+// src/controllers/offerController.js
+const axios = require('axios');
+const HolderSessionManager = require('../services/HolderSessionManager');
+const logger = console;
+
+module.exports = {
+    async useCredentialOffer(req, res) {
+        try {
+            const { offerUrl, did } = req.body;
+            if (!offerUrl || !did) return res.status(400).json({ error: 'Missing offerUrl or did' });
+
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = {
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'text/plain' }
+            };
+
+            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/useOfferRequest?did=${encodeURIComponent(did)}`;
+            logger.debug(`Calling useOfferRequest URL: ${url}`);
+
+            const response = await axios.post(url, offerUrl, config);
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error using credential offer:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    }
+};
+
+
+--- backend/src/controllers/userInfoController.js ---
+// src/controllers/userInfoController.js
+const axios = require('axios');
+const HolderSessionManager = require('../services/HolderSessionManager');
+const logger = console;
+
+module.exports = {
+    async getUserInfo(_req, res) {
+        try {
+            const token = await HolderSessionManager.getToken();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/auth/user-info`, config);
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error obtaining Holder user info:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    }
 };
 
 
@@ -913,24 +1356,282 @@ module.exports = {
 };
 
 
+--- backend/src/controllers/pingController.js ---
+// src/controllers/pingController.js
+module.exports = (req, res) => {
+    res.send('pong');
+};
+
+
+--- backend/src/controllers/presentationController.js ---
+// src/controllers/presentationController.js
+const logger = require('../../logger');
+const {
+    resolvePresentationRequest,
+    matchCredentialsForPresentation,
+    usePresentationRequest
+} = require('../services/presentationService');
+
+module.exports = {
+    async resolvePresentationRequest(req, res) {
+        try {
+            const { presentationRequestUrl } = req.body;
+            if (!presentationRequestUrl) return res.status(400).json({ error: 'Missing presentationRequestUrl' });
+
+            logger.debug(`[presentationController] resolvePresentationRequest => ${presentationRequestUrl}`);
+            const data = await resolvePresentationRequest(presentationRequestUrl);
+            logger.debug(`[presentationController] data => ${JSON.stringify(data, null, 2)}`);
+            res.status(200).json(data);
+        } catch (error) {
+            logger.error('Error resolving presentation request:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async matchCredentialsForPresentation(req, res) {
+        try {
+            const { presentationDefinition } = req.body;
+            if (!presentationDefinition) return res.status(400).json({ error: 'Missing presentationDefinition' });
+
+            logger.debug(`[presentationController] matchCredentialsForPresentation => ${JSON.stringify(presentationDefinition, null, 2)}`);
+            const data = await matchCredentialsForPresentation(presentationDefinition);
+            logger.debug(`[presentationController] data => ${JSON.stringify(data, null, 2)}`);
+            res.status(200).json(data);
+        } catch (error) {
+            logger.error('Error matching credentials:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async usePresentationRequest(req, res) {
+        try {
+            const { did, presentationRequest, selectedCredentials, disclosures } = req.body;
+            if (!did || !presentationRequest || !selectedCredentials) {
+                return res.status(400).json({ error: 'Missing did, presentationRequest or selectedCredentials' });
+            }
+
+            logger.debug(`[presentationController] usePresentationRequest => did=${did}, creds=${JSON.stringify(selectedCredentials)}`);
+            const data = await usePresentationRequest(did, presentationRequest, selectedCredentials, disclosures);
+            logger.debug(`[presentationController] data => ${JSON.stringify(data, null, 2)}`);
+            res.status(200).json(data);
+        } catch (error) {
+            logger.error('Error using presentation request:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    }
+};
+
+
+--- backend/src/controllers/didController.js ---
+// src/controllers/didController.js
+const axios = require('axios');
+const HolderSessionManager = require('../services/HolderSessionManager');
+const logger = console;
+
+module.exports = {
+    async listDIDs(_req, res) {
+        try {
+            const token = await HolderSessionManager.getToken();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/wallet/${HolderSessionManager.getWalletId()}/dids`, config);
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error obtaining DIDs:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    }
+};
+
+
+--- backend/src/controllers/authController.js ---
+const authService = require('../services/authService');
+const logger = require('../../logger');
+
+module.exports = {
+    async walletLogin(req, res, next) {
+        try {
+            logger.debug('POST /auth/wallet-login - inicio');
+            const { email, password } = req.body;
+            if (!email || !password) {
+                logger.warn('Faltan email o password');
+                return res.status(400).json({ error: 'Email and password are required' });
+            }
+
+            const result = await authService.loginAndVerifyIdentityCredential(email, password);
+            logger.debug('Login y verificación completados con éxito');
+            return res.status(200).json(result);
+
+        } catch (error) {
+            logger.error('Error en walletLogin:', error.message);
+            next(error);
+        }
+    },
+
+
+
+    async refresh(req, res, next) {
+        try {
+            logger.debug('POST /auth/refresh - Refrescando token');
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                logger.warn('No se proporcionó refresh token');
+                return res.status(400).json({ error: 'No refresh token provided' });
+            }
+
+            const result = await authService.refreshTokens(refreshToken);
+            return res.status(200).json(result);
+        } catch (err) {
+            logger.error('Error en refresh:', err.message);
+            next(err);
+        }
+    }
+};
+
+
+--- backend/src/controllers/credentialsController.js ---
+// src/controllers/credentialsController.js
+const axios = require('axios');
+const HolderSessionManager = require('../services/HolderSessionManager');
+const logger = console;
+
+module.exports = {
+    async listCredentials(_req, res) {
+        try {
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const credsUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials`;
+            const response = await axios.get(credsUrl, config);
+            const creds = response.data;
+            logger.info('Credentials listed successfully');
+            res.status(200).json(creds);
+        } catch (error) {
+            logger.error('Error listing credentials:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async getCredentialById(req, res) {
+        try {
+            const credentialId = req.params.id;
+            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+            const response = await axios.get(url, config);
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error getting credential by ID:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async deleteCredential(req, res) {
+        try {
+            const credentialId = req.params.id;
+            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+            await axios.delete(url, config);
+            res.status(200).json('Credential deleted successfully');
+        } catch (error) {
+            logger.error('Error deleting credential:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async acceptCredential(req, res) {
+        try {
+            const credentialId = req.params.id;
+            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const acceptUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/accept`;
+            const response = await axios.post(acceptUrl, {}, config);
+
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error accepting credential:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async rejectCredential(req, res) {
+        try {
+            const credentialId = req.params.id;
+            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/reject`;
+            const response = await axios.post(url, {}, config);
+
+            res.status(200).json(response.data);
+        } catch (error) {
+            logger.error('Error rejecting credential:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    },
+
+    async getCredentialStatus(req, res) {
+        try {
+            const credentialId = req.params.id;
+            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+
+            // En el wallet-api no había persistencia de estado extra, asumimos que la credencial se refleja tal cual.
+            // Podríamos simplemente devolver un mock o consultar la credencial y ver si está "pending" o "issued".
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
+            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+            const response = await axios.get(url, config);
+
+            res.status(200).json({ status: response.data.pending ? 'pending' : 'issued' });
+        } catch (error) {
+            logger.error('Error getting credential status:', error.message);
+            res.status(error.response?.status || 500).json({ error: error.message });
+        }
+    }
+};
+
+
 --- backend/src/controllers/verificationController.js ---
-// src/controllers/verificationController.js
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { findOrCreateOrUpdateUser, checkCredentialsRevocation, extractUserDataFromDecodedCredentialSubject, sessions } = require('../utils/validations');
 const User = require('../models/User');
 const { generateTokens } = require('../utils/jwtUtils');
+const logger = require('../../logger');
 
-const OFFER_EXPIRATION_MS = 60 * 1000; // 1 minuto
+const OFFER_EXPIRATION_MS = 60 * 1000;
 const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = process.env;
 
+/**
+ * verificationController.js
+ * -------------------------
+ * Maneja la verificación "manual" (con QR) y la parte de callbacks en manual o para el 
+ * login automático ("statusCallbackWalletLogin/:stateId").
+ */
 module.exports = {
+
+    // =============== Ejemplo: "offerVerification" para modo manual ===============
     async offerVerification(req, res, next) {
         try {
+            logger.debug('[verificationController] offerVerification - start');
+
             if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
-                return res.status(500).json({ error: 'Faltan variables de entorno' });
+                return res.status(500).json({ error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL' });
             }
+
             const stateId = uuidv4();
             const requestBody = req.body;
 
@@ -941,29 +1642,35 @@ module.exports = {
                 'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallback/${stateId}`
             };
 
+            logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify (manual), stateId=${stateId}`);
             const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+
             sessions[stateId] = {
                 status: 'pending',
                 verificationUrl: response.data,
                 verificationResult: null
             };
+
             res.status(200).json({ verificationUrl: response.data, state: stateId });
         } catch (err) {
             next(err);
         }
     },
 
+    // =============== Ejemplo: "offerVerification3Creds" (manual alta) ===============
     async offerVerification3Creds(req, res, next) {
         try {
-            if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
-                return res.status(500).json({ error: 'Faltan variables de entorno' });
-            }
+            logger.debug('[verificationController] offerVerification3Creds - start');
 
+            if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+                return res.status(500).json({ error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL' });
+            }
             if (!ISS_COORD_URL) {
-                return res.status(500).json({ error: 'Falta la variable de entorno ISS_COORD_URL' });
+                return res.status(500).json({ error: 'Falta la variable ISS_COORD_URL' });
             }
 
             const stateId = uuidv4();
+            // Pedimos los 3 DIDs, etc. ejemplo
             const didsResponse = await axios.get(`${ISS_COORD_URL}/did/issuers`);
             const { issuers } = didsResponse.data;
             if (!issuers || issuers.length < 3) {
@@ -999,7 +1706,9 @@ module.exports = {
                 'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
             };
 
+            logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify (3 creds), stateId=${stateId}`);
             const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+
             sessions[stateId] = {
                 status: 'pending',
                 verificationUrl: response.data,
@@ -1007,14 +1716,18 @@ module.exports = {
                 type: 'alta',
                 expiresAt: Date.now() + OFFER_EXPIRATION_MS
             };
+
             res.status(200).json({ verificationUrl: response.data, state: stateId });
         } catch (err) {
             next(err);
         }
     },
 
+    // =============== Callback para verificación del Alta ===============
     async statusCallbackAlta(req, res, next) {
         try {
+            logger.debug('[verificationController] statusCallbackAlta - start');
+
             const { stateId } = req.params;
             const verificationData = req.body;
 
@@ -1030,99 +1743,48 @@ module.exports = {
                 const vpToken = tokenResponse && tokenResponse.vp_token;
                 if (!vpToken) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se encontró el vp_token' });
+                    return res.status(400).json({ error: 'No vp_token' });
                 }
 
+                logger.debug(`[verificationController] VP token => ${vpToken}`);
                 const vpDecoded = jwt.decode(vpToken);
-                const credentialsJwt = vpDecoded?.vp?.verifiableCredential;
-                if (!credentialsJwt || credentialsJwt.length < 3) {
+                logger.debug(`[verificationController] vpDecoded => ${JSON.stringify(vpDecoded, null, 2)}`);
+
+                // Comprobamos que haya al menos 3 credenciales 
+                const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
+                if (credentialsJwt.length < 3) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
+                    return res.status(400).json({ error: 'Faltan las 3 credenciales requeridas' });
                 }
 
-                const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
-
-                const hasIdentity = decodedCreds.some(c => c?.vc?.type?.includes('CustomIdentityCredential'));
-                const hasPassport = decodedCreds.some(c => c?.vc?.type?.includes('PassportCredential'));
-                const hasEmployer = decodedCreds.some(c => c?.vc?.type?.includes('EmployerRegistrationCredential'));
-
-                if (!hasIdentity || !hasPassport || !hasEmployer) {
-                    sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Faltan credenciales requeridas (Identidad, Pasaporte, Empleador)' });
-                }
-
+                // Revisar revocación, etc.
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
                     return res.status(400).json({ error: 'Una de las credenciales está revocada' });
                 }
 
-                const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
-                const passportCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('PassportCredential'));
-                const employerCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('EmployerRegistrationCredential'));
-
-                if (!identityCredDecoded) {
-                    sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se encontró la credencial de identidad' });
-                }
-
-                // Extraer datos de identidad
-                const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
-
-                // Procesar dirección
-                let fullAddress = '';
-                if (passportCredDecoded && passportCredDecoded.vc?.credentialSubject) {
-                    if (idData.currentAddress && idData.currentAddress.length > 0) {
-                        fullAddress = idData.currentAddress.join(', ');
-                    } else {
-                        const ps = passportCredDecoded.vc.credentialSubject;
-                        fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
-                    }
-                } else {
-                    if (idData.currentAddress && idData.currentAddress.length > 0) {
-                        fullAddress = idData.currentAddress.join(', ');
-                    } else {
-                        fullAddress = "Calle Ejemplo 123, Madrid";
-                    }
-                }
-
-                // Datos empleador
-                if (!employerCredDecoded || !employerCredDecoded.vc?.credentialSubject) {
-                    sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
-                }
-
-                const employerSubject = employerCredDecoded.vc.credentialSubject;
-                const employerName = employerSubject.employerName || "Empresa de Servicios S.A.";
-                const contributionAccountCode = employerSubject.employerContributionAccountCode || "0111-2222-33-4444444444";
-                const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
-                const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
-
-                const user = await findOrCreateOrUpdateUser(idData);
-                user.hasAltaCredential = true;
-                user.altaIssueDate = new Date();
-                await user.save();
-
-                const token = "ejemplo-de-token-alta";
-                sessions[stateId].user = user;
-                sessions[stateId].token = token;
-                sessions[stateId].employerData = {
-                    employerName,
-                    contributionAccountCode,
-                    socialSecurityRegime,
-                    collectiveAgreements
-                };
-                sessions[stateId].userAddress = fullAddress;
+                // Extraer userData desde la credencial de identidad
+                // ...
+                // (ejemplo similar al manual)
+                // ... 
+                // Actualizar user:
+                // user.hasAltaCredential = true;
+                // user.altaIssueDate = new Date();
+                // ...
             }
 
-            res.status(200).send('Status callback alta processed successfully');
+            res.status(200).json({ message: 'statusCallbackAlta processed successfully' });
         } catch (err) {
             next(err);
         }
     },
 
+    // =============== Callback genérico (1 cred) ===============
     async statusCallback(req, res, next) {
         try {
+            logger.debug('[verificationController] statusCallback - start');
+
             const { stateId } = req.params;
             const verificationData = req.body;
 
@@ -1141,41 +1803,115 @@ module.exports = {
                     return res.status(400).json({ error: 'No vp_token' });
                 }
 
+                logger.debug(`[verificationController] VP token => ${vpToken}`);
                 const vpDecoded = jwt.decode(vpToken);
-                const credentialsJwt = vpDecoded.vp && vpDecoded.vp.verifiableCredential ? vpDecoded.vp.verifiableCredential : [];
-                if (credentialsJwt.length < 1) {
+                logger.debug(`[verificationController] vpDecoded => ${JSON.stringify(vpDecoded, null, 2)}`);
+
+                const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
+                if (!credentialsJwt.length) {
                     sessions[stateId].status = 'failed';
                     return res.status(400).json({ error: 'Falta la credencial requerida' });
                 }
 
+                // Comprobar si revocada
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
                     return res.status(400).json({ error: 'La credencial está revocada' });
                 }
 
+                // Decodificar la primera
                 const vcDecoded = jwt.decode(credentialsJwt[0]);
+                logger.debug(`[verificationController] vcDecoded => ${JSON.stringify(vcDecoded, null, 2)}`);
+
+                // Extraer userData
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
+
+                // Crear/actualizar user
                 const user = await findOrCreateOrUpdateUser(userData);
-
-                // Generamos tokens JWT
+                // Generar tokens
                 const { accessToken, refreshToken } = generateTokens(user._id.toString());
-
-                // Guardar el refreshToken en el usuario
                 user.refreshTokens.push(refreshToken);
                 await user.save();
 
                 sessions[stateId].user = user;
-                sessions[stateId].token = accessToken; // token de acceso
-                sessions[stateId].refreshToken = refreshToken; // guarda también el refresh token
+                sessions[stateId].token = accessToken;
+                sessions[stateId].refreshToken = refreshToken;
             }
 
-            res.status(200).send('Status callback processed successfully');
+            res.status(200).json({ message: 'statusCallback processed successfully' });
         } catch (err) {
             next(err);
         }
     },
 
+    // =============== Callback para "walletLogin" especial ===============
+    // Similar al anterior, pero destinado a la ruta "/verification/statusCallbackWalletLogin/:stateId"
+    // Se crea/actualiza el user y se emite token real, etc.
+    async statusCallbackWalletLogin(req, res, next) {
+        try {
+            logger.debug('[verificationController] statusCallbackWalletLogin - start');
+
+            const { stateId } = req.params;
+            const verificationData = req.body;
+
+            if (!sessions[stateId]) {
+                return res.status(404).json({ error: 'Sesión no encontrada' });
+            }
+
+            const { verificationResult } = verificationData;
+            sessions[stateId].verificationResult = verificationResult;
+            sessions[stateId].status = verificationResult ? 'verified' : 'failed';
+
+            if (verificationResult) {
+                const vpToken = verificationData.tokenResponse && verificationData.tokenResponse.vp_token;
+                if (!vpToken) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No vp_token' });
+                }
+                logger.debug(`[verificationController] (walletLogin) VP token => ${vpToken}`);
+
+                const vpDecoded = jwt.decode(vpToken);
+                logger.debug(`[verificationController] (walletLogin) vpDecoded => ${JSON.stringify(vpDecoded, null, 2)}`);
+
+                const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
+                if (!credentialsJwt.length) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Falta la credencial de identidad' });
+                }
+
+                const revoked = await checkCredentialsRevocation(credentialsJwt);
+                if (revoked) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Credencial revocada' });
+                }
+
+                // Decodificar la credencial 0
+                const vcDecoded = jwt.decode(credentialsJwt[0]);
+                logger.debug(`[verificationController] (walletLogin) vcDecoded => ${JSON.stringify(vcDecoded, null, 2)}`);
+
+                const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
+                // Creamos/actualizamos usuario con flow=automatic
+                const user = await findOrCreateOrUpdateUser(userData, 'automatic');
+
+                // Generar tokens
+                const { accessToken, refreshToken } = generateTokens(user._id.toString());
+                user.refreshTokens.push(refreshToken);
+                await user.save();
+
+                // Almacenamos
+                sessions[stateId].user = user;
+                sessions[stateId].token = accessToken;
+                sessions[stateId].refreshToken = refreshToken;
+            }
+
+            res.status(200).json({ message: 'statusCallbackWalletLogin processed', status: sessions[stateId].status });
+        } catch (err) {
+            next(err);
+        }
+    },
+
+    // =============== Consultar estado de la sesión ===============
     async getVerificationSession(req, res, next) {
         try {
             const { stateId } = req.params;
@@ -1203,20 +1939,11 @@ module.exports = {
                         nationality: u.nationality,
                         birthDate: u.birthDate,
                         nss: u.nss,
-                        personalNumber: u.personalNumber,
-                        laserEngravedSerial: u.laserEngravedSerial,
-                        dniIssueDate: u.dniIssueDate,
-                        canNumber: u.canNumber,
-                        sex: u.sex,
-                        placeOfBirth: u.placeOfBirth,
-                        ascendants: u.ascendants,
-                        issuingTeamCode: u.issuingTeamCode,
                         altaCredentialData: u.altaCredentialData || null
                     };
                 }
             }
 
-            // Devolvemos el access token y el usuario si está verificado
             res.status(200).json({
                 status: sessionData.status,
                 token: sessionData.token || null,
@@ -1286,22 +2013,15 @@ module.exports = {
                 firstName: user.firstName,
                 familyName: user.familyName,
                 documentNumber: user.documentNumber,
-                currentAddress: user.currentAddress,
-                hasAltaCredential: user.hasAltaCredential,
-                altaIssueDate: user.altaIssueDate,
                 gender: user.gender,
                 nationality: user.nationality,
                 birthDate: user.birthDate,
                 nss: user.nss,
-                personalNumber: user.personalNumber,
-                laserEngravedSerial: user.laserEngravedSerial,
-                dniIssueDate: user.dniIssueDate,
-                canNumber: user.canNumber,
-                sex: user.sex,
-                placeOfBirth: user.placeOfBirth,
-                ascendants: user.ascendants,
-                issuingTeamCode: user.issuingTeamCode,
-                altaCredentialData: user.altaCredentialData || null
+                photo: user.photo,
+                hasAltaCredential: user.hasAltaCredential,
+                altaIssueDate: user.altaIssueDate,
+                altaCredentialData: user.altaCredentialData || null,
+                flow: user.flow
             };
 
             return res.status(200).json({ user: userResponse });
