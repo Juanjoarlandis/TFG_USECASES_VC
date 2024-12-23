@@ -126,13 +126,21 @@ export const issue = async (req: Request, res: Response) => {
       throw new MissingParameterError('Missing parameter: type');
     }
 
-    const issuerLabel = credentialType.toLowerCase() === 'identity' ? 'issuer1'
-      : credentialType.toLowerCase() === 'passport' ? 'issuer2'
-      : credentialType.toLowerCase() === 'work' ? 'issuer3'
-      : null;
+    // 1) Vinculamos cada 'type' con un issuerLabel
+    //    'identity2' será tratado de forma parecida a 'identity', pero con cambios en la imagen.
+    const issuerLabel =
+      credentialType.toLowerCase() === 'identity'
+        ? 'issuer1'
+        : credentialType.toLowerCase() === 'identity2'
+        ? 'issuer1'  // Usamos también 'issuer1', pero luego en la construcción de credData cambiaremos la imagen
+        : credentialType.toLowerCase() === 'passport'
+        ? 'issuer2'
+        : credentialType.toLowerCase() === 'work'
+        ? 'issuer3'
+        : null;
 
     if (!issuerLabel) {
-      throw new Error('Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".');
+      throw new Error('Tipo de credencial no soportado. Use "identity", "identity2", "passport" o "work".');
     }
 
     const didRecord = await didRepository.getDIDByLabel(issuerLabel);
@@ -143,6 +151,8 @@ export const issue = async (req: Request, res: Response) => {
     const issuerDid = didRecord.issuerDid;
     const issuerKey = didRecord.issuerKey;
 
+    // 2) Llamamos al servicio que emite la credencial (CredentialService), 
+    //    pasándole 'identity2' como credentialType si aplica.
     const responseData = await credentialService.issueCredential(credentialType, issuerDid, issuerKey);
     res.status(200).json(responseData);
   } catch (error: any) {
@@ -156,7 +166,6 @@ export const issue = async (req: Request, res: Response) => {
     }
   }
 };
-
 /**
  * Procesa una devolución de estado (callback) desde el servicio de emisión,
  * actualizando el estado de la credencial a 'issued'.
