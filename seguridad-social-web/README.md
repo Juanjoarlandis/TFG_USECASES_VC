@@ -147,7 +147,7 @@ You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received w
    - Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
    - Log in or interact with the front-end features.  
    - The system will now be aware of your credentials as stored in the wallet.
-   - We have prepared a demo video showing the user flows (https://youtu.be/GifFznLlS4c)
+   - We have prepared a demo video showing the user flows (https://youtu.be/OttS8KTepNE)
 
 ---
 
