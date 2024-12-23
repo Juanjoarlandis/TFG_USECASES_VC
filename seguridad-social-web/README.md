@@ -112,26 +112,27 @@ These credentials are issued by the `issuer_coord` module via specific HTTP endp
 
    **Repeat** for each credential type (`identity`, `passport`, `work`).
 
-## 3. Acceder a la Wallet
+## 3. Access the Wallet
 
-Una vez tengas las URL de emisión (offerUrl) que obtuviste en el paso anterior, procede a:
+Once you have the issuance URLs (the `offerUrl`) obtained in the previous step, follow these steps:
 
-1. Abrir tu navegador y dirigirte a [http://localhost:7101](http://localhost:7101).
-2. Crear una cuenta (si no la tienes) y luego inicia sesión en la wallet.
+1. Open your browser and go to [http://localhost:7101](http://localhost:7101).
+2. Create an account (if you haven't already) and then log in to the wallet.
 
-**Capturas de referencia para la Wallet:**
+**Reference screenshots for the Wallet:**
 
-![Wallet Step 1](docs/images/Wallet/Wallet-1.png "Wallet-1: Pantalla inicial para registro o acceso")
+Sign up:
+![Wallet Step 1](docs/images/Wallet/Wallet-1.png "Wallet-1: Example of the registration/login form")
+Click on "Receive Credential"
+![Wallet Step 2](docs/images/Wallet/Wallet-2.png "Wallet-2: Wallet Dashboard")
+Select "Manual" and paste de offerURL obtained in previous steps
+![Wallet Step 3](docs/images/Wallet/Wallet-3.png "Wallet-3: Credential emission URL")
+Accept the credential
+![Wallet Step 4](docs/images/Wallet/Wallet-4.png "Wallet-4: Accept the credentials")
+Credential has been added
+![Wallet Step 5](docs/images/Wallet/Wallet-5.png "Wallet-5: Credentials confirmation and final status")
 
-![Wallet Step 2](docs/images/Wallet/Wallet-2.png "Wallet-2: Ejemplo de formulario de registro/ingreso")
-
-![Wallet Step 3](docs/images/Wallet/Wallet-3.png "Wallet-3: Vista de la wallet una vez dentro")
-
-![Wallet Step 4](docs/images/Wallet/Wallet-4.png "Wallet-4: Presentar URLs y descargar credenciales")
-
-![Wallet Step 5](docs/images/Wallet/Wallet-5.png "Wallet-5: Confirmación de credenciales y estado final")
-
-Deberás **presentar los 3 URLs** (los `issuanceUrl` o `offerUrl`) que recibiste al hacer las peticiones `POST` al endpoint `http://localhost:5500/credentials/issue`. De esta forma podrás obtener las tres credenciales (`work`, `identity`, `passport`) dentro de tu wallet.
+You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received when making the `POST` requests to `http://localhost:5500/credentials/issue`. This will allow you to obtain the three credentials (`work`, `identity`, and `passport`) in your wallet.
 
 4. **Use the Web Application**  
    - Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
