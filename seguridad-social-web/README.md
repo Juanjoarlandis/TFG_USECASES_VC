@@ -123,23 +123,23 @@ Once you have the issuance URLs (the `offerUrl`) obtained in the previous step, 
 
 Sign up:
 
-![Wallet Step 1](docs/images/Wallet/Wallet-1.png "Wallet-1: Example of the registration/login form")
+<img src="docs/images/Wallet/Wallet-1.png" alt="Wallet Step 1" title="Wallet-1: Example of the registration/login form" width="300" />
 
 Click on "Receive Credential"
 
-![Wallet Step 2](docs/images/Wallet/Wallet-2.png "Wallet-2: Wallet Dashboard")
+<img src="docs/images/Wallet/Wallet-2.png" alt="Wallet Step 2" title="Wallet-2: Wallet Dashboard" width="300" />
 
-Select "Manual" and paste de offerURL obtained in previous steps
+Select "Manual" and paste the offerURL obtained in previous steps
 
-![Wallet Step 3](docs/images/Wallet/Wallet-3.png "Wallet-3: Credential emission URL")
+<img src="docs/images/Wallet/Wallet-3.png" alt="Wallet Step 3" title="Wallet-3: Credential emission URL" width="300" />
 
 Accept the credential
 
-![Wallet Step 4](docs/images/Wallet/Wallet-4.png "Wallet-4: Accept the credentials")
+<img src="docs/images/Wallet/Wallet-4.png" alt="Wallet Step 4" title="Wallet-4: Accept the credentials" width="300" />
 
 Credential has been added
 
-![Wallet Step 5](docs/images/Wallet/Wallet-5.png "Wallet-5: Credentials confirmation and final status")
+<img src="docs/images/Wallet/Wallet-5.png" alt="Wallet Step 5" title="Wallet-5: Credentials confirmation and final status" width="300" />
 
 You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received when making the `POST` requests to `http://localhost:5500/credentials/issue`. This will allow you to obtain the three credentials (`work`, `identity`, and `passport`) in your wallet.
 
