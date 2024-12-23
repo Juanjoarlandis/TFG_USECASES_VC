@@ -123,23 +123,23 @@ Once you have the issuance URLs (the `offerUrl`) obtained in the previous step, 
 
 Sign up:
 
-<img src="docs/images/Wallet/Wallet-1.png" alt="Wallet Step 1" title="Wallet-1: Example of the registration/login form" width="300" />
+<img src="docs/images/Wallet/Wallet-1.png" alt="Wallet Step 1" title="Wallet-1: Example of the registration/login form" width="500" />
 
 Click on "Receive Credential"
 
-<img src="docs/images/Wallet/Wallet-2.png" alt="Wallet Step 2" title="Wallet-2: Wallet Dashboard" width="300" />
+<img src="docs/images/Wallet/Wallet-2.png" alt="Wallet Step 2" title="Wallet-2: Wallet Dashboard" width="500" />
 
 Select "Manual" and paste the offerURL obtained in previous steps
 
-<img src="docs/images/Wallet/Wallet-3.png" alt="Wallet Step 3" title="Wallet-3: Credential emission URL" width="300" />
+<img src="docs/images/Wallet/Wallet-3.png" alt="Wallet Step 3" title="Wallet-3: Credential emission URL" width="500" />
 
 Accept the credential
 
-<img src="docs/images/Wallet/Wallet-4.png" alt="Wallet Step 4" title="Wallet-4: Accept the credentials" width="300" />
+<img src="docs/images/Wallet/Wallet-4.png" alt="Wallet Step 4" title="Wallet-4: Accept the credentials" width="500" />
 
 Credential has been added
 
-<img src="docs/images/Wallet/Wallet-5.png" alt="Wallet Step 5" title="Wallet-5: Credentials confirmation and final status" width="300" />
+<img src="docs/images/Wallet/Wallet-5.png" alt="Wallet Step 5" title="Wallet-5: Credentials confirmation and final status" width="500" />
 
 You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received when making the `POST` requests to `http://localhost:5500/credentials/issue`. This will allow you to obtain the three credentials (`work`, `identity`, and `passport`) in your wallet.
 
@@ -147,6 +147,7 @@ You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received w
    - Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
    - Log in or interact with the front-end features.  
    - The system will now be aware of your credentials as stored in the wallet.
+   - We have prepared a demo video showing the user flows (https://youtu.be/GifFznLlS4c)
 
 ---
 
