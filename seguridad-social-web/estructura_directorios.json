@@ -1,174 +1,440 @@
 [
     {
-        "name": "frontend",
+        "name": "vault-init",
         "dirs": [
             {
-                "name": "public",
+                "name": "credentials",
                 "dirs": [],
                 "files": [
-                    "favicon.ico",
-                    "index.html",
-                    "dni.webp",
-                    "robots.txt",
-                    "manifest.json",
-                    "logo192.png",
-                    "logo512.png"
+                    "unseal-keys.txt",
+                    "root-token.txt"
                 ]
             },
             {
-                "name": "src",
+                "name": "env",
+                "dirs": [],
+                "files": [
+                    "vault_approle.env"
+                ]
+            },
+            {
+                "name": "vault-data",
                 "dirs": [
                     {
-                        "name": "assets",
-                        "dirs": [],
-                        "files": [
-                            "escudo_espana.png",
-                            "escudo_espana.avif"
-                        ]
-                    },
-                    {
-                        "name": "store",
-                        "dirs": [],
-                        "files": [
-                            "authSlice.js",
-                            "store.js"
-                        ]
-                    },
-                    {
-                        "name": "context",
-                        "dirs": [],
-                        "files": [
-                            "AuthContext.js"
-                        ]
-                    },
-                    {
-                        "name": "services",
-                        "dirs": [],
-                        "files": [
-                            "api.js"
-                        ]
-                    },
-                    {
-                        "name": "utils",
-                        "dirs": [],
-                        "files": [
-                            "validation.js"
-                        ]
-                    },
-                    {
-                        "name": "pages",
+                        "name": "auth",
                         "dirs": [
                             {
-                                "name": "Alta",
-                                "dirs": [],
+                                "name": "2ed45eff-867b-d72d-e775-ee1c99293966",
+                                "dirs": [
+                                    {
+                                        "name": "secret_id",
+                                        "dirs": [
+                                            {
+                                                "name": "076a7fd3fd87f48589a901bdc1b1c9b97640bc5a6d9a9160c75b05b64f06c20c",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_f511f12984e1e600e9e31be92096ca19cb0812f3276028d203b8b7e830ee9825"
+                                                ]
+                                            },
+                                            {
+                                                "name": "7ccd304c0330dc30a55eb02311bddd18d94ed589c24ed5a9a8d108b3c835536c",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_9c187478ef0cd3b46d2a59968cf02a9ca530bd9fd09adc7a3799f5aa7aba8f4b"
+                                                ]
+                                            },
+                                            {
+                                                "name": "02d518cee7db928f53b3b601b021be2dbf6b2f1f23abb391af1e930c0f04b029",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_9d2380b4bdfee1242a0442ba3dffa873dd9d183e8bc2bcefa6f45ae66957f1e6"
+                                                ]
+                                            }
+                                        ],
+                                        "files": []
+                                    },
+                                    {
+                                        "name": "role",
+                                        "dirs": [],
+                                        "files": [
+                                            "_issuer3-role",
+                                            "_issuer1-role",
+                                            "_issuer2-role"
+                                        ]
+                                    },
+                                    {
+                                        "name": "role_id",
+                                        "dirs": [],
+                                        "files": [
+                                            "_d232b498b0440715f415b6db47af3913512a308e2e80cd996ed2229ded8961ac",
+                                            "_d72715e08f35b7333da0a8fac0952a8fbd966def3b527e1b84b68bad3817dcbf",
+                                            "_47d8b9cbed11ac06d35f5660fae846fa5e8ef4f7aaa81dafa4118671d11e6ca3"
+                                        ]
+                                    },
+                                    {
+                                        "name": "accessor",
+                                        "dirs": [],
+                                        "files": [
+                                            "_fc249eaf482fba2821b87a5a7dd5e18316c1c3e70fb9e4e04524143cb62c442d",
+                                            "_462ea8069ae30c263dea89db4646f7182a0c180a9108a49c493486a6b1f2ae0c",
+                                            "_b30b4a345d0d4addd0672ff5d7a929b3191126d34fec7d053b48bbaaa8c2aed9"
+                                        ]
+                                    }
+                                ],
                                 "files": [
-                                    "Alta.js",
-                                    "AltaEmission.js",
-                                    "AltaAutomatica.js",
-                                    "LoadingEmission.js",
-                                    "AltaAutomaticaInfo.js"
-                                ]
-                            },
-                            {
-                                "name": "LoginWithWallet",
-                                "dirs": [],
-                                "files": [
-                                    "LoadingVerification.js",
-                                    "LoginWithWallet.js"
-                                ]
-                            },
-                            {
-                                "name": "VerificationTutorial",
-                                "dirs": [],
-                                "files": [
-                                    "VerificationTutorial.js"
-                                ]
-                            },
-                            {
-                                "name": "Dashboard",
-                                "dirs": [],
-                                "files": [
-                                    "Dashboard.js"
-                                ]
-                            },
-                            {
-                                "name": "VerificationMethodSelect",
-                                "dirs": [],
-                                "files": [
-                                    "VerificationMethodSelect.js"
-                                ]
-                            },
-                            {
-                                "name": "Home",
-                                "dirs": [],
-                                "files": [
-                                    "Home.css",
-                                    "Home.js"
-                                ]
-                            },
-                            {
-                                "name": "Register",
-                                "dirs": [],
-                                "files": [
-                                    "Register.js"
+                                    "_salt"
                                 ]
                             }
                         ],
                         "files": []
                     },
                     {
-                        "name": "components",
+                        "name": "logical",
                         "dirs": [
                             {
-                                "name": "Footer",
-                                "dirs": [],
-                                "files": [
-                                    "Footer.js",
-                                    "Footer.css"
-                                ]
+                                "name": "0f0fb6e0-e9bf-f48b-c9ba-f541a6068cb2",
+                                "dirs": [
+                                    {
+                                        "name": "archive",
+                                        "dirs": [],
+                                        "files": [
+                                            "_k-1457400921",
+                                            "_k1523025282",
+                                            "_k554339196",
+                                            "_issuer1-key",
+                                            "_k1541557390",
+                                            "_k1570441030",
+                                            "_k801555813",
+                                            "_k-249665925",
+                                            "_k-1841698174",
+                                            "_k-2005386895",
+                                            "_k-675621697",
+                                            "_k422189326",
+                                            "_k-1845733710",
+                                            "_k1513561502",
+                                            "_k377286243",
+                                            "_k301217202",
+                                            "_k1952702099",
+                                            "_k-733013224",
+                                            "_k598961505",
+                                            "_k-1725601507",
+                                            "_k1451672102",
+                                            "_k1520985950",
+                                            "_k1251095290",
+                                            "_k1148415637",
+                                            "_k1547824921",
+                                            "_k911356381",
+                                            "_k413223053",
+                                            "_k389985097",
+                                            "_k-592308784",
+                                            "_k-231926063",
+                                            "_k-70889418",
+                                            "_k-1128099292",
+                                            "_k-719151927",
+                                            "_issuer3-key",
+                                            "_k-252926197",
+                                            "_k-1995332144",
+                                            "_k-1588454116",
+                                            "_k422806680",
+                                            "_issuer2-key",
+                                            "_k1033623384",
+                                            "_k-1663428341",
+                                            "_k2129312620",
+                                            "_k635565746",
+                                            "_k-922356794",
+                                            "_k-1734994187",
+                                            "_k966187265",
+                                            "_k-1933561668",
+                                            "_k1418972397",
+                                            "_k-1596237066"
+                                        ]
+                                    },
+                                    {
+                                        "name": "policy",
+                                        "dirs": [],
+                                        "files": [
+                                            "_k-1457400921",
+                                            "_k1523025282",
+                                            "_k554339196",
+                                            "_issuer1-key",
+                                            "_k1541557390",
+                                            "_k1570441030",
+                                            "_k801555813",
+                                            "_k-249665925",
+                                            "_k-1841698174",
+                                            "_k-2005386895",
+                                            "_k-675621697",
+                                            "_k422189326",
+                                            "_k-1845733710",
+                                            "_k1513561502",
+                                            "_k377286243",
+                                            "_k301217202",
+                                            "_k1952702099",
+                                            "_k-733013224",
+                                            "_k598961505",
+                                            "_k-1725601507",
+                                            "_k1451672102",
+                                            "_k1520985950",
+                                            "_k1251095290",
+                                            "_k1148415637",
+                                            "_k1547824921",
+                                            "_k911356381",
+                                            "_k413223053",
+                                            "_k389985097",
+                                            "_k-592308784",
+                                            "_k-231926063",
+                                            "_k-70889418",
+                                            "_k-1128099292",
+                                            "_k-719151927",
+                                            "_issuer3-key",
+                                            "_k-252926197",
+                                            "_k-1995332144",
+                                            "_k-1588454116",
+                                            "_k422806680",
+                                            "_issuer2-key",
+                                            "_k1033623384",
+                                            "_k-1663428341",
+                                            "_k2129312620",
+                                            "_k635565746",
+                                            "_k-922356794",
+                                            "_k-1734994187",
+                                            "_k966187265",
+                                            "_k-1933561668",
+                                            "_k1418972397",
+                                            "_k-1596237066"
+                                        ]
+                                    }
+                                ],
+                                "files": []
                             },
                             {
-                                "name": "Header",
-                                "dirs": [],
-                                "files": [
-                                    "Header.js",
-                                    "Header.css"
-                                ]
+                                "name": "70cc0cd1-d3c8-32ba-a8cb-5d314660f2aa",
+                                "dirs": [
+                                    {
+                                        "name": "oidc_provider",
+                                        "dirs": [
+                                            {
+                                                "name": "assignment",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_allow_all"
+                                                ]
+                                            },
+                                            {
+                                                "name": "provider",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_default"
+                                                ]
+                                            }
+                                        ],
+                                        "files": []
+                                    },
+                                    {
+                                        "name": "oidc_tokens",
+                                        "dirs": [
+                                            {
+                                                "name": "public_keys",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_3f3f4b84-1e60-c7af-9f07-8aea84625f80",
+                                                    "_aeff1022-a874-3ec2-0653-141acce3fda5"
+                                                ]
+                                            },
+                                            {
+                                                "name": "named_keys",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_default"
+                                                ]
+                                            }
+                                        ],
+                                        "files": []
+                                    },
+                                    {
+                                        "name": "packer",
+                                        "dirs": [
+                                            {
+                                                "name": "buckets",
+                                                "dirs": [],
+                                                "files": [
+                                                    "_17",
+                                                    "_10",
+                                                    "_183"
+                                                ]
+                                            }
+                                        ],
+                                        "files": []
+                                    }
+                                ],
+                                "files": []
                             }
                         ],
                         "files": []
+                    },
+                    {
+                        "name": "sys",
+                        "dirs": [
+                            {
+                                "name": "counters",
+                                "dirs": [
+                                    {
+                                        "name": "activity",
+                                        "dirs": [],
+                                        "files": [
+                                            "_acme-regeneration"
+                                        ]
+                                    }
+                                ],
+                                "files": []
+                            },
+                            {
+                                "name": "token",
+                                "dirs": [
+                                    {
+                                        "name": "id",
+                                        "dirs": [],
+                                        "files": [
+                                            "_h0d86e11e42c98a67848b092496c714e6c9a78364380f929a8accc34065e00102",
+                                            "_h967123d1d3fd5e1553b52209d9f13ccb215aa0feefdb0fea444a37f872d6bb35",
+                                            "_h6c9c28abc4d3180ce135681ef935948a7379eac633c1a97957ff696286523657",
+                                            "_h36bff1412b14bb3c79bbd863e84aba7fca81c33b97a7ddecd0435af900b979c6"
+                                        ]
+                                    },
+                                    {
+                                        "name": "accessor",
+                                        "dirs": [],
+                                        "files": [
+                                            "_4c2b2744e4e65ba2cb4a3e0214902dd5313ea5c8",
+                                            "_37e8b9c9ab268981590f0bb095d25f542a62d9c3",
+                                            "_95cb3cda95619fd000dc621ce9a592943833032e",
+                                            "_f659e059a3f9cf84161d67ffb062b45178c4439e"
+                                        ]
+                                    }
+                                ],
+                                "files": [
+                                    "_salt"
+                                ]
+                            },
+                            {
+                                "name": "policy",
+                                "dirs": [],
+                                "files": [
+                                    "_control-group",
+                                    "_default",
+                                    "_issuer1-policy",
+                                    "_issuer3-policy",
+                                    "_issuer2-policy",
+                                    "_response-wrapping"
+                                ]
+                            },
+                            {
+                                "name": "expire",
+                                "dirs": [
+                                    {
+                                        "name": "id",
+                                        "dirs": [
+                                            {
+                                                "name": "auth",
+                                                "dirs": [
+                                                    {
+                                                        "name": "approle",
+                                                        "dirs": [
+                                                            {
+                                                                "name": "login",
+                                                                "dirs": [],
+                                                                "files": [
+                                                                    "_h967123d1d3fd5e1553b52209d9f13ccb215aa0feefdb0fea444a37f872d6bb35",
+                                                                    "_h6c9c28abc4d3180ce135681ef935948a7379eac633c1a97957ff696286523657",
+                                                                    "_h36bff1412b14bb3c79bbd863e84aba7fca81c33b97a7ddecd0435af900b979c6"
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "files": []
+                                                    }
+                                                ],
+                                                "files": []
+                                            }
+                                        ],
+                                        "files": []
+                                    }
+                                ],
+                                "files": []
+                            }
+                        ],
+                        "files": []
+                    },
+                    {
+                        "name": "core",
+                        "dirs": [
+                            {
+                                "name": "cluster",
+                                "dirs": [
+                                    {
+                                        "name": "local",
+                                        "dirs": [],
+                                        "files": [
+                                            "_info",
+                                            "_name"
+                                        ]
+                                    }
+                                ],
+                                "files": [
+                                    "_feature-flags"
+                                ]
+                            },
+                            {
+                                "name": "versions",
+                                "dirs": [],
+                                "files": [
+                                    "_1.18.2"
+                                ]
+                            },
+                            {
+                                "name": "hsm",
+                                "dirs": [],
+                                "files": [
+                                    "_barrier-unseal-keys"
+                                ]
+                            },
+                            {
+                                "name": "wrapping",
+                                "dirs": [],
+                                "files": [
+                                    "_jwtkey"
+                                ]
+                            }
+                        ],
+                        "files": [
+                            "_audit",
+                            "_keyring",
+                            "_index-header-hmac-key",
+                            "_local-auth",
+                            "_shamir-kek",
+                            "_master",
+                            "_local-mounts",
+                            "_local-audit",
+                            "_mounts",
+                            "_auth",
+                            "_seal-config"
+                        ]
                     }
                 ],
-                "files": [
-                    "index.js",
-                    "App.test.js",
-                    "reportWebVitals.js",
-                    "setupTests.js",
-                    "App.js",
-                    "ProtectedRoute.js",
-                    "logo.svg",
-                    "index.css",
-                    "i18n.js"
-                ]
-            },
-            {
-                "name": "certs",
-                "dirs": [],
-                "files": [
-                    "fullchain.pem",
-                    "privkey.pem"
-                ]
+                "files": []
             }
         ],
         "files": [
-            "package.json",
-            ".gitignore",
-            ".env",
-            "Dockerfile",
-            "nginx.conf",
+            "config.hcl",
+            "issuer2-policy.hcl",
+            "issuer1-policy.hcl",
+            "issuer3-policy.hcl",
+            "setup_all_windows.sh",
+            "Dockerfile.vault-init",
+            "vault-init.sh",
+            "vault-init-windows.sh",
             "README.md",
-            "postcss.config.js",
-            "tailwind.config.js"
+            "Instrucciones.txt",
+            "setup_all.sh"
         ]
     }
 ]
