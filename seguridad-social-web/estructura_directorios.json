@@ -1,91 +1,174 @@
 [
     {
-        "name": "backend",
+        "name": "frontend",
         "dirs": [
+            {
+                "name": "public",
+                "dirs": [],
+                "files": [
+                    "favicon.ico",
+                    "index.html",
+                    "dni.webp",
+                    "robots.txt",
+                    "manifest.json",
+                    "logo192.png",
+                    "logo512.png"
+                ]
+            },
             {
                 "name": "src",
                 "dirs": [
                     {
-                        "name": "models",
+                        "name": "assets",
                         "dirs": [],
                         "files": [
-                            "User.js",
-                            "RevokedCredential.js"
+                            "escudo_espana.png",
+                            "escudo_espana.avif"
                         ]
                     },
                     {
-                        "name": "routes",
+                        "name": "store",
                         "dirs": [],
                         "files": [
-                            "issuanceRoutes.js",
-                            "userRoutes.js",
-                            "walletRoutes.js",
-                            "authRoutes.js",
-                            "didRoutes.js",
-                            "verificationRoutes.js",
-                            "revocationRoutes.js"
+                            "authSlice.js",
+                            "store.js"
+                        ]
+                    },
+                    {
+                        "name": "context",
+                        "dirs": [],
+                        "files": [
+                            "AuthContext.js"
                         ]
                     },
                     {
                         "name": "services",
                         "dirs": [],
                         "files": [
-                            "presentationService.js",
-                            "authService.js",
-                            "HolderSessionManager.js",
-                            "walletService.js"
+                            "api.js"
                         ]
                     },
                     {
                         "name": "utils",
                         "dirs": [],
                         "files": [
-                            "jwtUtils.js",
-                            "sessionStore.js",
-                            "validations.js"
+                            "validation.js"
                         ]
                     },
                     {
-                        "name": "middleware",
-                        "dirs": [],
-                        "files": [
-                            "corsConfig.js",
-                            "errorHandler.js",
-                            "requestLogger.js"
-                        ]
+                        "name": "pages",
+                        "dirs": [
+                            {
+                                "name": "Alta",
+                                "dirs": [],
+                                "files": [
+                                    "Alta.js",
+                                    "AltaEmission.js",
+                                    "AltaAutomatica.js",
+                                    "LoadingEmission.js",
+                                    "AltaAutomaticaInfo.js"
+                                ]
+                            },
+                            {
+                                "name": "LoginWithWallet",
+                                "dirs": [],
+                                "files": [
+                                    "LoadingVerification.js",
+                                    "LoginWithWallet.js"
+                                ]
+                            },
+                            {
+                                "name": "VerificationTutorial",
+                                "dirs": [],
+                                "files": [
+                                    "VerificationTutorial.js"
+                                ]
+                            },
+                            {
+                                "name": "Dashboard",
+                                "dirs": [],
+                                "files": [
+                                    "Dashboard.js"
+                                ]
+                            },
+                            {
+                                "name": "VerificationMethodSelect",
+                                "dirs": [],
+                                "files": [
+                                    "VerificationMethodSelect.js"
+                                ]
+                            },
+                            {
+                                "name": "Home",
+                                "dirs": [],
+                                "files": [
+                                    "Home.css",
+                                    "Home.js"
+                                ]
+                            },
+                            {
+                                "name": "Register",
+                                "dirs": [],
+                                "files": [
+                                    "Register.js"
+                                ]
+                            }
+                        ],
+                        "files": []
                     },
                     {
-                        "name": "controllers",
-                        "dirs": [],
-                        "files": [
-                            "offerController.js",
-                            "userInfoController.js",
-                            "issuanceController.js",
-                            "pingController.js",
-                            "presentationController.js",
-                            "didController.js",
-                            "authController.js",
-                            "credentialsController.js",
-                            "verificationController.js",
-                            "revocationController.js",
-                            "userController.js"
-                        ]
+                        "name": "components",
+                        "dirs": [
+                            {
+                                "name": "Footer",
+                                "dirs": [],
+                                "files": [
+                                    "Footer.js",
+                                    "Footer.css"
+                                ]
+                            },
+                            {
+                                "name": "Header",
+                                "dirs": [],
+                                "files": [
+                                    "Header.js",
+                                    "Header.css"
+                                ]
+                            }
+                        ],
+                        "files": []
                     }
                 ],
                 "files": [
-                    "index.js"
+                    "index.js",
+                    "App.test.js",
+                    "reportWebVitals.js",
+                    "setupTests.js",
+                    "App.js",
+                    "ProtectedRoute.js",
+                    "logo.svg",
+                    "index.css",
+                    "i18n.js"
+                ]
+            },
+            {
+                "name": "certs",
+                "dirs": [],
+                "files": [
+                    "fullchain.pem",
+                    "privkey.pem"
                 ]
             }
         ],
         "files": [
             "package.json",
-            "logger.js",
-            "signing_key_base64.txt",
+            ".gitignore",
             ".env",
             "Dockerfile",
-            "encryption_key_base64.txt",
+            "nginx.conf",
             "README.md",
-            "app.js"
+            "postcss.config.js",
+            "tailwind.config.js"
         ]
     }
 ]
