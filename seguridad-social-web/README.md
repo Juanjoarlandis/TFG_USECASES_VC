@@ -112,10 +112,26 @@ These credentials are issued by the `issuer_coord` module via specific HTTP endp
 
    **Repeat** for each credential type (`identity`, `passport`, `work`).
 
-3. **Go to the WALT.ID Wallet**  
-   - Access the WALT.ID identity wallet at [http://localhost:7101](http://localhost:7101).
-   - Create an account if prompted.
-   - Once logged in, **present** (paste) each of the 3 `issuanceUrl` values from above to the wallet. This will let you collect all 3 credentials (DNI, Passport, Work Registration) into your wallet.
+## 3. Acceder a la Wallet
+
+Una vez tengas las URL de emisión (offerUrl) que obtuviste en el paso anterior, procede a:
+
+1. Abrir tu navegador y dirigirte a [http://localhost:7101](http://localhost:7101).
+2. Crear una cuenta (si no la tienes) y luego inicia sesión en la wallet.
+
+**Capturas de referencia para la Wallet:**
+
+![Wallet Step 1](docs/images/Wallet/Wallet-1.png "Wallet-1: Pantalla inicial para registro o acceso")
+
+![Wallet Step 2](docs/images/Wallet/Wallet-2.png "Wallet-2: Ejemplo de formulario de registro/ingreso")
+
+![Wallet Step 3](docs/images/Wallet/Wallet-3.png "Wallet-3: Vista de la wallet una vez dentro")
+
+![Wallet Step 4](docs/images/Wallet/Wallet-4.png "Wallet-4: Presentar URLs y descargar credenciales")
+
+![Wallet Step 5](docs/images/Wallet/Wallet-5.png "Wallet-5: Confirmación de credenciales y estado final")
+
+Deberás **presentar los 3 URLs** (los `issuanceUrl` o `offerUrl`) que recibiste al hacer las peticiones `POST` al endpoint `http://localhost:5500/credentials/issue`. De esta forma podrás obtener las tres credenciales (`work`, `identity`, `passport`) dentro de tu wallet.
 
 4. **Use the Web Application**  
    - Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
