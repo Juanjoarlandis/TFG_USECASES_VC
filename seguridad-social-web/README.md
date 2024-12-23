@@ -1,4 +1,3 @@
-```markdown
 # SeguridadSocialWeb Project
 
 This repository contains a full-stack web application with multiple components (front-end, back-end, credential issuer coordination, Vault initialization, and WALT.ID identity services). The goal is to demonstrate credential issuance (like DNI, passport, work registration) using decentralized identities (DIDs) and a secure Vault.
@@ -163,4 +162,3 @@ If you have any questions or issues, please refer to logs (`docker logs <contain
 
 Licensed under the MIT License.  
 See [LICENSE](LICENSE) for details.
-```
