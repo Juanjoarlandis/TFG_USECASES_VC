@@ -51,14 +51,14 @@ rvdE6chvJDhST2dArMVtcz+1nNfyheVjdrkW+V+3uLXrIvYA1H42kH26mh6Ae4NG
 
 
 --- backend/.env ---
-WALTID_VERIFIER_URL=http://verifier-api:7003
-WALTID_ISSUER_URL=http://issuer-api:7002
+WALTID_VERIFIER_URL=http://caddy:7003
+WALTID_ISSUER_URL=http://caddy:7002
 VERIFIER_COORD_PUBLIC_URL=http://backend:3001
 MONGO_URI=mongodb://mongo-backend:27017/seguridadSocial
 PORT=3001
 ISS_COORD_URL=http://issuer_coord:5500
 NODE_ENV=production
-WALLET_COORD_URL=http://wallet-api:7001
+WALLET_COORD_URL=http://caddy:7001
 JWT_SECRET='2e31LA9Ersv4eAk4Uk7oAv/rCO7caS1OC8w5835hzkU='
 JWT_REFRESH_SECRET='IVXrhhmS1rF+f65wYu1f+0Y1poILab5NogbR+yYI1DM='
 
@@ -313,18 +313,26 @@ module.exports = mongoose.model('RevokedCredential', RevokedCredentialSchema);
 
 
 --- backend/src/routes/issuanceRoutes.js ---
-// src/routes/issuanceRoutes.js
 const express = require('express');
 const router = express.Router();
 const {
     offerIssuance,
     issuanceStatusCallback,
-    getIssuanceSessionStatus
+    getIssuanceSessionStatus,
+    claimAltaCredential
 } = require('../controllers/issuanceController');
 
-router.post('/offer', offerIssuance);
+// 1) Para la oferta (issueOffer)
+router.post('/offerIssuance', offerIssuance);
+
+// 2) Callback del issuer
 router.post('/statusCallback/:stateId', issuanceStatusCallback);
+
+// 3) Consultar el status de la issuance
 router.get('/session/:stateId', getIssuanceSessionStatus);
+
+// 4) Reclamar la credencial
+router.post('/claimAltaCredential', claimAltaCredential);
 
 module.exports = router;
 
@@ -413,11 +421,13 @@ const {
     statusCallbackAlta,
     statusCallback,
     getVerificationSession,
-    statusCallbackWalletLogin
+    statusCallbackWalletLogin,
+    offerVerification3CredsAutomatic
 } = require('../controllers/verificationController');
 
 router.post('/offer', offerVerification);
 router.post('/offer3creds', offerVerification3Creds);
+router.post('/offer3credsAuto', offerVerification3CredsAutomatic);
 router.post('/statusCallbackAlta/:stateId', statusCallbackAlta);
 router.post('/statusCallback/:stateId', statusCallback);
 router.post('/statusCallbackWalletLogin/:stateId', statusCallbackWalletLogin);
@@ -441,6 +451,7 @@ module.exports = router;
 --- backend/src/services/presentationService.js ---
 const axios = require('axios');
 const HolderSessionManager = require('./HolderSessionManager');
+const { listDIDs } = require('./walletService');
 
 async function resolvePresentationRequest(presentationRequestUrl) {
     const token = await HolderSessionManager.getToken();
@@ -478,7 +489,33 @@ async function usePresentationRequest(did, presentationRequest, selectedCredenti
     return response.data;
 }
 
+async function getOrSelectDidSomewhere() {
+    // 1) obtener token de la wallet
+    const token = await HolderSessionManager.getToken();
+    // 2) obtener walletId
+    const walletId = HolderSessionManager.getWalletId();
+
+    if (!token || !walletId) {
+        throw new Error('[getOrSelectDidSomewhere] No se encontró token o walletId');
+    }
+
+    // 3) listar DIDs en la wallet
+    const dids = await listDIDs(token, walletId);
+    if (!dids || !dids.length) {
+        throw new Error('[getOrSelectDidSomewhere] No se encontraron DIDs en la wallet');
+    }
+
+    // 4) seleccionar el primero (o el que quieras)
+    const did = dids[0].did;
+    if (!did) {
+        throw new Error('[getOrSelectDidSomewhere] DID inválido');
+    }
+
+    return did;
+}
+
 module.exports = {
+    getOrSelectDidSomewhere,
     resolvePresentationRequest,
     matchCredentialsForPresentation,
     usePresentationRequest
@@ -1009,14 +1046,16 @@ async function findOrCreateOrUpdateUser(userData, flow) {
         user.nss = userData.nss;
         user.photo = userData.photo || user.photo;
 
-        // Forzar el flujo a manual si así se requiere
         if (flow === 'manual') {
             user.flow = 'manual';
+        } else if (flow === 'automatic') {
+            user.flow = 'automatic';
         }
     }
     await user.save();
     return user;
 }
+
 
 module.exports = {
     extractUserDataFromDecodedCredentialSubject,
@@ -1188,21 +1227,43 @@ const { v4: uuidv4 } = require('uuid');
 const { sessions } = require('../utils/validations');
 const User = require('../models/User');
 
+// Puedes usar un logger más completo (winston, pino, etc.) o console.log
+const logger = require('../../logger');
+
 const { VERIFIER_COORD_PUBLIC_URL, WALTID_ISSUER_URL } = process.env;
+
+// Si estás usando HolderSessionManager y listDIDs en claimAltaCredential
+const HolderSessionManager = require('../services/HolderSessionManager');
+const { listDIDs } = require('../services/walletService');
 
 module.exports = {
     async offerIssuance(req, res, next) {
         try {
+            console.log('[offerIssuance] => BODY:', req.body);
+
             const { stateId } = req.body;
-            if (!sessions[stateId] || !sessions[stateId].user) {
+            console.log('[offerIssuance] => stateId recibido:', stateId);
+
+            // Verificamos la sesión
+            if (!sessions[stateId]) {
+                console.log('[offerIssuance] => ¡No existe sessions[stateId]!');
                 return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
+            }
+            if (!sessions[stateId].user) {
+                console.log('[offerIssuance] => ¡sessions[stateId] existe pero .user es falsy!');
+                return res.status(404).json({ error: 'No hay usuario en la sesión' });
             }
 
             const user = sessions[stateId].user;
+            console.log('[offerIssuance] => user.documentNumber:', user.documentNumber);
+            console.log('[offerIssuance] => user.hasAltaCredential:', user.hasAltaCredential);
+
             if (!user.hasAltaCredential) {
+                console.log('[offerIssuance] => El usuario no tiene hasAltaCredential=true');
                 return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
             }
 
+            // Recuperamos datos extra de la sesión
             const employerData = sessions[stateId].employerData || {
                 employerName: "Empresa de Servicios S.A.",
                 contributionAccountCode: "0111-2222-33-4444444444",
@@ -1214,6 +1275,10 @@ module.exports = {
             };
             const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
 
+            console.log('[offerIssuance] => employerData:', employerData);
+            console.log('[offerIssuance] => userAddress:', userAddress);
+
+            // Construimos datos del trabajador
             const apellidos = user.familyName || "Perez";
             const nombre = user.firstName || "Mario";
             const dni = user.documentNumber || "12345678A";
@@ -1224,10 +1289,11 @@ module.exports = {
             const tipoContrato = "Indefinido tiempo completo";
             const coeficienteJornada = "100%";
             const ocupacion = "Administrativo";
-            const codigoCuentaCotizacion = employerData.contributionAccountCode;
 
             const revocationId = uuidv4();
+            console.log('[offerIssuance] => revocationId (UUID):', revocationId);
 
+            // Credencial base
             const altaCredential = {
                 "@context": [
                     "https://www.w3.org/ns/credentials/v2",
@@ -1264,10 +1330,27 @@ module.exports = {
                         "tipoContrato": tipoContrato,
                         "coeficienteJornada": coeficienteJornada,
                         "ocupacion": ocupacion,
-                        "codigoCuentaCotizacion": codigoCuentaCotizacion
+                        "codigoCuentaCotizacion": employerData.contributionAccountCode
                     }
                 }
             };
+
+            console.log('[offerIssuance] => altaCredential:', altaCredential);
+
+            // Guardamos en DB
+            const dbUser = await User.findOne({ documentNumber: user.documentNumber });
+            if (!dbUser) {
+                console.log('[offerIssuance] => No se encontró dbUser con documentNumber=', user.documentNumber);
+            } else {
+                dbUser.altaCredentialJti = revocationId;
+                dbUser.altaCredentialData = altaCredential;
+                console.log('[offerIssuance] => dbUser, set altaCredentialJti y altaCredentialData');
+                await dbUser.save();
+            }
+
+            // Llamada de issuance
+            const callbackUrl = `${VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
+            console.log('[offerIssuance] => callbackUrl =', callbackUrl);
 
             const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
             const issuerKey = {
@@ -1282,74 +1365,154 @@ module.exports = {
             };
             const credentialConfigurationId = "CustomIdentityCredential_jwt_vc_json";
 
-            const dbUser = await User.findOne({ documentNumber: user.documentNumber });
-            if (dbUser) {
-                dbUser.altaCredentialJti = revocationId;
-                dbUser.altaCredentialData = altaCredential;
-                await dbUser.save();
-            }
-
-            const callbackUrl = `${VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
             const issuanceRequestBody = {
-                issuerKey: issuerKey,
-                issuerDid: issuerDid,
+                issuerKey,
+                issuerDid,
                 credentialConfigurationId,
                 credentialData: altaCredential,
-                "mapping": {
-                    "id": "<uuid>",
-                    "issuer": {
-                        "id": "<issuerDid>"
-                    },
-                    "credentialSubject": {
-                        "id": "<subjectDid>"
-                    },
+                mapping: {
+                    "id": altaCredential.id,
+                    "issuer": { "id": "<issuerDid>" },
+                    "credentialSubject": { "id": "<subjectDid>" },
                     "issuanceDate": "<timestamp>",
                     "expirationDate": "<timestamp-in:365d>"
                 },
-                "authenticationMethod": "PRE_AUTHORIZED"
+                authenticationMethod: "PRE_AUTHORIZED"
             };
 
-            const issueResponse = await axios.post(`${WALTID_ISSUER_URL}/openid4vc/jwt/issue`, issuanceRequestBody, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'statusCallbackUri': callbackUrl
-                }
-            });
+            console.log('[offerIssuance] => issuanceRequestBody:', issuanceRequestBody);
 
-            sessions[stateId].user = dbUser;
+            const issueResponse = await axios.post(
+                `${WALTID_ISSUER_URL}/openid4vc/jwt/issue`,
+                issuanceRequestBody,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'statusCallbackUri': callbackUrl
+                    }
+                }
+            );
+            console.log('[offerIssuance] => issueResponse.data =', issueResponse.data);
+
+            // Guardamos en la sesión
+            sessions[stateId].user = dbUser || user; // por si dbUser no existe
             sessions[stateId].issuanceOfferUrl = issueResponse.data;
             sessions[stateId].issuanceStatus = 'offered';
 
-            res.status(200).json({ issuanceOfferUrl: issueResponse.data, state: stateId });
+            console.log('[offerIssuance] => sessions[stateId] después de guardar =>', sessions[stateId]);
+
+            // Responder al front
+            return res.status(200).json({ issuanceOfferUrl: issueResponse.data, state: stateId });
         } catch (err) {
+            console.error('[offerIssuance] => Error:', err);
             next(err);
         }
     },
 
     async issuanceStatusCallback(req, res, next) {
         try {
+            console.log('[issuanceStatusCallback] => params:', req.params);
             const { stateId } = req.params;
+
             if (!sessions[stateId]) {
+                console.log('[issuanceStatusCallback] => Sesión no encontrada para stateId=', stateId);
                 return res.status(404).json({ error: 'Sesión no encontrada' });
             }
 
+            // Asumimos que si llegó aquí, la issuance fue aceptada
             sessions[stateId].issuanceStatus = 'accepted';
+            console.log('[issuanceStatusCallback] => issuanceStatus se marcó como accepted');
+
             res.status(200).json({ message: 'Issuance callback processed successfully' });
         } catch (err) {
+            console.error('[issuanceStatusCallback] => Error:', err);
             next(err);
         }
     },
 
     async getIssuanceSessionStatus(req, res, next) {
         try {
+            console.log('[getIssuanceSessionStatus] => params:', req.params);
             const { stateId } = req.params;
+
             if (!sessions[stateId]) {
+                console.log('[getIssuanceSessionStatus] => No existe la sesión para stateId=', stateId);
                 return res.status(404).json({ error: 'Sesión no encontrada' });
             }
 
             const { issuanceStatus } = sessions[stateId];
+            console.log('[getIssuanceSessionStatus] => issuanceStatus=', issuanceStatus);
+
             res.status(200).json({ issuanceStatus: issuanceStatus || 'unknown' });
         } catch (err) {
+            console.error('[getIssuanceSessionStatus] => Error:', err);
+            next(err);
+        }
+    },
+
+    async claimAltaCredential(req, res, next) {
+        try {
+            console.log('[claimAltaCredential] => BODY:', req.body);
+            const { stateId } = req.body;
+            console.log('[claimAltaCredential] => stateId recibido:', stateId);
+
+            if (!stateId || !sessions[stateId]) {
+                console.log('[claimAltaCredential] => stateId inválido o no existe la sesión');
+                return res.status(400).json({ error: 'stateId inválido o no existe la sesión' });
+            }
+
+            const issuanceOfferUrl = sessions[stateId].issuanceOfferUrl;
+            console.log('[claimAltaCredential] => issuanceOfferUrl en sesión=', issuanceOfferUrl);
+
+            if (!issuanceOfferUrl) {
+                return res.status(400).json({ error: 'No hay issuanceOfferUrl en la sesión' });
+            }
+
+            // Obtenemos token y walletId de la wallet
+            const token = await HolderSessionManager.getToken();
+            const walletId = HolderSessionManager.getWalletId();
+            console.log('[claimAltaCredential] => token?', !!token, ' walletId=', walletId);
+
+            if (!token || !walletId) {
+                return res
+                    .status(500)
+                    .json({ error: 'No se encontró sesión de la wallet (token o walletId)' });
+            }
+
+            // DID del holder
+            const dids = await listDIDs(token, walletId);
+            console.log('[claimAltaCredential] => dids =', dids);
+            if (!dids || !dids.length) {
+                return res.status(400).json({ error: 'No se encontraron DIDs en la wallet' });
+            }
+            const did = dids[0].did;
+            console.log('[claimAltaCredential] => selected did=', did);
+
+            // URL del endpoint de waltid para reclamar la cred
+            const useOfferUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/useOfferRequest?did=${encodeURIComponent(did)}&requireUserInput=false`;
+            console.log('[claimAltaCredential] => POST ->', useOfferUrl);
+            console.log('[claimAltaCredential] => Body (issuanceOfferUrl)=', issuanceOfferUrl);
+
+            // Aqui el cambio esencial: 'Content-Type': 'text/plain'
+            // y enviamos `issuanceOfferUrl` tal cual (sin JSON.stringify).
+            const resp = await axios.post(useOfferUrl, issuanceOfferUrl, {
+                headers: {
+                    'Content-Type': 'text/plain',
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            console.log('[claimAltaCredential] => wallet response =>', resp.data);
+
+            // Marcamos como 'claimed'
+            sessions[stateId].issuanceStatus = 'claimed';
+
+            return res.status(200).json({
+                message: 'Credencial de Alta reclamada con éxito',
+                claimedCredentials: resp.data
+            });
+        } catch (err) {
+            console.error('[claimAltaCredential] => Error:', err);
             next(err);
         }
     }
@@ -1611,6 +1774,12 @@ const { findOrCreateOrUpdateUser, checkCredentialsRevocation, extractUserDataFro
 const User = require('../models/User');
 const { generateTokens } = require('../utils/jwtUtils');
 const logger = require('../../logger');
+const {
+    resolvePresentationRequest,
+    matchCredentialsForPresentation,
+    usePresentationRequest,
+    getOrSelectDidSomewhere
+} = require('../services/presentationService');
 
 const OFFER_EXPIRATION_MS = 60 * 1000;
 const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = process.env;
@@ -1623,7 +1792,6 @@ const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = proces
  */
 module.exports = {
 
-    // =============== Ejemplo: "offerVerification" para modo manual ===============
     async offerVerification(req, res, next) {
         try {
             logger.debug('[verificationController] offerVerification - start');
@@ -1653,6 +1821,132 @@ module.exports = {
 
             res.status(200).json({ verificationUrl: response.data, state: stateId });
         } catch (err) {
+            next(err);
+        }
+    },
+
+    async offerVerification3CredsAutomatic(req, res, next) {
+        try {
+            logger.debug('[verificationController] offerVerification3CredsAutomatic - start');
+
+            if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
+                return res.status(500).json({
+                    error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL'
+                });
+            }
+            if (!ISS_COORD_URL) {
+                return res.status(500).json({
+                    error: 'Falta la variable ISS_COORD_URL'
+                });
+            }
+
+            // 1) Generar stateId
+            const stateId = uuidv4();
+
+            // 2) Obtener (opc.) la lista de DIDs permitidos (por ejemplo)
+            const didsResponse = await axios.get(`${ISS_COORD_URL}/did/issuers`);
+            const { issuers } = didsResponse.data || {};
+            if (!issuers || issuers.length < 3) {
+                return res.status(500).json({ error: 'No se pudieron obtener los 3 issuers' });
+            }
+
+            // 3) Preparar body pidiendo EXACTAMENTE 3 credenciales 
+            const requestBody = {
+                // Políticas de VP (ejemplo)
+                vp_policies: [
+                    { policy: 'minimum-credentials', args: 3 },
+                    { policy: 'maximum-credentials', args: 100 }
+                ],
+                // Políticas de VC
+                vc_policies: [
+                    'signature',
+                    'expired',
+                    'not-before',
+                    'revoked_status_list',
+                    {
+                        policy: 'allowed-issuer',
+                        args: issuers  // array de DIDs permitidos
+                    }
+                ],
+                // Tipos de credenciales requeridas
+                request_credentials: [
+                    { type: 'CustomIdentityCredential', format: 'jwt_vc_json' },
+                    { type: 'PassportCredential', format: 'jwt_vc_json' },
+                    { type: 'EmployerRegistrationCredential', format: 'jwt_vc_json' }
+                ]
+            };
+
+            // 4) Llamamos a walt.id
+            const headers = {
+                'Content-Type': 'application/json',
+                authorizeBaseUrl: 'openid4vp://authorize',
+                responseMode: 'direct_post',
+                // callback donde walt.id nos notificará el resultado => statusCallbackAlta
+                statusCallbackUri: `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
+            };
+
+            logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify, stateId=${stateId}`);
+            const responseWalt = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
+
+            const verificationUrl = responseWalt.data; // openid4vp://... ?
+
+            // 5) Guardar en sessions
+            sessions[stateId] = {
+                status: 'pending',
+                verificationUrl,
+                verificationResult: null,
+                type: 'alta',
+                // por ejemplo, expiración en 1 minuto
+                expiresAt: Date.now() + 1 * 60 * 1000
+            };
+
+            // ============== PARTE AUTOMÁTICA (resolvemos en backend) ==============
+            logger.debug('[offerVerification3CredsAutomatic] -> resolvePresentationRequest');
+            const resolvedPresentationRequest = await resolvePresentationRequest(verificationUrl);
+            logger.debug(`[offerVerification3CredsAutomatic] resolvedPresentationRequest = ${JSON.stringify(resolvedPresentationRequest, null, 2)}`);
+
+            // Extraer la presentationDefinition
+            const presentationDefinition = extractPresentationDefinition(resolvedPresentationRequest);
+            logger.debug(`[offerVerification3CredsAutomatic] presentationDefinition = ${JSON.stringify(presentationDefinition, null, 2)}`);
+
+            // matchCredentialsForPresentation
+            logger.debug('[offerVerification3CredsAutomatic] -> matchCredentialsForPresentation');
+            const matchedCreds = await matchCredentialsForPresentation(presentationDefinition);
+            if (!matchedCreds || matchedCreds.length < 3) {
+                logger.error('[offerVerification3CredsAutomatic] No se encontraron 3 credenciales en la wallet');
+                // Cambia el estado a 'failed'
+                sessions[stateId].status = 'failed';
+                return res.status(400).json({ error: 'No matching 3 credentials in the wallet' });
+            }
+
+            // Por si se devuelven muchas, filtramos las 3 que necesitamos
+            // (OJO, esto depende de cómo walt.id devuelva matchedCreds: 
+            //  puede que ya vengan 3 exactas, o vengan 5 y tengas que filtrar 
+            //  por type=CustomIdentityCredential, etc.)
+            // Ejemplo naive:
+            const selectedCredsIds = matchedCreds.map(c => c.id);
+
+            // DID "por defecto" (puedes haberlo tomado de HolderSessionManager)
+            // O del token que tengas en tu "presentationService"
+            const did = await getOrSelectDidSomewhere();
+
+            logger.debug('[offerVerification3CredsAutomatic] -> usePresentationRequest con las 3 credenciales');
+            const useResp = await usePresentationRequest(
+                did,
+                resolvedPresentationRequest,
+                selectedCredsIds,
+                null // sin disclosures
+            );
+            logger.debug(`[offerVerification3CredsAutomatic] useResp = ${JSON.stringify(useResp, null, 2)}`);
+
+            // 6) Devolver info al frontend (stateId, por si quiere hacer polling, etc.)
+            return res.status(200).json({
+                message: 'Verificación de 3 credenciales (alta automática) iniciada. Revisar callback.',
+                state: stateId,
+                verificationUrl
+            });
+        } catch (err) {
+            logger.error('[offerVerification3CredsAutomatic] Error:', err.message);
             next(err);
         }
     },
@@ -1726,8 +2020,6 @@ module.exports = {
     // =============== Callback para verificación del Alta ===============
     async statusCallbackAlta(req, res, next) {
         try {
-            logger.debug('[verificationController] statusCallbackAlta - start');
-
             const { stateId } = req.params;
             const verificationData = req.body;
 
@@ -1743,38 +2035,92 @@ module.exports = {
                 const vpToken = tokenResponse && tokenResponse.vp_token;
                 if (!vpToken) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No vp_token' });
+                    return res.status(400).json({ error: 'No se encontró el vp_token' });
                 }
 
-                logger.debug(`[verificationController] VP token => ${vpToken}`);
                 const vpDecoded = jwt.decode(vpToken);
-                logger.debug(`[verificationController] vpDecoded => ${JSON.stringify(vpDecoded, null, 2)}`);
-
-                // Comprobamos que haya al menos 3 credenciales 
-                const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
-                if (credentialsJwt.length < 3) {
+                const credentialsJwt = vpDecoded?.vp?.verifiableCredential;
+                if (!credentialsJwt || credentialsJwt.length < 3) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Faltan las 3 credenciales requeridas' });
+                    return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
                 }
 
-                // Revisar revocación, etc.
+                const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
+
+                const hasIdentity = decodedCreds.some(c => c?.vc?.type?.includes('CustomIdentityCredential'));
+                const hasPassport = decodedCreds.some(c => c?.vc?.type?.includes('PassportCredential'));
+                const hasEmployer = decodedCreds.some(c => c?.vc?.type?.includes('EmployerRegistrationCredential'));
+
+                if (!hasIdentity || !hasPassport || !hasEmployer) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'Faltan credenciales requeridas (Identidad, Pasaporte, Empleador)' });
+                }
+
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
                     return res.status(400).json({ error: 'Una de las credenciales está revocada' });
                 }
 
-                // Extraer userData desde la credencial de identidad
-                // ...
-                // (ejemplo similar al manual)
-                // ... 
-                // Actualizar user:
-                // user.hasAltaCredential = true;
-                // user.altaIssueDate = new Date();
-                // ...
+                const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
+                const passportCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('PassportCredential'));
+                const employerCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('EmployerRegistrationCredential'));
+
+                if (!identityCredDecoded) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se encontró la credencial de identidad' });
+                }
+
+                // Extraer datos de identidad
+                const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
+
+                // Procesar dirección
+                let fullAddress = '';
+                if (passportCredDecoded && passportCredDecoded.vc?.credentialSubject) {
+                    if (idData.currentAddress && idData.currentAddress.length > 0) {
+                        fullAddress = idData.currentAddress.join(', ');
+                    } else {
+                        const ps = passportCredDecoded.vc.credentialSubject;
+                        fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
+                    }
+                } else {
+                    if (idData.currentAddress && idData.currentAddress.length > 0) {
+                        fullAddress = idData.currentAddress.join(', ');
+                    } else {
+                        fullAddress = "Calle Ejemplo 123, Madrid";
+                    }
+                }
+
+                // Datos empleador
+                if (!employerCredDecoded || !employerCredDecoded.vc?.credentialSubject) {
+                    sessions[stateId].status = 'failed';
+                    return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
+                }
+
+                const employerSubject = employerCredDecoded.vc.credentialSubject;
+                const employerName = employerSubject.employerName || "Empresa de Servicios S.A.";
+                const contributionAccountCode = employerSubject.employerContributionAccountCode || "0111-2222-33-4444444444";
+                const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
+                const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
+
+                const user = await findOrCreateOrUpdateUser(idData, 'manual');
+                user.hasAltaCredential = true;
+                user.altaIssueDate = new Date();
+                await user.save();
+
+                const token = "ejemplo-de-token-alta";
+                sessions[stateId].user = user;
+                sessions[stateId].token = token;
+                sessions[stateId].employerData = {
+                    employerName,
+                    contributionAccountCode,
+                    socialSecurityRegime,
+                    collectiveAgreements
+                };
+                sessions[stateId].userAddress = fullAddress;
             }
 
-            res.status(200).json({ message: 'statusCallbackAlta processed successfully' });
+            res.status(200).send('Status callback alta processed successfully');
         } catch (err) {
             next(err);
         }
@@ -1828,7 +2174,7 @@ module.exports = {
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
 
                 // Crear/actualizar user
-                const user = await findOrCreateOrUpdateUser(userData);
+                const user = await findOrCreateOrUpdateUser(userData, 'manual');
                 // Generar tokens
                 const { accessToken, refreshToken } = generateTokens(user._id.toString());
                 user.refreshTokens.push(refreshToken);
@@ -1956,40 +2302,124 @@ module.exports = {
     }
 };
 
+function extractPresentationDefinition(resolvedPresentationRequest) {
+    // Caso 1: es string con query params (ej: "openid4vp://...?presentation_definition=...")
+    if (typeof resolvedPresentationRequest === 'string') {
+        const urlObj = new URL(resolvedPresentationRequest);
+        const presDef = urlObj.searchParams.get('presentation_definition');
+        if (!presDef) {
+            throw new Error('No presentation_definition in resolvedPresentationRequest');
+        }
+        return JSON.parse(decodeURIComponent(presDef));
+
+        // Caso 2: es un objeto con la clave presentation_definition
+    } else if (typeof resolvedPresentationRequest === 'object') {
+        if (resolvedPresentationRequest.presentation_definition) {
+            return resolvedPresentationRequest.presentation_definition;
+        }
+    }
+
+    // Si nada de lo anterior, lanzamos error
+    throw new Error('Could not extract presentationDefinition');
+}
+
 
 --- backend/src/controllers/revocationController.js ---
 // src/controllers/revocationController.js
 const User = require('../models/User');
 const RevokedCredential = require('../models/RevokedCredential');
+const axios = require('axios');
+const HolderSessionManager = require('../services/HolderSessionManager');
 
 module.exports = {
     async revokeCredential(req, res, next) {
         try {
             const { dni } = req.body;
+            console.log('[revokeCredential] Recibido en req.body:', req.body);
+
+            // 1) Buscar al usuario
             const user = await User.findOne({ documentNumber: dni });
+            console.log('[revokeCredential] Usuario encontrado =', user);
+
             if (!user) {
+                console.warn('[revokeCredential] No se encontró usuario con DNI:', dni);
                 return res.status(404).json({ error: 'Usuario no encontrado' });
             }
 
+            // 2) Log de todos los campos de user relacionados con credencial
+            console.log('[revokeCredential] user.hasAltaCredential:', user.hasAltaCredential);
+            console.log('[revokeCredential] user.altaIssueDate:', user.altaIssueDate);
+            console.log('[revokeCredential] user.altaCredentialData:', user.altaCredentialData);
+            console.log('[revokeCredential] user.altaCredentialJti:', user.altaCredentialJti);
+
+            // 3) Actualizar en BBDD (revocación interna)
             user.hasAltaCredential = false;
             user.altaIssueDate = null;
+
+            // 4) Obtener el ID de la credencial en la wallet
+            let walletCredentialId = null;
+            if (user.altaCredentialData && user.altaCredentialData.id) {
+                walletCredentialId = user.altaCredentialData.id;
+            }
+
+            console.log('[revokeCredential] Valor de walletCredentialId:', walletCredentialId);
+
+            // Dejar la credencial en BBDD como null
             user.altaCredentialData = null;
             await user.save();
+            console.log('[revokeCredential] user actualizado en BBDD:', user);
 
+            // 5) Marcar como revocada en lista negra
             if (user.altaCredentialJti) {
                 try {
+                    console.log('[revokeCredential] Insertando credentialId en RevokedCredential:', user.altaCredentialJti);
                     await RevokedCredential.create({ credentialId: user.altaCredentialJti });
-                } catch (e) {
-                    if (e.code !== 11000) {
-                        console.error('Error añadiendo a la lista negra:', e);
+                } catch (err) {
+                    if (err.code === 11000) {
+                        console.warn('[revokeCredential] Ya existía esta credencial en la lista negra:', user.altaCredentialJti);
+                    } else {
+                        console.error('[revokeCredential] Error añadiendo a la lista negra:', err);
                     }
                 }
             } else {
-                console.warn('No se encontró altaCredentialJti en el usuario.');
+                console.warn('[revokeCredential] No se encontró altaCredentialJti en el usuario.');
             }
 
-            return res.status(200).json({ message: 'Credencial revocada con éxito', user });
+            // 6) Eliminar la credencial de la wallet
+            if (walletCredentialId) {
+                console.log('[revokeCredential] Voy a eliminar la credencial de la wallet:', walletCredentialId);
+
+                try {
+                    const token = await HolderSessionManager.getToken();
+                    const walletId = HolderSessionManager.getWalletId();
+                    const encodedId = walletCredentialId;
+
+                    const deleteUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodedId}?permanent=true`;
+                    const config = {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            Accept: '*/*'
+                        }
+                    };
+
+                    console.log('[revokeCredential] deleteUrl =', deleteUrl);
+                    console.log('[revokeCredential] config =', config);
+
+                    const resp = await axios.delete(deleteUrl, config);
+                    console.log('[revokeCredential] DELETE status=', resp.status, ', data=', resp.data);
+                } catch (err) {
+                    console.error('[revokeCredential] Error eliminando la credencial permanentemente del wallet:', err.message);
+                }
+            } else {
+                console.log('[revokeCredential] No existe walletCredentialId, no se envía DELETE a la wallet.');
+            }
+
+            return res.status(200).json({
+                message: 'Credencial revocada y eliminada permanentemente del wallet con éxito',
+                user
+            });
         } catch (err) {
+            console.error('[revokeCredential] Error general:', err);
             next(err);
         }
     }
