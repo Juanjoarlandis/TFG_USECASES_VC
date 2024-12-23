@@ -73,6 +73,42 @@ export class CredentialService {
           }
         };
         break;
+
+        case 'identity2':
+          // Igual que la credencial 'identity', salvo que cambiamos la imagen a /dni2.webp
+          credentialConfigurationId = 'CustomIdentityCredential_jwt_vc_json';
+          credentialData = {
+            "@context": [
+              "https://www.w3.org/ns/credentials/v2",
+              "https://www.w3.org/ns/credentials/examples/v2"
+            ],
+            "id": credentialId,
+            "type": ["VerifiableCredential", "CustomIdentityCredential"],
+            "issuer": {
+              "id": issuerDid,
+              "name": "Ministerio del Interior - Gobierno de España",
+              "description": "Entidad emisora de documentos nacionales de identidad"
+            },
+            "name": "Documento Nacional de Identidad (versión 2)",
+            "description": "Credencial verificable de identidad personal con imagen renovada",
+            "validFrom": "2024-12-08T10:19:28Z",
+            "expirationDate": "2025-12-08T10:19:28Z",
+            "category": "Identity",
+            "credentialSubject": {
+              "id": "did:web:localhost:6000",
+              "dni": {
+                "identifier": "12345678CCC",
+                "givenName": "María",
+                "familyName": "Perez",
+                "gender": "F",
+                "nationality": "ES",
+                "birthDate": "1990-01-01",
+                "nss": "12345678901333",
+                "photo": "/dni2.webp" // <--- Imagen cambiada
+              }
+            }
+          };
+          break;
       case 'passport':
         credentialConfigurationId = 'PassportCredential_jwt_vc_json';
         credentialData = {
