@@ -57,13 +57,15 @@ services:
 
   waltid-demo-wallet:
     container_name: waltid-demo-wallet
-    image: docker.io/juanjoarlandis/waltid-demo-wallet-custom-tfg:1.0.1
+    image: docker.io/juanjoarlandis/waltid-demo-wallet:latest
     build:
       context: ../
       dockerfile: waltid-applications/waltid-web-wallet/apps/waltid-demo-wallet/Dockerfile
     depends_on:
       - wallet-api
       - caddy
+    expose:
+      - "7101"
     environment:
       NUXT_PUBLIC_ISSUER_CALLBACK_URL: "http://localhost:$DEMO_WALLET_FRONTEND_PORT"
       NUXT_PUBLIC_DEV_WALLET_URL: "http://localhost:$DEV_WALLET_FRONTEND_PORT"
