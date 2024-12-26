@@ -9,7 +9,10 @@ const Home = () => {
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] p-4 bg-neutralLight text-neutralDark fade-in-scale relative overflow-hidden">
       {/* Marca de agua semi-transparente */}
-      <div className="absolute top-0 right-0 opacity-10 pointer-events-none" style={{ fontSize: '10rem', lineHeight: '1' }}>
+      <div
+        className="absolute top-0 right-0 opacity-10 pointer-events-none"
+        style={{ fontSize: '10rem', lineHeight: '1' }}
+      >
         <FaShieldAlt className="text-azulOscuro" />
       </div>
 
@@ -25,7 +28,6 @@ const Home = () => {
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 relative z-10">
-
         <Link
           to="/login"
           className="px-8 py-3 bg-primary text-white rounded-full hover:bg-secondary hover:scale-105 transition-transform duration-300 font-body text-lg font-semibold flex items-center gap-2"
@@ -56,7 +58,9 @@ const Home = () => {
 
       {/* Sección extra: beneficios e info adicional */}
       <div className="mt-10 max-w-3xl text-center relative z-10">
-        <h3 className="font-headings text-2xl text-primary font-semibold mb-4">¿Por qué usar nuestros servicios en línea?</h3>
+        <h3 className="font-headings text-2xl text-primary font-semibold mb-4">
+          ¿Por qué usar nuestros servicios en línea?
+        </h3>
         <p className="font-body text-base md:text-lg text-neutralDark leading-relaxed mb-6">
           Acceda cómodamente desde su hogar a trámites que antes requerían desplazamientos.
           Garantizamos la seguridad y confidencialidad de sus datos, cumpliendo con las normativas
@@ -64,24 +68,37 @@ const Home = () => {
         </p>
         <div className="flex flex-col md:flex-row md:justify-between gap-6">
           <div className="bg-white p-4 rounded-xl shadow hover:shadow-md transition-shadow">
-            <h4 className="font-headings text-xl text-primary font-semibold mb-2">Ahorro de tiempo</h4>
+            <h4 className="font-headings text-xl text-primary font-semibold mb-2">
+              Ahorro de tiempo
+            </h4>
             <p className="font-body text-neutralDark text-sm">
               Realice sus trámites sin esperas ni colas, cuando usted quiera.
             </p>
           </div>
           <div className="bg-white p-4 rounded-xl shadow hover:shadow-md transition-shadow">
-            <h4 className="font-headings text-xl text-primary font-semibold mb-2">Accesible 24/7</h4>
+            <h4 className="font-headings text-xl text-primary font-semibold mb-2">
+              Accesible 24/7
+            </h4>
             <p className="font-body text-neutralDark text-sm">
               Servicios disponibles todos los días, a cualquier hora.
             </p>
           </div>
           <div className="bg-white p-4 rounded-xl shadow hover:shadow-md transition-shadow">
-            <h4 className="font-headings text-xl text-primary font-semibold mb-2">Seguridad y Confianza</h4>
+            <h4 className="font-headings text-xl text-primary font-semibold mb-2">
+              Seguridad y Confianza
+            </h4>
             <p className="font-body text-neutralDark text-sm">
               Verificación de identidad robusta y protección de datos personales.
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Texto semi-transparente indicando que es una demo */}
+      <div className="relative z-10 mt-6">
+        <p className="bg-white bg-opacity-50 p-4 italic rounded-lg text-sm text-neutralDark max-w-2xl mx-auto shadow-md">
+          Este sitio es únicamente una demostración. <strong>No</strong> corresponde a ninguna web oficial.
+        </p>
       </div>
 
       {/* Elemento decorativo sutil en el fondo */}
@@ -91,4 +108,3 @@ const Home = () => {
 };
 
 export default Home;
-

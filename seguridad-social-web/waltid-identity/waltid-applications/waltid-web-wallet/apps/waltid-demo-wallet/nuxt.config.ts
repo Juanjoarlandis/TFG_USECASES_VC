@@ -16,7 +16,10 @@ export default defineNuxtConfig({
         "@pinia/nuxt",
         "nuxt-icon"
     ],
-
+    app: {
+        baseURL: '/wallet/'
+      },
+      
     build: {
         transpile: ["@headlessui/vue"]
     },
