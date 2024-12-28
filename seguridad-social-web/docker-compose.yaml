@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   issuer_coord:
     container_name: issuer_coord
@@ -24,10 +22,29 @@ services:
     build: ./backend
     environment:
       MONGO_URI: "mongodb://mongo-backend:27017/seguridadSocial"
+      # Añade variables de entorno para Redis
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      # En caso de usar un DB index distinto al 0, puedes ponerlo aquí:
+      # REDIS_DB: "0"
     expose:
       - "3001"
     networks:
       - my_network
+    depends_on:
+      - mongo-backend
+      - redis  # Se asegura de que Redis esté disponible antes de iniciar
+
+  # --- AÑADIMOS REDIS ---
+  redis:
+    container_name: redis
+    image: redis:latest
+    # Opcionalmente exponer el puerto si necesitas acceder fuera del contenedor
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+    # No es indispensable, pero si quieres garantizar arranque en orden:
     depends_on:
       - mongo-backend
 

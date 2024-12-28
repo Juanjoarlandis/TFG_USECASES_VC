@@ -1,18 +1,28 @@
 // src/controllers/didController.js
-const axios = require('axios');
+const logger = require('../../logger');
 const HolderSessionManager = require('../services/HolderSessionManager');
-const logger = console;
+const { listDIDs } = require('../services/walletService');
 
 module.exports = {
-    async listDIDs(_req, res) {
+    async listDIDs(_req, res, next) {
         try {
+            logger.debug('[didController] listDIDs - start');
+
+            // 1) Obtener token y walletId desde HolderSessionManager
             const token = await HolderSessionManager.getToken();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const response = await axios.get(`${process.env.WALLET_COORD_URL}/wallet-api/wallet/${HolderSessionManager.getWalletId()}/dids`, config);
-            res.status(200).json(response.data);
+            const walletId = HolderSessionManager.getWalletId();
+
+            // 2) Llamar al método de walletService que ya existe
+            const dids = await listDIDs(token, walletId);
+
+            // 3) Devolver la respuesta
+            return res.status(200).json(dids);
         } catch (error) {
-            logger.error('Error obtaining DIDs:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[didController] Error obtaining DIDs:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     }
 };
