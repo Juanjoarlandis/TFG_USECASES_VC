@@ -14,6 +14,7 @@ import routes from './routes/routes';
 import logger from '../logger';
 import '../shim';
 import { connectToMongo } from './db/mongoose';
+import bitstringRoutes from './routes/routes';
 
 /**
  * Configura el servidor Express, conectando middlewares, rutas y base de datos.
@@ -64,6 +65,7 @@ const PORT = process.env.PORT || 5500;
   app.use(express.static(path.join(__dirname, 'public')));
 
   app.use('/', routes);
+  app.use('/', bitstringRoutes);
 
   http.createServer(app).listen(PORT, () => {
     logger.info(`HTTP server listening on http://localhost:${PORT}`);

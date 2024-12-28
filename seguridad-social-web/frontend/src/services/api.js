@@ -8,8 +8,15 @@ export const startVerification = async () => {
   const response = await axios.post(`${BASE_URL}/verification/offer`, {
     request_credentials: [
       {
-        format: "jwt_vc_json",
-        type: "CustomIdentityCredential"
+        type: "CustomIdentityCredential",
+        format: "jwt_vc_json"
+      }
+    ],
+    vc_policies: [
+      "signature",
+      {
+        policy: "webhook",
+        args: "http://issuer_coord:5500/webhook-verify"
       }
     ]
   });

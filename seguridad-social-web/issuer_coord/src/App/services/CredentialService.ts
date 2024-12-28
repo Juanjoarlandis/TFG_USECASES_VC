@@ -6,6 +6,17 @@ import { FileRepository } from '../repositories/FileRepository';
 import { MissingParameterError, CredentialIDError, NotFoundError, IssuerCoordError } from '../errors/errors';
 
 /**
+ * Importamos bitstringService para asignar 'statusListIndex' en cada credencial.
+ */
+import { bitstringService } from './bitstringService';
+
+/**
+ * Obtenemos la variable de entorno DEBUG_BITSTRING (true o false).
+ * Si no está definida, por defecto false.
+ */
+const DEBUG_BITSTRING = (process.env.DEBUG_BITSTRING === 'true');
+
+/**
  * Servicio que gestiona la emisión, actualización de estado, borrado y consulta de credenciales.
  * Emite credenciales usando walt.id ya sea en modo OpenID4VC o firma directa.
  * Almacena las credenciales emitidas en ficheros locales.
@@ -22,26 +33,46 @@ export class CredentialService {
   }
 
   /**
- * Emite una credencial del tipo indicado, firmándola con las llaves del issuer.
- * @param credentialType Tipo de credencial (Identity, Passport, Work).
- * @param issuerDid DID del issuer emisor.
- * @param issuerKey Llave del issuer para firmar la credencial.
- * @returns Objeto con `issuanceUrl` (en modo open) o `signedCredential` (en modo direct).
- */
-  public async issueCredential(credentialType: string, issuerDid: string, issuerKey: any): Promise<any> {
+   * Emite una credencial del tipo indicado, firmándola con las llaves del issuer.
+   * @param credentialType Tipo de credencial (Identity, Passport, Work, etc.).
+   * @param issuerDid DID del issuer emisor.
+   * @param issuerKey Llave del issuer para firmar la credencial.
+   * @returns Objeto con `issuanceUrl` (en modo open) o `signedCredential` (en modo direct).
+   */
+  public async issueCredential(
+    credentialType: string,
+    issuerDid: string,
+    issuerKey: any
+  ): Promise<any> {
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> issueCredential(${credentialType}, ${issuerDid})`);
+    }
+
     if (!credentialType) {
       throw new MissingParameterError('Missing parameter: type');
     }
 
+    // Generamos un UUID para la credencial
     const credentialUuid = uuidv4();
     const credentialId = `urn:uuid:${credentialUuid}`;
-    let credentialData: any;
-    let credentialConfigurationId: string;
+    
+    // Pedimos un índice libre en el bitstring:
+    const statusListIndex = bitstringService.getFreeIndex();
+    const statusListIndexStr = statusListIndex.toString();
 
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> Obtenido statusListIndex=${statusListIndexStr}`);
+    }
+
+    // Variables para construir la credencial base
+    let credentialConfigurationId: string;
+    let credentialData: any;
+
+    // Dependiendo del tipo, construimos un JSON distinto
     switch (credentialType.toLowerCase()) {
       case 'identity':
         credentialConfigurationId = 'CustomIdentityCredential_jwt_vc_json';
-        credentialData = { 
+        credentialData = {
           "@context": [
             "https://www.w3.org/ns/credentials/v2",
             "https://www.w3.org/ns/credentials/examples/v2"
@@ -74,41 +105,41 @@ export class CredentialService {
         };
         break;
 
-        case 'identity2':
-          // Igual que la credencial 'identity', salvo que cambiamos la imagen a /dni2.webp
-          credentialConfigurationId = 'CustomIdentityCredential_jwt_vc_json';
-          credentialData = {
-            "@context": [
-              "https://www.w3.org/ns/credentials/v2",
-              "https://www.w3.org/ns/credentials/examples/v2"
-            ],
-            "id": credentialId,
-            "type": ["VerifiableCredential", "CustomIdentityCredential"],
-            "issuer": {
-              "id": issuerDid,
-              "name": "Ministerio del Interior - Gobierno de España",
-              "description": "Entidad emisora de documentos nacionales de identidad"
-            },
-            "name": "Documento Nacional de Identidad (versión 2)",
-            "description": "Credencial verificable de identidad personal con imagen renovada",
-            "validFrom": "2024-12-08T10:19:28Z",
-            "expirationDate": "2025-12-08T10:19:28Z",
-            "category": "Identity",
-            "credentialSubject": {
-              "id": "did:web:localhost:6000",
-              "dni": {
-                "identifier": "12345678CCC",
-                "givenName": "María",
-                "familyName": "Perez",
-                "gender": "F",
-                "nationality": "ES",
-                "birthDate": "1990-01-01",
-                "nss": "12345678901333",
-                "photo": "/dni2.webp" // <--- Imagen cambiada
-              }
+      case 'identity2':
+        credentialConfigurationId = 'CustomIdentityCredential_jwt_vc_json';
+        credentialData = {
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://www.w3.org/ns/credentials/examples/v2"
+          ],
+          "id": credentialId,
+          "type": ["VerifiableCredential", "CustomIdentityCredential"],
+          "issuer": {
+            "id": issuerDid,
+            "name": "Ministerio del Interior - Gobierno de España",
+            "description": "Entidad emisora de documentos nacionales de identidad"
+          },
+          "name": "Documento Nacional de Identidad (versión 2)",
+          "description": "Credencial verificable de identidad personal con imagen renovada",
+          "validFrom": "2024-12-08T10:19:28Z",
+          "expirationDate": "2025-12-08T10:19:28Z",
+          "category": "Identity",
+          "credentialSubject": {
+            "id": "did:web:localhost:6000",
+            "dni": {
+              "identifier": "12345678CCC",
+              "givenName": "María",
+              "familyName": "Perez",
+              "gender": "F",
+              "nationality": "ES",
+              "birthDate": "1990-01-01",
+              "nss": "12345678901333",
+              "photo": "/dni2.webp"
             }
-          };
-          break;
+          }
+        };
+        break;
+
       case 'passport':
         credentialConfigurationId = 'PassportCredential_jwt_vc_json';
         credentialData = {
@@ -142,6 +173,7 @@ export class CredentialService {
           }
         };
         break;
+
       case 'work':
         credentialConfigurationId = 'EmployerRegistrationCredential_jwt_vc_json';
         credentialData = {
@@ -173,21 +205,39 @@ export class CredentialService {
           }
         };
         break;
+
       default:
-        throw new Error('Tipo de credencial no soportado. Use "Identity", "Passport" o "Work".');
+        throw new Error('Tipo de credencial no soportado. Use "Identity", "identity2", "Passport" o "Work".');
     }
 
+    // Insertar credentialStatus para Bitstring
+    credentialData.credentialStatus = {
+      id: `https://issuer-coord.com/bitstring-status-list#${statusListIndexStr}`,
+      type: "BitstringStatusListEntry",
+      statusPurpose: "revocation",
+      statusListIndex: statusListIndexStr,
+      statusListCredential: "https://issuer-coord.com/bitstring-status-list"
+    };
+
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> credentialData con credentialStatus:\n${JSON.stringify(credentialData.credentialStatus, null, 2)}`);
+    }
+
+    // Determinamos status según modo (open => 'pending', direct => 'issued')
     const status = this.mode === 'open' ? 'pending' : 'issued';
+
+    // Directorio de credenciales
     const credentialsDir = path.join(__dirname, '..', '..', 'data', 'credentials');
     this.fileRepository.ensureDirectoryExists(credentialsDir);
 
     if (this.mode === 'open') {
+      // === MODO OpenID4VC ===
       const authenticationMethod = 'PRE_AUTHORIZED';
       const payload = {
-        issuerKey: issuerKey,
-        issuerDid: issuerDid,
-        credentialConfigurationId: credentialConfigurationId,
-        credentialData: credentialData,
+        issuerKey,
+        issuerDid,
+        credentialConfigurationId,
+        credentialData,
         mapping: {
           id: credentialData.id,
           issuer: { id: credentialData.issuer.id },
@@ -195,8 +245,12 @@ export class CredentialService {
           issuanceDate: credentialData.validFrom,
           expirationDate: credentialData.expirationDate
         },
-        authenticationMethod: authenticationMethod
+        authenticationMethod
       };
+
+      if (DEBUG_BITSTRING) {
+        logger.debug('[CredentialService] -> Enviando a walt.id (modo=open) con payload:', payload);
+      }
 
       const issueUrl_openid = `${this.waltidUrl}/openid4vc/jwt/issue`;
       const issueResponse = await axios.post<string>(issueUrl_openid, payload, {
@@ -204,11 +258,13 @@ export class CredentialService {
       });
 
       if (issueResponse.status !== 200 && issueResponse.status !== 201) {
+        logger.error(`OpenID Issue -> status ${issueResponse.status}`, issueResponse.data);
         throw new IssuerCoordError(`Failed to issue credential via OpenID. Status code: ${issueResponse.status}`);
       }
 
       const issuanceUrl = issueResponse.data;
       if (!issuanceUrl) {
+        logger.error('[CredentialService] -> issuanceUrl vacío en la respuesta walt.id');
         throw new Error('issuanceUrl not found in the response from walt.id');
       }
 
@@ -222,8 +278,13 @@ export class CredentialService {
       const credentialFilePath = path.join(credentialsDir, `credential_${credentialUuid}.json`);
       this.fileRepository.writeJSON(credentialFilePath, credentialToStore);
 
+      if (DEBUG_BITSTRING) {
+        logger.debug(`[CredentialService] -> Credencial (open) guardada en ${credentialFilePath}`);
+      }
+
       return { issuanceUrl };
     } else {
+      // === MODO Direct ===
       const directPayload = {
         issuerKey,
         issuerDid,
@@ -231,17 +292,23 @@ export class CredentialService {
         credentialData
       };
 
+      if (DEBUG_BITSTRING) {
+        logger.debug('[CredentialService] -> Enviando a walt.id (modo=direct) con payload:', directPayload);
+      }
+
       const issueUrl_direct = `${this.waltidUrl}/raw/jwt/sign`;
       const issueResponseDirect = await axios.post<string>(issueUrl_direct, directPayload, {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' }
       });
 
       if (issueResponseDirect.status !== 200 && issueResponseDirect.status !== 201) {
+        logger.error(`Direct Sign -> status ${issueResponseDirect.status}`, issueResponseDirect.data);
         throw new IssuerCoordError(`Failed to issue credential via Direct Signing. Status code: ${issueResponseDirect.status}`);
       }
 
       const signedCredential = issueResponseDirect.data;
       if (!signedCredential) {
+        logger.error('[CredentialService] -> signedCredential vacío en la respuesta walt.id');
         throw new Error('Signed credential not found in the response from walt.id');
       }
 
@@ -255,17 +322,25 @@ export class CredentialService {
       const credentialFilePath = path.join(credentialsDir, `credential_${credentialUuid}.json`);
       this.fileRepository.writeJSON(credentialFilePath, credentialToStore);
 
+      if (DEBUG_BITSTRING) {
+        logger.debug(`[CredentialService] -> Credencial (direct) guardada en ${credentialFilePath}`);
+      }
+
       return { signedCredential };
     }
   }
 
   /**
- * Actualiza el estado de una credencial a 'issued' tras recibir un callback de estado.
- * Busca la credencial por sessionId en las issuanceUrl locales.
- * @param sessionId Identificador de sesión.
- * @param statusData Datos de estado recibidos del callback.
- */
+   * Actualiza el estado de una credencial a 'issued' tras recibir un callback de estado.
+   * Busca la credencial por sessionId en las issuanceUrl locales.
+   * @param sessionId Identificador de sesión.
+   * @param statusData Datos de estado recibidos del callback.
+   */
   public updateCredentialStatusFromCallback(sessionId: string, statusData: any): void {
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> updateCredentialStatusFromCallback(${sessionId}) with data:`, statusData);
+    }
+
     const credentialsDir = path.join(__dirname, '..', '..', 'data', 'credentials');
     const files = this.fileRepository.listFiles(credentialsDir);
 
@@ -289,14 +364,18 @@ export class CredentialService {
 
     credentialData.status = 'issued';
     this.fileRepository.writeJSON(targetFilePath, credentialData);
-    logger.info(`Credential status updated to 'issued' for sessionId ${sessionId}`);
+    logger.info(`[CredentialService] -> Credencial actualizada a 'issued' para sessionId=${sessionId}`);
   }
 
   /**
- * Retorna todas las credenciales almacenadas en el sistema de ficheros.
- * @returns Lista de credenciales.
- */
+   * Retorna todas las credenciales almacenadas en el sistema de ficheros.
+   * @returns Lista de credenciales.
+   */
   public getAllCredentials(): any[] {
+    if (DEBUG_BITSTRING) {
+      logger.debug('[CredentialService] -> getAllCredentials()');
+    }
+
     const credentialsDir = path.join(__dirname, '..', '..', 'data', 'credentials');
     const files = this.fileRepository.listFiles(credentialsDir);
     const credentials = [];
@@ -309,22 +388,33 @@ export class CredentialService {
   }
 
   /**
- * Retorna una credencial específica por su ID numérico.
- * @param id ID numérico de la credencial.
- * @returns La credencial correspondiente.
- */
+   * Retorna una credencial específica por su ID numérico.
+   * @param id ID numérico de la credencial.
+   * @returns La credencial correspondiente.
+   */
   public getCredentialById(id: string): any {
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> getCredentialById(${id})`);
+    }
+
     const credentialsDir = path.join(__dirname, '..', '..', 'data', 'credentials');
     const filePath = path.join(credentialsDir, `credential_${id}.json`);
     return this.fileRepository.readJSON(filePath);
   }
 
   /**
- * Actualiza el estado de una credencial, almacenándolo en un fichero de estado separado.
- * @param credentialId Identificador completo de la credencial.
- * @param statusObj Objeto con `credentialId` y `status` representando el nuevo estado.
- */
-  public updateCredentialStatus(credentialId: string, statusObj: { credentialId: string, status: string }): void {
+   * Actualiza el estado de una credencial, almacenándolo en un fichero de estado separado.
+   * @param credentialId Identificador completo de la credencial.
+   * @param statusObj Objeto con `credentialId` y `status` representando el nuevo estado.
+   */
+  public updateCredentialStatus(
+    credentialId: string,
+    statusObj: { credentialId: string; status: string }
+  ): void {
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> updateCredentialStatus(${credentialId}) =`, statusObj);
+    }
+
     if (!credentialId || !statusObj) {
       throw new MissingParameterError('Missing required parameter');
     }
@@ -338,22 +428,27 @@ export class CredentialService {
     this.fileRepository.writeJSON(statusFilePath, statusObj);
   }
 
-/**
- * Elimina una credencial del almacenamiento local.
- * @param id ID numérico de la credencial.
- */
+  /**
+   * Elimina una credencial del almacenamiento local.
+   * @param id ID numérico de la credencial.
+   */
   public deleteCredential(id: string): void {
+    if (DEBUG_BITSTRING) {
+      logger.debug(`[CredentialService] -> deleteCredential(${id})`);
+    }
+
     const credentialsDir = path.join(__dirname, '..', '..', 'data', 'credentials');
     const filePath = path.join(credentialsDir, `credential_${id}.json`);
     this.fileRepository.deleteFile(filePath);
   }
 
   /**
- * Extrae el ID final a partir de un identificador de credencial completo, asumiendo que el ID
- * está al final del string separado por '/'. Lanza un error si no se encuentra.
- * @param credentialId Identificador completo de la credencial.
- * @returns ID extraído (string).
- */
+   * Extrae el ID final a partir de un identificador de credencial completo,
+   * asumiendo que el ID está al final del string separado por '/'. 
+   * Lanza un error si no se encuentra.
+   * @param credentialId Identificador completo de la credencial.
+   * @returns ID extraído (string).
+   */
   private extractIdFromCredentialId(credentialId: string): string {
     const parts = credentialId.split('/');
     const _id = parts.pop();

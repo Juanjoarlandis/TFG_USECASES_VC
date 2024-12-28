@@ -1,11 +1,14 @@
+// src/services/authService.js
 const HolderSessionManager = require('./HolderSessionManager');
 const { verifyRefreshToken, generateTokens } = require('../utils/jwtUtils');
 const { getUserInfo, listDIDs, listCredentials } = require('./walletService');
-const { sessions } = require('../utils/validations');
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const logger = require('../../logger');
+
+// Importa el store que usa Redis
+const sessionStore = require('../utils/sessionStore');
 
 // Funciones para presentar la credencial sin QR
 const {
@@ -59,8 +62,7 @@ module.exports = {
             throw new Error('No DID found in wallet');
         }
 
-        // (Opcional) Comprobamos que exista una credencial de identidad. 
-        // No es la "verificación" real, pero sirve para saber si la wallet *tiene* la cred.
+        // (Opcional) Comprobamos que exista una credencial de identidad.
         const creds = await listCredentials(token, walletId);
         const identityCred = creds.find(c =>
             c.parsedDocument &&
@@ -78,17 +80,17 @@ module.exports = {
         const requestBody = {
             request_credentials: [
                 {
-                    type: "CustomIdentityCredential",
-                    format: "jwt_vc_json"
+                    type: 'CustomIdentityCredential',
+                    format: 'jwt_vc_json'
                 }
             ]
         };
         const headers = {
             'Content-Type': 'application/json',
-            'authorizeBaseUrl': 'openid4vp://authorize',
-            'responseMode': 'direct_post',
+            authorizeBaseUrl: 'openid4vp://authorize',
+            responseMode: 'direct_post',
             // Callback donde nos dirán si la credencial era válida o no
-            'statusCallbackUri': `${process.env.VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackWalletLogin/${stateId}`
+            statusCallbackUri: `${process.env.VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackWalletLogin/${stateId}`
         };
 
         logger.debug(`[authService] POST -> ${process.env.WALTID_VERIFIER_URL}/openid4vc/verify, state=${stateId}`);
@@ -100,23 +102,22 @@ module.exports = {
         const verificationUrl = offerResp.data;
         logger.debug(`[authService] verificationUrl = ${verificationUrl}`);
 
-        // Guardamos en sessions
-        sessions[stateId] = {
+        // Guardamos la sesión en Redis
+        const sessionData = {
             status: 'pending',
             verificationUrl,
             verificationResult: null,
             user: null,
             flow: 'automatic'
         };
+        await sessionStore.setSession(stateId, sessionData);
 
-        // 4) En lugar de dar "verificationUrl" al frontend para que escanee un QR,
-        //    resolvemos directamente en el backend.
+        // 4) Resolución en backend (sin QR)
         logger.debug('[authService] -> resolvePresentationRequest');
         const resolvedPresentationRequest = await resolvePresentationRequest(verificationUrl);
         logger.debug(`[authService] resolvedPresentationRequest = ${JSON.stringify(resolvedPresentationRequest, null, 2)}`);
 
-        // 5) Extraer la presentationDefinition de resolvedPresentationRequest
-        //    (puede venir como string con query params o como objeto con { presentation_definition })
+        // 5) Extraer presentationDefinition y match
         const presentationDefinition = extractPresentationDefinition(resolvedPresentationRequest);
         logger.debug(`[authService] presentationDefinition: ${JSON.stringify(presentationDefinition, null, 2)}`);
 
@@ -128,7 +129,7 @@ module.exports = {
         }
         logger.debug(`[authService] matchedCreds => ${JSON.stringify(matchedCreds, null, 2)}`);
 
-        // 6) usePresentationRequest con la credencial matcheada (matchedCreds[0].id)
+        // 6) usePresentationRequest con la credencial matcheada
         const selectedCredentialId = matchedCreds[0].id;
         logger.debug(`[authService] -> usePresentationRequest with credId=${selectedCredentialId}`);
 
@@ -136,11 +137,11 @@ module.exports = {
             did,
             resolvedPresentationRequest,
             [selectedCredentialId],
-            null // sin disclosures
+            null
         );
         logger.debug(`[authService] usePresentationRequest response => ${JSON.stringify(useResp, null, 2)}`);
 
-        // 7) Devolvemos algo; la verificación se completará en el callback
+        // Retornamos el stateId para que el front (o quien sea) sepa que se está verificando
         return {
             message: 'Login automático iniciado. Verificación en curso. Poll /verification/session/:stateId',
             state: stateId,
@@ -172,7 +173,9 @@ module.exports = {
             throw new Error('Refresh token not recognized');
         }
 
+        // Generar nuevos tokens
         const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id.toString());
+        // Reemplazar el refresh token anterior
         user.refreshTokens = user.refreshTokens.filter(rt => rt !== refreshToken);
         user.refreshTokens.push(newRefreshToken);
         await user.save();
@@ -185,10 +188,9 @@ module.exports = {
 /**
  * Función de ayuda para extraer la "presentationDefinition" de un string
  * con query params o de un objeto con la definición en su interior.
- * Ajusta o refina según lo que walt.id te devuelva en "resolvedPresentationRequest".
  */
 function extractPresentationDefinition(resolvedPresentationRequest) {
-    // Caso 1: es string con query params (ej: "openid4vp://...?presentation_definition=...")
+    // Caso 1: es string con query params
     if (typeof resolvedPresentationRequest === 'string') {
         const urlObj = new URL(resolvedPresentationRequest);
         const presDef = urlObj.searchParams.get('presentation_definition');
@@ -196,14 +198,12 @@ function extractPresentationDefinition(resolvedPresentationRequest) {
             throw new Error('No presentation_definition in resolvedPresentationRequest');
         }
         return JSON.parse(decodeURIComponent(presDef));
-
-        // Caso 2: es un objeto con la clave presentation_definition
-    } else if (typeof resolvedPresentationRequest === 'object') {
+    }
+    // Caso 2: es objeto con { presentation_definition }
+    else if (typeof resolvedPresentationRequest === 'object') {
         if (resolvedPresentationRequest.presentation_definition) {
             return resolvedPresentationRequest.presentation_definition;
         }
     }
-
-    // Si nada de lo anterior, lanzamos error
     throw new Error('Could not extract presentationDefinition');
 }

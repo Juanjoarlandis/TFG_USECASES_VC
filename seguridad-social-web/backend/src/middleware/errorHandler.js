@@ -1,44 +1,61 @@
 // src/middleware/errorHandler.js
 
-module.exports = (err, req, res, next) => {
-    console.error('--- Error Handler Log Start ---');
-    console.error(`Time: ${new Date().toISOString()}`);
-    console.error('Original Error:', err);
+const logger = require('../../logger'); // Si usas Winston, Pino u otro logger personalizado
 
-    // Aquí definimos valores por defecto
+module.exports = (err, req, res, next) => {
+    // =====================================================
+    // 1) LOG BASADO EN TIEMPO Y METADATOS DE LA PETICIÓN
+    // =====================================================
+    const now = new Date().toISOString();
+    logger.error('--- Error Handler Log Start ---');
+    logger.error(`Time: ${now}`);
+    logger.error(`Request Path: ${req.method} ${req.originalUrl}`);
+    logger.error(`IP: ${req.ip}`);
+    // Aquí podrías incluir más metadatos (headers relevantes, userId si lo tienes, etc.)
+
+    // =====================================================
+    // 2) VALORES POR DEFECTO
+    // =====================================================
     let statusCode = err.status || 500;
     let message = err.message || 'Internal Server Error';
     let errorType = 'InternalServerError';
 
-    // Manejo de errores de Mongoose
+    // =====================================================
+    // 3) ERRORES DE MONGOOSE
+    // =====================================================
     if (err.name === 'ValidationError') {
-        // Errores de validación Mongoose
+        // Error de validación Mongoose
         statusCode = 400;
+        // Unir todos los mensajes de validación
         message = 'Datos inválidos: ' + Object.values(err.errors).map(e => e.message).join(', ');
         errorType = 'ValidationError';
     } else if (err.name === 'CastError') {
-        // Errores de casteo, por ejemplo, id inválido
+        // Errores de casteo (por ej. IDs mal formados)
         statusCode = 400;
         message = `El formato del parámetro ${err.path} es inválido: ${err.value}`;
         errorType = 'CastError';
     } else if (err.code && err.code === 11000) {
-        // Error de índice único en Mongoose
+        // Índice único violado en Mongoose
         statusCode = 400;
         const field = Object.keys(err.keyValue);
         message = `El campo ${field} debe ser único. Valor duplicado: ${err.keyValue[field]}`;
         errorType = 'DuplicateKeyError';
     }
 
-    // Manejo de errores de Axios (peticiones externas)
+    // =====================================================
+    // 4) ERRORES DE AXIOS (SERVICIOS EXTERNOS)
+    // =====================================================
+    // isAxiosError: puede indicarnos que el error viene de axios
     if (err.isAxiosError) {
-        // Podríamos agregar lógica para errores de axios
-        // err.response?.status puede ayudarnos
+        // Podrías extraer err.response?.status, err.response?.data, etc.
         statusCode = err.response && err.response.status ? err.response.status : 500;
         message = `Error en servicio externo: ${err.message}`;
         errorType = 'ExternalServiceError';
     }
 
-    // Manejo de errores de JWT (si se hace verificación interna)
+    // =====================================================
+    // 5) ERRORES DE JWT U OTRAS BIBLIOTECAS
+    // =====================================================
     if (err.name === 'TokenExpiredError') {
         statusCode = 401;
         message = 'Token expirado';
@@ -49,26 +66,41 @@ module.exports = (err, req, res, next) => {
         errorType = 'JsonWebTokenError';
     }
 
-    // Si el error viene ya con un status predefinido por el controlador, lo respetamos
-    // (por ejemplo: 400, 404, etc.)
+    // =====================================================
+    // 6) ERRORES PERSONALIZADOS (SERVICES, ETC.)
+    // =====================================================
+    // Por ejemplo, tu service puede lanzar:
+    //   throw { status: 404, message: 'Recurso no encontrado', code: 'RESOURCE_NOT_FOUND' }
+    // O un error con err.customCode
     if (err.status) {
         statusCode = err.status;
     }
+    if (err.code && typeof err.code === 'string') {
+        // Podríamos asignar errorType con err.code si tiene un valor especial
+        errorType = err.code;
+    }
 
-    // Podemos añadir lógica adicional para errores no cubiertos, o errores personalizados
-    // con más contexto
+    // =====================================================
+    // 7) LOG DETALLADO (Stacktrace, Data, Etc.)
+    // =====================================================
+    logger.error(`Status Code: ${statusCode}`);
+    logger.error(`Error Type: ${errorType}`);
+    logger.error(`Message: ${message}`);
+    // Si estás en un entorno de staging o desarrollo, loguea el stack completo
+    if (process.env.NODE_ENV !== 'production') {
+        logger.error(err.stack);
+    }
+    logger.error('--- Error Handler Log End ---');
 
-    // Log detallado para debug (en producción podrías omitir ciertos detalles)
-    console.error('Status Code:', statusCode);
-    console.error('Message:', message);
-    console.error('--- Error Handler Log End ---');
-
-    // Respuesta con JSON
+    // =====================================================
+    // 8) RESPUESTA JSON AL CLIENTE
+    // =====================================================
+    // En producción no retornamos stacktrace, para evitar exponer detalles.
+    // Ajusta según tus necesidades.
     res.status(statusCode).json({
         error: {
             type: errorType,
             message: message,
-            // Podemos dar detalles adicionales para debug si no es producción
             ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
         }
     });
