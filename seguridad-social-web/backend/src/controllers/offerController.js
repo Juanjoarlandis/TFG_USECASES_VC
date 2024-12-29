@@ -1,28 +1,26 @@
 // src/controllers/offerController.js
-const axios = require('axios');
-const HolderSessionManager = require('../services/HolderSessionManager');
-const logger = console;
+const offerService = require('../services/offerService');
+const logger = require('../../logger');
 
 module.exports = {
-    async useCredentialOffer(req, res) {
+    async useCredentialOffer(req, res, next) {
         try {
             const { offerUrl, did } = req.body;
-            if (!offerUrl || !did) return res.status(400).json({ error: 'Missing offerUrl or did' });
+            logger.debug('[offerController] useCredentialOffer - body:', req.body);
 
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = {
-                headers: { Authorization: `Bearer ${token}`, Accept: 'application/json', 'Content-Type': 'text/plain' }
-            };
+            if (!offerUrl || !did) {
+                return res.status(400).json({ error: 'Missing offerUrl or did' });
+            }
 
-            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/useOfferRequest?did=${encodeURIComponent(did)}`;
-            logger.debug(`Calling useOfferRequest URL: ${url}`);
-
-            const response = await axios.post(url, offerUrl, config);
-            res.status(200).json(response.data);
+            const data = await offerService.useCredentialOffer(offerUrl, did);
+            return res.status(200).json(data);
         } catch (error) {
-            logger.error('Error using credential offer:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[offerController] Error using credential offer:', error.message);
+
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     }
 };

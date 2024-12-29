@@ -1,112 +1,108 @@
 // src/controllers/credentialsController.js
-const axios = require('axios');
-const HolderSessionManager = require('../services/HolderSessionManager');
-const logger = console;
+const logger = require('../../logger');
+const credentialsService = require('../services/credentialsService');
 
 module.exports = {
-    async listCredentials(_req, res) {
+    async listCredentials(_req, res, next) {
         try {
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const credsUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials`;
-            const response = await axios.get(credsUrl, config);
-            const creds = response.data;
-            logger.info('Credentials listed successfully');
-            res.status(200).json(creds);
+            const creds = await credentialsService.listCredentials();
+            return res.status(200).json(creds);
         } catch (error) {
-            logger.error('Error listing credentials:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error listing credentials:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     },
 
-    async getCredentialById(req, res) {
+    async getCredentialById(req, res, next) {
         try {
             const credentialId = req.params.id;
-            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+            if (!credentialId) {
+                return res.status(400).json({ error: 'Missing credentialId' });
+            }
 
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
-            const response = await axios.get(url, config);
-            res.status(200).json(response.data);
+            const credential = await credentialsService.getCredentialById(credentialId);
+            return res.status(200).json(credential);
         } catch (error) {
-            logger.error('Error getting credential by ID:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error getting credential by ID:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     },
 
-    async deleteCredential(req, res) {
+    async deleteCredential(req, res, next) {
         try {
             const credentialId = req.params.id;
-            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+            if (!credentialId) {
+                return res.status(400).json({ error: 'Missing credentialId' });
+            }
 
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
-            await axios.delete(url, config);
-            res.status(200).json('Credential deleted successfully');
+            await credentialsService.deleteCredential(credentialId);
+            return res.status(200).json('Credential deleted successfully');
         } catch (error) {
-            logger.error('Error deleting credential:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error deleting credential:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     },
 
-    async acceptCredential(req, res) {
+    async acceptCredential(req, res, next) {
         try {
             const credentialId = req.params.id;
-            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+            if (!credentialId) {
+                return res.status(400).json({ error: 'Missing credentialId' });
+            }
 
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const acceptUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/accept`;
-            const response = await axios.post(acceptUrl, {}, config);
-
-            res.status(200).json(response.data);
+            const result = await credentialsService.acceptCredential(credentialId);
+            return res.status(200).json(result);
         } catch (error) {
-            logger.error('Error accepting credential:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error accepting credential:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     },
 
-    async rejectCredential(req, res) {
+    async rejectCredential(req, res, next) {
         try {
             const credentialId = req.params.id;
-            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+            if (!credentialId) {
+                return res.status(400).json({ error: 'Missing credentialId' });
+            }
 
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/reject`;
-            const response = await axios.post(url, {}, config);
-
-            res.status(200).json(response.data);
+            const result = await credentialsService.rejectCredential(credentialId);
+            return res.status(200).json(result);
         } catch (error) {
-            logger.error('Error rejecting credential:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error rejecting credential:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     },
 
-    async getCredentialStatus(req, res) {
+    async getCredentialStatus(req, res, next) {
         try {
             const credentialId = req.params.id;
-            if (!credentialId) return res.status(400).json({ error: 'Missing credentialId' });
+            if (!credentialId) {
+                return res.status(400).json({ error: 'Missing credentialId' });
+            }
 
-            // En el wallet-api no había persistencia de estado extra, asumimos que la credencial se refleja tal cual.
-            // Podríamos simplemente devolver un mock o consultar la credencial y ver si está "pending" o "issued".
-            const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            const config = { headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' } };
-            const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
-            const response = await axios.get(url, config);
-
-            res.status(200).json({ status: response.data.pending ? 'pending' : 'issued' });
+            const statusObj = await credentialsService.getCredentialStatus(credentialId);
+            return res.status(200).json(statusObj);
         } catch (error) {
-            logger.error('Error getting credential status:', error.message);
-            res.status(error.response?.status || 500).json({ error: error.message });
+            logger.error('[credentialsController] Error getting credential status:', error.message);
+            if (error.status) {
+                return res.status(error.status).json({ error: error.message });
+            }
+            next(error);
         }
     }
 };

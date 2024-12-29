@@ -13,6 +13,8 @@ import {
   easterEgg,
   getIssuersDidsEndpoint
 } from '../controllers/maincontroller';
+import { BitstringController } from '../controllers/BitstringController';
+import { WebhookController } from '../controllers/WebhookController';
 
 const router = express.Router();
 
@@ -42,5 +44,13 @@ router.post('/credentials/status', upstatus);
 router.delete('/credentials/:id(\\d+)', delcred);
 
 router.get('/.hidden-easter-egg', easterEgg);
+
+router.get('/bitstring-status-list', BitstringController.getBitstringStatusList);
+
+router.post('/bitstring-status-list/revoke', BitstringController.revokeIndex);
+
+router.post('/bitstring-status-list/activate', BitstringController.activateIndex);
+
+router.post('/webhook-verify', WebhookController.verifyCredential);
 
 export default router;
