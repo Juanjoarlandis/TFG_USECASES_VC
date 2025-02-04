@@ -20,16 +20,21 @@ services:
 
   backend:
     container_name: backend
-    image: juanjoarlandis/seguridad-social-web-backend:latest
+    #image: juanjoarlandis/seguridad-social-web-backend:latest
     build: ./backend
     environment:
       MONGO_URI: "mongodb://mongo-backend:27017/seguridadSocial"
+      # Variables para conectar a Redis
+      REDIS_HOST: "redis"
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
     expose:
       - "3001"
     networks:
       - my_network
     depends_on:
       - mongo-backend
+      - redis
 
   mongo-backend:
     container_name: mongo-backend
@@ -73,6 +78,14 @@ services:
     networks:
       - my_network
     restart: unless-stopped
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
 
 networks:
   my_network:

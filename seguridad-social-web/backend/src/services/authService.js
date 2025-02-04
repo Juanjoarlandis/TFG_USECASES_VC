@@ -1,3 +1,10 @@
+/**
+ * @file authService.js
+ * @description Provides authentication services for automatic login and token refresh.
+ * Implements a flow for automatic login via the wallet using OID4VC verification, and token refresh logic.
+ * @module services/authService
+ */
+
 const HolderSessionManager = require('./HolderSessionManager');
 const { verifyRefreshToken, generateTokens } = require('../utils/jwtUtils');
 const { getUserInfo, listDIDs, listCredentials } = require('./walletService');
@@ -7,50 +14,53 @@ const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const logger = require('../../logger');
 
-// Funciones para presentar la credencial sin QR
+// Functions for presenting credentials without QR code
 const {
     resolvePresentationRequest,
     matchCredentialsForPresentation,
     usePresentationRequest
 } = require('./presentationService');
 
-/**
- * authService.js
- * --------------
- * Maneja el flujo de login "automático" (sin QR visible) para credenciales de identidad,
- * realizando la verificación mediante OID4VC directamente desde el backend.
- */
 module.exports = {
     /**
-     * loginAndVerifyIdentityCredential:
-     *  1) Autentica en la wallet con email y password.
-     *  2) Pide a WaltId una oferta de verificación (CustomIdentityCredential).
-     *  3) Resuelve localmente la presentation request (sin QR).
-     *  4) Hace match de credencial.
-     *  5) Usa la credencial (presenta).
-     *  6) Espera callback en `/verification/statusCallbackWalletLogin/:stateId`.
+     * Performs automatic login and identity credential verification.
+     *
+     * This function implements the following steps:
+     * 1. Logs in to the wallet with the provided email and password.
+     * 2. Retrieves the wallet token and walletId.
+     * 3. Verifies that a CustomIdentityCredential exists in the wallet.
+     * 4. Requests a verification offer (without QR) from the external verification service.
+     * 5. Resolves the presentation request locally, matches the credential, and uses the presentation request.
+     * 6. Stores session information (with a unique stateId) for later polling via a callback.
+     *
+     * @async
+     * @function loginAndVerifyIdentityCredential
+     * @param {string} email - The user's email.
+     * @param {string} password - The user's password.
+     * @returns {Promise<Object>} An object containing a message, stateId, and verificationUrl.
+     * @throws {Error} Throws an error if any step fails (e.g., missing walletId, missing DID, or missing credentials).
      */
     async loginAndVerifyIdentityCredential(email, password) {
         logger.debug(`[authService] loginAndVerifyIdentityCredential - Start with email=${email}`);
 
-        // 1) Login en la wallet
+        // 1) Log in to the wallet
         await HolderSessionManager.loginHolderWithCredentials(email, password);
         logger.debug('[authService] HolderSessionManager.loginHolderWithCredentials OK.');
 
-        // 2) Obtenemos token y walletId
+        // 2) Retrieve token and walletId
         const token = await HolderSessionManager.getToken();
-        const walletId = HolderSessionManager.getWalletId();
+        const walletId = await HolderSessionManager.getWalletId();
         if (!walletId) {
             logger.error('[authService] No walletId found after login');
             throw new Error('No walletId found after login');
         }
         logger.debug(`[authService] token? ${!!token}, walletId=${walletId}`);
 
-        // Info extra del holder (opcional)
+        // Retrieve additional holder info (optional)
         const userInfo = await getUserInfo(token);
         logger.debug(`[authService] userInfo: ${JSON.stringify(userInfo, null, 2)}`);
 
-        // Listar DIDs en la wallet (opcional para logs)
+        // List DIDs from the wallet (for logging purposes)
         const dids = await listDIDs(token, walletId);
         logger.debug(`[authService] DIDs => ${JSON.stringify(dids, null, 2)}`);
         const did = (dids[0] && dids[0].did) || null;
@@ -59,8 +69,7 @@ module.exports = {
             throw new Error('No DID found in wallet');
         }
 
-        // (Opcional) Comprobamos que exista una credencial de identidad. 
-        // No es la "verificación" real, pero sirve para saber si la wallet *tiene* la cred.
+        // Optionally, verify that the wallet contains a CustomIdentityCredential
         const creds = await listCredentials(token, walletId);
         const identityCred = creds.find(c =>
             c.parsedDocument &&
@@ -73,7 +82,7 @@ module.exports = {
         }
         logger.debug(`[authService] Found identityCred => ${identityCred.id}`);
 
-        // 3) Pedimos a walt.id una "offer" para verificar (sin QR).
+        // 3) Request a verification offer from the external service (without QR)
         const stateId = uuidv4();
         const requestBody = {
             request_credentials: [
@@ -87,7 +96,7 @@ module.exports = {
             'Content-Type': 'application/json',
             'authorizeBaseUrl': 'openid4vp://authorize',
             'responseMode': 'direct_post',
-            // Callback donde nos dirán si la credencial era válida o no
+            // Callback for the verification result
             'statusCallbackUri': `${process.env.VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackWalletLogin/${stateId}`
         };
 
@@ -100,7 +109,7 @@ module.exports = {
         const verificationUrl = offerResp.data;
         logger.debug(`[authService] verificationUrl = ${verificationUrl}`);
 
-        // Guardamos en sessions
+        // 4) Store session data for automatic processing
         sessions[stateId] = {
             status: 'pending',
             verificationUrl,
@@ -109,26 +118,24 @@ module.exports = {
             flow: 'automatic'
         };
 
-        // 4) En lugar de dar "verificationUrl" al frontend para que escanee un QR,
-        //    resolvemos directamente en el backend.
+        // 5) Automatically resolve the presentation request (instead of QR scanning)
         logger.debug('[authService] -> resolvePresentationRequest');
         const resolvedPresentationRequest = await resolvePresentationRequest(verificationUrl);
         logger.debug(`[authService] resolvedPresentationRequest = ${JSON.stringify(resolvedPresentationRequest, null, 2)}`);
 
-        // 5) Extraer la presentationDefinition de resolvedPresentationRequest
-        //    (puede venir como string con query params o como objeto con { presentation_definition })
+        // Extract the presentationDefinition from the resolved presentation request
         const presentationDefinition = extractPresentationDefinition(resolvedPresentationRequest);
         logger.debug(`[authService] presentationDefinition: ${JSON.stringify(presentationDefinition, null, 2)}`);
 
         logger.debug('[authService] -> matchCredentialsForPresentation');
         const matchedCreds = await matchCredentialsForPresentation(presentationDefinition);
         if (!matchedCreds || !matchedCreds.length) {
-            logger.error('[authService] No matched creds for CustomIdentityCredential');
+            logger.error('[authService] No matching credentials found in the wallet');
             throw new Error('No matching credentials found in the wallet');
         }
         logger.debug(`[authService] matchedCreds => ${JSON.stringify(matchedCreds, null, 2)}`);
 
-        // 6) usePresentationRequest con la credencial matcheada (matchedCreds[0].id)
+        // 6) Use the presentation request with the matched credential (using the first match)
         const selectedCredentialId = matchedCreds[0].id;
         logger.debug(`[authService] -> usePresentationRequest with credId=${selectedCredentialId}`);
 
@@ -136,20 +143,29 @@ module.exports = {
             did,
             resolvedPresentationRequest,
             [selectedCredentialId],
-            null // sin disclosures
+            null // No disclosures
         );
         logger.debug(`[authService] usePresentationRequest response => ${JSON.stringify(useResp, null, 2)}`);
 
-        // 7) Devolvemos algo; la verificación se completará en el callback
+        // 7) Return response indicating that automatic login has been initiated
         return {
-            message: 'Login automático iniciado. Verificación en curso. Poll /verification/session/:stateId',
+            message: 'Automatic login initiated. Verification in progress. Poll /verification/session/:stateId',
             state: stateId,
             verificationUrl
         };
     },
 
     /**
-     * refreshTokens: refresca un token JWT estándar.
+     * Refreshes JWT tokens.
+     *
+     * This function verifies the provided refresh token, retrieves the corresponding user,
+     * and generates new access and refresh tokens. The old refresh token is replaced with the new one.
+     *
+     * @async
+     * @function refreshTokens
+     * @param {string} refreshToken - The current refresh token.
+     * @returns {Promise<Object>} An object containing the new accessToken and refreshToken.
+     * @throws {Error} Throws an error if the refresh token is invalid or the user is not found.
      */
     async refreshTokens(refreshToken) {
         logger.debug(`[*] [authService] refreshTokens - refreshToken: ${refreshToken}`);
@@ -157,7 +173,7 @@ module.exports = {
         try {
             decoded = verifyRefreshToken(refreshToken);
         } catch (err) {
-            logger.warn('[!] Refresh token inválido');
+            logger.warn('[!] Invalid refresh token');
             throw new Error('Invalid refresh token');
         }
 
@@ -168,27 +184,36 @@ module.exports = {
         }
 
         if (!user.refreshTokens.includes(refreshToken)) {
-            logger.warn('[!] Refresh token no reconocido');
+            logger.warn('[!] Refresh token not recognized');
             throw new Error('Refresh token not recognized');
         }
 
         const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id.toString());
+        // Replace the old refresh token with the new one
         user.refreshTokens = user.refreshTokens.filter(rt => rt !== refreshToken);
         user.refreshTokens.push(newRefreshToken);
         await user.save();
-        logger.debug('[*] Refresh token refrescado con éxito');
+        logger.debug('[*] Refresh token refreshed successfully');
 
         return { accessToken, refreshToken: newRefreshToken };
     }
 };
 
 /**
- * Función de ayuda para extraer la "presentationDefinition" de un string
- * con query params o de un objeto con la definición en su interior.
- * Ajusta o refina según lo que walt.id te devuelva en "resolvedPresentationRequest".
+ * Helper function to extract the presentationDefinition from a resolved presentation request.
+ *
+ * Supports two cases:
+ * 1. When the input is a string with query parameters (e.g., "openid4vp://...?presentation_definition=...").
+ * 2. When the input is an object with a "presentation_definition" property.
+ *
+ * @function extractPresentationDefinition
+ * @param {string|Object} resolvedPresentationRequest - The resolved presentation request.
+ * @returns {Object} The parsed presentation definition.
+ * @throws {Error} Throws an error if the presentation definition cannot be extracted.
+ * @private
  */
 function extractPresentationDefinition(resolvedPresentationRequest) {
-    // Caso 1: es string con query params (ej: "openid4vp://...?presentation_definition=...")
+    // Case 1: Input is a string with query parameters
     if (typeof resolvedPresentationRequest === 'string') {
         const urlObj = new URL(resolvedPresentationRequest);
         const presDef = urlObj.searchParams.get('presentation_definition');
@@ -197,13 +222,13 @@ function extractPresentationDefinition(resolvedPresentationRequest) {
         }
         return JSON.parse(decodeURIComponent(presDef));
 
-        // Caso 2: es un objeto con la clave presentation_definition
+        // Case 2: Input is an object with a "presentation_definition" property
     } else if (typeof resolvedPresentationRequest === 'object') {
         if (resolvedPresentationRequest.presentation_definition) {
             return resolvedPresentationRequest.presentation_definition;
         }
     }
 
-    // Si nada de lo anterior, lanzamos error
+    // If neither case applies, throw an error
     throw new Error('Could not extract presentationDefinition');
 }

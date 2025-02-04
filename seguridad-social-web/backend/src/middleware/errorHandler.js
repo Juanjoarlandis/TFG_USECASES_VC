@@ -1,74 +1,81 @@
-// src/middleware/errorHandler.js
+/**
+ * @file errorHandler.js
+ * @description Global error handling middleware for Express.
+ * This middleware logs error details and returns a structured JSON response with error information.
+ * It handles errors from various sources including Mongoose, Axios, and JWT.
+ * @module middleware/errorHandler
+ */
 
+/**
+ * Global error handler middleware.
+ *
+ * Logs error details (including time, original error, status code, and message) and sends a JSON response
+ * with the error type and message. Additional error details (e.g., stack trace) are provided in non-production environments.
+ *
+ * @param {Error} err - The error object.
+ * @param {import('express').Request} req - The Express request object.
+ * @param {import('express').Response} res - The Express response object.
+ * @param {import('express').NextFunction} next - The Express next middleware function.
+ */
 module.exports = (err, req, res, next) => {
     console.error('--- Error Handler Log Start ---');
     console.error(`Time: ${new Date().toISOString()}`);
     console.error('Original Error:', err);
 
-    // Aquí definimos valores por defecto
+    // Set default values for status code, message, and error type.
     let statusCode = err.status || 500;
     let message = err.message || 'Internal Server Error';
     let errorType = 'InternalServerError';
 
-    // Manejo de errores de Mongoose
+    // Handle Mongoose errors.
     if (err.name === 'ValidationError') {
-        // Errores de validación Mongoose
         statusCode = 400;
-        message = 'Datos inválidos: ' + Object.values(err.errors).map(e => e.message).join(', ');
+        message = 'Invalid data: ' + Object.values(err.errors).map(e => e.message).join(', ');
         errorType = 'ValidationError';
     } else if (err.name === 'CastError') {
-        // Errores de casteo, por ejemplo, id inválido
         statusCode = 400;
-        message = `El formato del parámetro ${err.path} es inválido: ${err.value}`;
+        message = `Invalid format for parameter ${err.path}: ${err.value}`;
         errorType = 'CastError';
     } else if (err.code && err.code === 11000) {
-        // Error de índice único en Mongoose
         statusCode = 400;
         const field = Object.keys(err.keyValue);
-        message = `El campo ${field} debe ser único. Valor duplicado: ${err.keyValue[field]}`;
+        message = `The field ${field} must be unique. Duplicate value: ${err.keyValue[field]}`;
         errorType = 'DuplicateKeyError';
     }
 
-    // Manejo de errores de Axios (peticiones externas)
+    // Handle errors from Axios (external service requests).
     if (err.isAxiosError) {
-        // Podríamos agregar lógica para errores de axios
-        // err.response?.status puede ayudarnos
         statusCode = err.response && err.response.status ? err.response.status : 500;
-        message = `Error en servicio externo: ${err.message}`;
+        message = `External service error: ${err.message}`;
         errorType = 'ExternalServiceError';
     }
 
-    // Manejo de errores de JWT (si se hace verificación interna)
+    // Handle JWT errors.
     if (err.name === 'TokenExpiredError') {
         statusCode = 401;
-        message = 'Token expirado';
+        message = 'Token expired';
         errorType = 'TokenExpiredError';
     } else if (err.name === 'JsonWebTokenError') {
         statusCode = 401;
-        message = 'Token inválido';
+        message = 'Invalid token';
         errorType = 'JsonWebTokenError';
     }
 
-    // Si el error viene ya con un status predefinido por el controlador, lo respetamos
-    // (por ejemplo: 400, 404, etc.)
+    // If the error already defines a status, use it.
     if (err.status) {
         statusCode = err.status;
     }
 
-    // Podemos añadir lógica adicional para errores no cubiertos, o errores personalizados
-    // con más contexto
-
-    // Log detallado para debug (en producción podrías omitir ciertos detalles)
     console.error('Status Code:', statusCode);
     console.error('Message:', message);
     console.error('--- Error Handler Log End ---');
 
-    // Respuesta con JSON
+    // Send the error response as JSON.
     res.status(statusCode).json({
         error: {
             type: errorType,
             message: message,
-            // Podemos dar detalles adicionales para debug si no es producción
+            // Include stack trace details if not in production.
             ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
         }
     });

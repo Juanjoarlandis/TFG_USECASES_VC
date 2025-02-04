@@ -1,7 +1,21 @@
+/**
+ * @file verificationController.js
+ * @description Controller for handling verification operations.
+ * This module manages both manual verification (with QR) and automatic verification flows,
+ * including the handling of various callbacks (e.g., statusCallback, statusCallbackAlta, and statusCallbackWalletLogin)
+ * as well as session status retrieval.
+ * @module controllers/verificationController
+ */
+
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
-const { findOrCreateOrUpdateUser, checkCredentialsRevocation, extractUserDataFromDecodedCredentialSubject, sessions } = require('../utils/validations');
+const {
+    findOrCreateOrUpdateUser,
+    checkCredentialsRevocation,
+    extractUserDataFromDecodedCredentialSubject,
+    sessions
+} = require('../utils/validations');
 const User = require('../models/User');
 const { generateTokens } = require('../utils/jwtUtils');
 const logger = require('../../logger');
@@ -15,20 +29,26 @@ const {
 const OFFER_EXPIRATION_MS = 60 * 1000;
 const { WALTID_VERIFIER_URL, VERIFIER_COORD_PUBLIC_URL, ISS_COORD_URL } = process.env;
 
-/**
- * verificationController.js
- * -------------------------
- * Maneja la verificación "manual" (con QR) y la parte de callbacks en manual o para el 
- * login automático ("statusCallbackWalletLogin/:stateId").
- */
 module.exports = {
-
+    /**
+     * Initiates a manual verification offer.
+     *
+     * This endpoint sends a verification request to the external verification service (WaltID)
+     * using the provided request body. It generates a unique stateId and stores a new session with status "pending".
+     *
+     * @async
+     * @function offerVerification
+     * @param {import('express').Request} req - Express request object containing the verification request body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing the verificationUrl and stateId.
+     */
     async offerVerification(req, res, next) {
         try {
             logger.debug('[verificationController] offerVerification - start');
 
             if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
-                return res.status(500).json({ error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL' });
+                return res.status(500).json({ error: 'Missing environment variables WALTID_VERIFIER_URL or VERIFIER_COORD_PUBLIC_URL' });
             }
 
             const stateId = uuidv4();
@@ -56,39 +76,52 @@ module.exports = {
         }
     },
 
+    /**
+     * Initiates an automatic verification offer for 3 credentials.
+     *
+     * This function generates a stateId and retrieves a list of issuer DIDs from the issuer coordinator.
+     * It builds a verification request for exactly 3 credentials and sends it to the verification service.
+     * The resulting verificationUrl and session data are stored, and then the function automatically
+     * resolves the presentation request, matches credentials, and triggers the presentation request.
+     *
+     * @async
+     * @function offerVerification3CredsAutomatic
+     * @param {import('express').Request} req - Express request object.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing a message, stateId, and verificationUrl.
+     */
     async offerVerification3CredsAutomatic(req, res, next) {
         try {
             logger.debug('[verificationController] offerVerification3CredsAutomatic - start');
 
             if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
                 return res.status(500).json({
-                    error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL'
+                    error: 'Missing environment variables WALTID_VERIFIER_URL or VERIFIER_COORD_PUBLIC_URL'
                 });
             }
             if (!ISS_COORD_URL) {
                 return res.status(500).json({
-                    error: 'Falta la variable ISS_COORD_URL'
+                    error: 'Missing environment variable ISS_COORD_URL'
                 });
             }
 
-            // 1) Generar stateId
+            // 1) Generate stateId
             const stateId = uuidv4();
 
-            // 2) Obtener (opc.) la lista de DIDs permitidos (por ejemplo)
+            // 2) Retrieve allowed issuer DIDs
             const didsResponse = await axios.get(`${ISS_COORD_URL}/did/issuers`);
             const { issuers } = didsResponse.data || {};
             if (!issuers || issuers.length < 3) {
-                return res.status(500).json({ error: 'No se pudieron obtener los 3 issuers' });
+                return res.status(500).json({ error: 'Could not obtain 3 issuers' });
             }
 
-            // 3) Preparar body pidiendo EXACTAMENTE 3 credenciales 
+            // 3) Prepare the verification request body for exactly 3 credentials
             const requestBody = {
-                // Políticas de VP (ejemplo)
                 vp_policies: [
                     { policy: 'minimum-credentials', args: 3 },
                     { policy: 'maximum-credentials', args: 100 }
                 ],
-                // Políticas de VC
                 vc_policies: [
                     'signature',
                     'expired',
@@ -96,10 +129,9 @@ module.exports = {
                     'revoked_status_list',
                     {
                         policy: 'allowed-issuer',
-                        args: issuers  // array de DIDs permitidos
+                        args: issuers
                     }
                 ],
-                // Tipos de credenciales requeridas
                 request_credentials: [
                     { type: 'CustomIdentityCredential', format: 'jwt_vc_json' },
                     { type: 'PassportCredential', format: 'jwt_vc_json' },
@@ -107,72 +139,62 @@ module.exports = {
                 ]
             };
 
-            // 4) Llamamos a walt.id
+            // 4) Call the verification service
             const headers = {
                 'Content-Type': 'application/json',
                 authorizeBaseUrl: 'openid4vp://authorize',
                 responseMode: 'direct_post',
-                // callback donde walt.id nos notificará el resultado => statusCallbackAlta
                 statusCallbackUri: `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
             };
 
             logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify, stateId=${stateId}`);
             const responseWalt = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
 
-            const verificationUrl = responseWalt.data; // openid4vp://... ?
+            const verificationUrl = responseWalt.data;
 
-            // 5) Guardar en sessions
+            // 5) Store session data with expiration
             sessions[stateId] = {
                 status: 'pending',
                 verificationUrl,
                 verificationResult: null,
                 type: 'alta',
-                // por ejemplo, expiración en 1 minuto
-                expiresAt: Date.now() + 1 * 60 * 1000
+                expiresAt: Date.now() + OFFER_EXPIRATION_MS
             };
 
-            // ============== PARTE AUTOMÁTICA (resolvemos en backend) ==============
+            // ============== AUTOMATIC PART: resolve, match, and use the presentation request ==============
             logger.debug('[offerVerification3CredsAutomatic] -> resolvePresentationRequest');
             const resolvedPresentationRequest = await resolvePresentationRequest(verificationUrl);
             logger.debug(`[offerVerification3CredsAutomatic] resolvedPresentationRequest = ${JSON.stringify(resolvedPresentationRequest, null, 2)}`);
 
-            // Extraer la presentationDefinition
             const presentationDefinition = extractPresentationDefinition(resolvedPresentationRequest);
             logger.debug(`[offerVerification3CredsAutomatic] presentationDefinition = ${JSON.stringify(presentationDefinition, null, 2)}`);
 
-            // matchCredentialsForPresentation
             logger.debug('[offerVerification3CredsAutomatic] -> matchCredentialsForPresentation');
             const matchedCreds = await matchCredentialsForPresentation(presentationDefinition);
             if (!matchedCreds || matchedCreds.length < 3) {
-                logger.error('[offerVerification3CredsAutomatic] No se encontraron 3 credenciales en la wallet');
-                // Cambia el estado a 'failed'
+                logger.error('[offerVerification3CredsAutomatic] Less than 3 matching credentials found in wallet');
                 sessions[stateId].status = 'failed';
                 return res.status(400).json({ error: 'No matching 3 credentials in the wallet' });
             }
 
-            // Por si se devuelven muchas, filtramos las 3 que necesitamos
-            // (OJO, esto depende de cómo walt.id devuelva matchedCreds: 
-            //  puede que ya vengan 3 exactas, o vengan 5 y tengas que filtrar 
-            //  por type=CustomIdentityCredential, etc.)
-            // Ejemplo naive:
+            // Select the credential IDs (this example assumes all returned credentials are needed)
             const selectedCredsIds = matchedCreds.map(c => c.id);
 
-            // DID "por defecto" (puedes haberlo tomado de HolderSessionManager)
-            // O del token que tengas en tu "presentationService"
+            // Retrieve a default DID from the wallet or another source
             const did = await getOrSelectDidSomewhere();
 
-            logger.debug('[offerVerification3CredsAutomatic] -> usePresentationRequest con las 3 credenciales');
+            logger.debug('[offerVerification3CredsAutomatic] -> usePresentationRequest with selected credentials');
             const useResp = await usePresentationRequest(
                 did,
                 resolvedPresentationRequest,
                 selectedCredsIds,
-                null // sin disclosures
+                null // No disclosures
             );
             logger.debug(`[offerVerification3CredsAutomatic] useResp = ${JSON.stringify(useResp, null, 2)}`);
 
-            // 6) Devolver info al frontend (stateId, por si quiere hacer polling, etc.)
+            // 6) Return information for polling by the frontend
             return res.status(200).json({
-                message: 'Verificación de 3 credenciales (alta automática) iniciada. Revisar callback.',
+                message: 'Automatic verification for 3 credentials initiated. Check callback for results.',
                 state: stateId,
                 verificationUrl
             });
@@ -182,45 +204,56 @@ module.exports = {
         }
     },
 
-    // =============== Ejemplo: "offerVerification3Creds" (manual alta) ===============
+    /**
+     * Initiates a manual verification offer for 3 credentials.
+     *
+     * Similar to the automatic version, this endpoint prepares a verification request for exactly 3 credentials,
+     * but it is intended for a manual flow (e.g., using QR codes).
+     *
+     * @async
+     * @function offerVerification3Creds
+     * @param {import('express').Request} req - Express request object.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing the verificationUrl and stateId.
+     */
     async offerVerification3Creds(req, res, next) {
         try {
             logger.debug('[verificationController] offerVerification3Creds - start');
 
             if (!WALTID_VERIFIER_URL || !VERIFIER_COORD_PUBLIC_URL) {
-                return res.status(500).json({ error: 'Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL' });
+                return res.status(500).json({ error: 'Missing environment variables WALTID_VERIFIER_URL or VERIFIER_COORD_PUBLIC_URL' });
             }
             if (!ISS_COORD_URL) {
-                return res.status(500).json({ error: 'Falta la variable ISS_COORD_URL' });
+                return res.status(500).json({ error: 'Missing environment variable ISS_COORD_URL' });
             }
 
             const stateId = uuidv4();
-            // Pedimos los 3 DIDs, etc. ejemplo
             const didsResponse = await axios.get(`${ISS_COORD_URL}/did/issuers`);
             const { issuers } = didsResponse.data;
             if (!issuers || issuers.length < 3) {
-                return res.status(500).json({ error: 'No se pudieron obtener los 3 DIDs de los issuers' });
+                return res.status(500).json({ error: 'Could not obtain 3 issuer DIDs' });
             }
 
             const requestBody = {
                 vp_policies: [
-                    { "policy": "minimum-credentials", "args": 3 },
-                    { "policy": "maximum-credentials", "args": 100 }
+                    { policy: 'minimum-credentials', args: 3 },
+                    { policy: 'maximum-credentials', args: 100 }
                 ],
                 vc_policies: [
-                    "signature",
-                    "expired",
-                    "not-before",
-                    "revoked_status_list",
+                    'signature',
+                    'expired',
+                    'not-before',
+                    'revoked_status_list',
                     {
-                        "policy": "allowed-issuer",
-                        "args": issuers
+                        policy: 'allowed-issuer',
+                        args: issuers
                     }
                 ],
                 request_credentials: [
-                    { "type": "CustomIdentityCredential", "format": "jwt_vc_json" },
-                    { "type": "PassportCredential", "format": "jwt_vc_json" },
-                    { "type": "EmployerRegistrationCredential", "format": "jwt_vc_json" }
+                    { type: 'CustomIdentityCredential', format: 'jwt_vc_json' },
+                    { type: 'PassportCredential', format: 'jwt_vc_json' },
+                    { type: 'EmployerRegistrationCredential', format: 'jwt_vc_json' }
                 ]
             };
 
@@ -231,7 +264,7 @@ module.exports = {
                 'statusCallbackUri': `${VERIFIER_COORD_PUBLIC_URL}/verification/statusCallbackAlta/${stateId}`
             };
 
-            logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify (3 creds), stateId=${stateId}`);
+            logger.debug(`[verificationController] -> POST ${WALTID_VERIFIER_URL}/openid4vc/verify (3 creds manual), stateId=${stateId}`);
             const response = await axios.post(`${WALTID_VERIFIER_URL}/openid4vc/verify`, requestBody, { headers });
 
             sessions[stateId] = {
@@ -248,14 +281,28 @@ module.exports = {
         }
     },
 
-    // =============== Callback para verificación del Alta ===============
+    /**
+     * Processes the status callback for a verification (Alta) process.
+     *
+     * This endpoint is called by the verification service after the verification process completes.
+     * It updates the session status based on the verification result and processes tokens,
+     * decodes the credential JWTs, verifies required credentials, checks for revocation,
+     * and updates or creates the user record accordingly.
+     *
+     * @async
+     * @function statusCallbackAlta
+     * @param {import('express').Request} req - Express request object with stateId as a URL parameter and verification data in the body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a success message if processed successfully.
+     */
     async statusCallbackAlta(req, res, next) {
         try {
             const { stateId } = req.params;
             const verificationData = req.body;
 
             if (!sessions[stateId]) {
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                return res.status(404).json({ error: 'Session not found' });
             }
 
             const { verificationResult, tokenResponse } = verificationData;
@@ -266,14 +313,14 @@ module.exports = {
                 const vpToken = tokenResponse && tokenResponse.vp_token;
                 if (!vpToken) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se encontró el vp_token' });
+                    return res.status(400).json({ error: 'vp_token not found' });
                 }
 
                 const vpDecoded = jwt.decode(vpToken);
                 const credentialsJwt = vpDecoded?.vp?.verifiableCredential;
                 if (!credentialsJwt || credentialsJwt.length < 3) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se presentaron las 3 credenciales requeridas' });
+                    return res.status(400).json({ error: 'Required 3 credentials not presented' });
                 }
 
                 const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
@@ -284,13 +331,13 @@ module.exports = {
 
                 if (!hasIdentity || !hasPassport || !hasEmployer) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Faltan credenciales requeridas (Identidad, Pasaporte, Empleador)' });
+                    return res.status(400).json({ error: 'Missing required credentials (Identity, Passport, Employer)' });
                 }
 
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Una de las credenciales está revocada' });
+                    return res.status(400).json({ error: 'One of the credentials is revoked' });
                 }
 
                 const identityCredDecoded = decodedCreds.find(c => c.vc && c.vc.type.includes('CustomIdentityCredential'));
@@ -299,47 +346,45 @@ module.exports = {
 
                 if (!identityCredDecoded) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se encontró la credencial de identidad' });
+                    return res.status(400).json({ error: 'Identity credential not found' });
                 }
 
-                // Extraer datos de identidad
+                // Extract identity data and process address information
                 const idData = extractUserDataFromDecodedCredentialSubject(identityCredDecoded.vc.credentialSubject);
 
-                // Procesar dirección
                 let fullAddress = '';
                 if (passportCredDecoded && passportCredDecoded.vc?.credentialSubject) {
                     if (idData.currentAddress && idData.currentAddress.length > 0) {
                         fullAddress = idData.currentAddress.join(', ');
                     } else {
                         const ps = passportCredDecoded.vc.credentialSubject;
-                        fullAddress = ps.placeOfBirth ? ps.placeOfBirth : "Calle Ejemplo 123, Madrid";
+                        fullAddress = ps.placeOfBirth ? ps.placeOfBirth : 'Calle Ejemplo 123, Madrid';
                     }
                 } else {
-                    if (idData.currentAddress && idData.currentAddress.length > 0) {
-                        fullAddress = idData.currentAddress.join(', ');
-                    } else {
-                        fullAddress = "Calle Ejemplo 123, Madrid";
-                    }
+                    fullAddress = idData.currentAddress && idData.currentAddress.length > 0 ? idData.currentAddress.join(', ') : 'Calle Ejemplo 123, Madrid';
                 }
 
-                // Datos empleador
                 if (!employerCredDecoded || !employerCredDecoded.vc?.credentialSubject) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'No se pudo extraer la credencial del empleador' });
+                    return res.status(400).json({ error: 'Employer credential could not be extracted' });
                 }
 
                 const employerSubject = employerCredDecoded.vc.credentialSubject;
-                const employerName = employerSubject.employerName || "Empresa de Servicios S.A.";
-                const contributionAccountCode = employerSubject.employerContributionAccountCode || "0111-2222-33-4444444444";
-                const socialSecurityRegime = employerSubject.socialSecurityRegime || "Régimen General";
-                const collectiveAgreements = employerSubject.collectiveAgreements || ["Convenio Colectivo de Empresas de Servicios Generales", "Convenio Colectivo Sectorial"];
+                const employerName = employerSubject.employerName || 'Empresa de Servicios S.A.';
+                const contributionAccountCode = employerSubject.employerContributionAccountCode || '0111-2222-33-4444444444';
+                const socialSecurityRegime = employerSubject.socialSecurityRegime || 'Régimen General';
+                const collectiveAgreements = employerSubject.collectiveAgreements || [
+                    'Convenio Colectivo de Empresas de Servicios Generales',
+                    'Convenio Colectivo Sectorial'
+                ];
 
                 const user = await findOrCreateOrUpdateUser(idData, 'manual');
                 user.hasAltaCredential = true;
                 user.altaIssueDate = new Date();
                 await user.save();
 
-                const token = "ejemplo-de-token-alta";
+                // Set a placeholder token (in production, use a proper token)
+                const token = "example-alta-token";
                 sessions[stateId].user = user;
                 sessions[stateId].token = token;
                 sessions[stateId].employerData = {
@@ -357,7 +402,20 @@ module.exports = {
         }
     },
 
-    // =============== Callback genérico (1 cred) ===============
+    /**
+     * Processes a generic verification callback for a single credential.
+     *
+     * This endpoint updates the session with the verification result,
+     * decodes the provided vp_token, checks revocation, and creates/updates the user.
+     * It then generates new access and refresh tokens for the user.
+     *
+     * @async
+     * @function statusCallback
+     * @param {import('express').Request} req - Express request object containing stateId in params and verification data in the body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a success message upon processing the callback.
+     */
     async statusCallback(req, res, next) {
         try {
             logger.debug('[verificationController] statusCallback - start');
@@ -366,7 +424,7 @@ module.exports = {
             const verificationData = req.body;
 
             if (!sessions[stateId]) {
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                return res.status(404).json({ error: 'Session not found' });
             }
 
             const { verificationResult } = verificationData;
@@ -387,26 +445,21 @@ module.exports = {
                 const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
                 if (!credentialsJwt.length) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Falta la credencial requerida' });
+                    return res.status(400).json({ error: 'Required credential missing' });
                 }
 
-                // Comprobar si revocada
+                // Check for revocation
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'La credencial está revocada' });
+                    return res.status(400).json({ error: 'Credential is revoked' });
                 }
 
-                // Decodificar la primera
                 const vcDecoded = jwt.decode(credentialsJwt[0]);
                 logger.debug(`[verificationController] vcDecoded => ${JSON.stringify(vcDecoded, null, 2)}`);
 
-                // Extraer userData
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
-
-                // Crear/actualizar user
                 const user = await findOrCreateOrUpdateUser(userData, 'manual');
-                // Generar tokens
                 const { accessToken, refreshToken } = generateTokens(user._id.toString());
                 user.refreshTokens.push(refreshToken);
                 await user.save();
@@ -422,9 +475,20 @@ module.exports = {
         }
     },
 
-    // =============== Callback para "walletLogin" especial ===============
-    // Similar al anterior, pero destinado a la ruta "/verification/statusCallbackWalletLogin/:stateId"
-    // Se crea/actualiza el user y se emite token real, etc.
+    /**
+     * Processes a special verification callback for wallet login.
+     *
+     * Similar to the generic callback, this endpoint is specifically used for the
+     * "/verification/statusCallbackWalletLogin/:stateId" route. It updates the user with the "automatic" flow,
+     * generates new tokens, and saves the user in the session.
+     *
+     * @async
+     * @function statusCallbackWalletLogin
+     * @param {import('express').Request} req - Express request object with stateId in params and verification data in the body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing a message and the session status.
+     */
     async statusCallbackWalletLogin(req, res, next) {
         try {
             logger.debug('[verificationController] statusCallbackWalletLogin - start');
@@ -433,7 +497,7 @@ module.exports = {
             const verificationData = req.body;
 
             if (!sessions[stateId]) {
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                return res.status(404).json({ error: 'Session not found' });
             }
 
             const { verificationResult } = verificationData;
@@ -454,29 +518,25 @@ module.exports = {
                 const credentialsJwt = vpDecoded?.vp?.verifiableCredential || [];
                 if (!credentialsJwt.length) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Falta la credencial de identidad' });
+                    return res.status(400).json({ error: 'Identity credential missing' });
                 }
 
                 const revoked = await checkCredentialsRevocation(credentialsJwt);
                 if (revoked) {
                     sessions[stateId].status = 'failed';
-                    return res.status(400).json({ error: 'Credencial revocada' });
+                    return res.status(400).json({ error: 'Credential revoked' });
                 }
 
-                // Decodificar la credencial 0
                 const vcDecoded = jwt.decode(credentialsJwt[0]);
                 logger.debug(`[verificationController] (walletLogin) vcDecoded => ${JSON.stringify(vcDecoded, null, 2)}`);
 
                 const userData = extractUserDataFromDecodedCredentialSubject(vcDecoded.vc.credentialSubject);
-                // Creamos/actualizamos usuario con flow=automatic
                 const user = await findOrCreateOrUpdateUser(userData, 'automatic');
 
-                // Generar tokens
                 const { accessToken, refreshToken } = generateTokens(user._id.toString());
                 user.refreshTokens.push(refreshToken);
                 await user.save();
 
-                // Almacenamos
                 sessions[stateId].user = user;
                 sessions[stateId].token = accessToken;
                 sessions[stateId].refreshToken = refreshToken;
@@ -488,12 +548,24 @@ module.exports = {
         }
     },
 
-    // =============== Consultar estado de la sesión ===============
+    /**
+     * Retrieves the current verification session status.
+     *
+     * This endpoint returns the status of the verification session (e.g., pending, verified, failed, expired)
+     * along with token information and user details if available.
+     *
+     * @async
+     * @function getVerificationSession
+     * @param {import('express').Request} req - Express request object containing stateId in params.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing the session status, tokens, and user data.
+     */
     async getVerificationSession(req, res, next) {
         try {
             const { stateId } = req.params;
             if (!sessions[stateId]) {
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                return res.status(404).json({ error: 'Session not found' });
             }
 
             const sessionData = sessions[stateId];
@@ -533,8 +605,21 @@ module.exports = {
     }
 };
 
+/**
+ * Extracts the presentation definition from a resolved presentation request.
+ *
+ * The function supports two cases:
+ * 1. When the input is a string with query parameters (e.g., "openid4vp://...?presentation_definition=...").
+ * 2. When the input is an object with a "presentation_definition" property.
+ *
+ * @function extractPresentationDefinition
+ * @param {string|Object} resolvedPresentationRequest - The resolved presentation request.
+ * @returns {Object} The parsed presentation definition.
+ * @throws {Error} If the presentation definition cannot be extracted.
+ * @private
+ */
 function extractPresentationDefinition(resolvedPresentationRequest) {
-    // Caso 1: es string con query params (ej: "openid4vp://...?presentation_definition=...")
+    // Case 1: String with query parameters
     if (typeof resolvedPresentationRequest === 'string') {
         const urlObj = new URL(resolvedPresentationRequest);
         const presDef = urlObj.searchParams.get('presentation_definition');
@@ -542,14 +627,13 @@ function extractPresentationDefinition(resolvedPresentationRequest) {
             throw new Error('No presentation_definition in resolvedPresentationRequest');
         }
         return JSON.parse(decodeURIComponent(presDef));
-
-        // Caso 2: es un objeto con la clave presentation_definition
-    } else if (typeof resolvedPresentationRequest === 'object') {
+    }
+    // Case 2: Object with a presentation_definition property
+    else if (typeof resolvedPresentationRequest === 'object') {
         if (resolvedPresentationRequest.presentation_definition) {
             return resolvedPresentationRequest.presentation_definition;
         }
     }
-
-    // Si nada de lo anterior, lanzamos error
+    // If neither case applies, throw an error
     throw new Error('Could not extract presentationDefinition');
 }

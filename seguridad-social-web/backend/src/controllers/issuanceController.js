@@ -1,76 +1,97 @@
-// src/controllers/issuanceController.js
+/**
+ * @file issuanceController.js
+ * @description Controller for handling credential issuance operations.
+ * This module provides endpoints for offering an issuance, processing issuance status callbacks,
+ * retrieving issuance session status, and claiming a credential.
+ * @module controllers/issuanceController
+ */
+
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const { sessions } = require('../utils/validations');
 const User = require('../models/User');
-
-// Puedes usar un logger más completo (winston, pino, etc.) o console.log
 const logger = require('../../logger');
 
 const { VERIFIER_COORD_PUBLIC_URL, WALTID_ISSUER_URL } = process.env;
 
-// Si estás usando HolderSessionManager y listDIDs en claimAltaCredential
 const HolderSessionManager = require('../services/HolderSessionManager');
 const { listDIDs } = require('../services/walletService');
 
 module.exports = {
+    /**
+     * Offers a credential issuance.
+     *
+     * This function verifies the session and user data stored in the sessions object,
+     * constructs the credential (including worker and employer data), saves the credential
+     * information in the database, and sends an issuance request to the external issuer service.
+     * On success, it stores the issuance offer URL and status in the session.
+     *
+     * @async
+     * @function offerIssuance
+     * @param {import('express').Request} req - Express request object containing the session stateId in its body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing the issuance offer URL and stateId.
+     */
     async offerIssuance(req, res, next) {
         try {
-            console.log('[offerIssuance] => BODY:', req.body);
+            // Log request body (for debugging purposes)
+            console.log('[offerIssuance] Request body:', req.body);
 
             const { stateId } = req.body;
-            console.log('[offerIssuance] => stateId recibido:', stateId);
+            console.log('[offerIssuance] Received stateId:', stateId);
 
-            // Verificamos la sesión
+            // Validate session existence and user presence
             if (!sessions[stateId]) {
-                console.log('[offerIssuance] => ¡No existe sessions[stateId]!');
-                return res.status(404).json({ error: 'No hay usuario asociado a esta sesión o no existe la sesión' });
+                console.log('[offerIssuance] No session found for the provided stateId');
+                return res.status(404).json({ error: 'No user associated with this session or session does not exist' });
             }
             if (!sessions[stateId].user) {
-                console.log('[offerIssuance] => ¡sessions[stateId] existe pero .user es falsy!');
-                return res.status(404).json({ error: 'No hay usuario en la sesión' });
+                console.log('[offerIssuance] Session exists but user is missing');
+                return res.status(404).json({ error: 'No user in the session' });
             }
 
             const user = sessions[stateId].user;
-            console.log('[offerIssuance] => user.documentNumber:', user.documentNumber);
-            console.log('[offerIssuance] => user.hasAltaCredential:', user.hasAltaCredential);
+            console.log('[offerIssuance] User documentNumber:', user.documentNumber);
+            console.log('[offerIssuance] User hasAltaCredential:', user.hasAltaCredential);
 
             if (!user.hasAltaCredential) {
-                console.log('[offerIssuance] => El usuario no tiene hasAltaCredential=true');
-                return res.status(400).json({ error: 'El usuario no tiene una alta pendiente de emisión' });
+                console.log('[offerIssuance] User does not have an issuance pending');
+                return res.status(400).json({ error: 'User does not have a pending issuance' });
             }
 
-            // Recuperamos datos extra de la sesión
+            // Retrieve additional session data or set defaults
             const employerData = sessions[stateId].employerData || {
-                employerName: "Empresa de Servicios S.A.",
-                contributionAccountCode: "0111-2222-33-4444444444",
-                socialSecurityRegime: "Régimen General",
+                employerName: 'Empresa de Servicios S.A.',
+                contributionAccountCode: '0111-2222-33-4444444444',
+                socialSecurityRegime: 'Régimen General',
                 collectiveAgreements: [
-                    "Convenio Colectivo de Empresas de Servicios Generales",
-                    "Convenio Colectivo Sectorial"
+                    'Convenio Colectivo de Empresas de Servicios Generales',
+                    'Convenio Colectivo Sectorial'
                 ]
             };
-            const userAddress = sessions[stateId].userAddress || "Calle Ejemplo 123, Madrid";
+            const userAddress = sessions[stateId].userAddress || 'Calle Ejemplo 123, Madrid';
 
-            console.log('[offerIssuance] => employerData:', employerData);
-            console.log('[offerIssuance] => userAddress:', userAddress);
+            console.log('[offerIssuance] Employer data:', employerData);
+            console.log('[offerIssuance] User address:', userAddress);
 
-            // Construimos datos del trabajador
-            const apellidos = user.familyName || "Perez";
-            const nombre = user.firstName || "Mario";
-            const dni = user.documentNumber || "12345678A";
-            const nss = user.nss || "123456789012";
+            // Construct worker data
+            const apellidos = user.familyName || 'Perez';
+            const nombre = user.firstName || 'Mario';
+            const dni = user.documentNumber || '12345678A';
+            const nss = user.nss || '123456789012';
             const domicilio = userAddress;
-            const fechaInicioActividad = "2024-12-08";
-            const grupoCotizacion = "Grupo 4";
-            const tipoContrato = "Indefinido tiempo completo";
-            const coeficienteJornada = "100%";
-            const ocupacion = "Administrativo";
+            const fechaInicioActividad = '2024-12-08';
+            const grupoCotizacion = 'Grupo 4';
+            const tipoContrato = 'Indefinido tiempo completo';
+            const coeficienteJornada = '100%';
+            const ocupacion = 'Administrativo';
 
+            // Generate a unique revocation ID
             const revocationId = uuidv4();
-            console.log('[offerIssuance] => revocationId (UUID):', revocationId);
+            console.log('[offerIssuance] Generated revocationId:', revocationId);
 
-            // Credencial base
+            // Build the base credential data (altaCredential)
             const altaCredential = {
                 "@context": [
                     "https://www.w3.org/ns/credentials/v2",
@@ -81,10 +102,10 @@ module.exports = {
                 "issuer": {
                     "id": "did:web:tesoreria.seguridadsocial.gob.es",
                     "name": "Tesorería General de la Seguridad Social - España",
-                    "description": "Entidad emisora de la credencial de alta en la Seguridad Social"
+                    "description": "Issuer of the social security registration credential"
                 },
-                "name": "Credencial de Alta en la Seguridad Social",
-                "description": "Credencial verificable de alta en el régimen de la Seguridad Social del trabajador",
+                "name": "Social Security Registration Credential",
+                "description": "Verifiable credential for registering in the social security system",
                 "validFrom": "2024-12-08T10:19:28Z",
                 "expirationDate": "2025-12-08T10:19:28Z",
                 "category": "SocialSecurityEnrollment",
@@ -112,24 +133,25 @@ module.exports = {
                 }
             };
 
-            console.log('[offerIssuance] => altaCredential:', altaCredential);
+            console.log('[offerIssuance] Constructed altaCredential:', altaCredential);
 
-            // Guardamos en DB
+            // Save credential data in the database by updating the user record
             const dbUser = await User.findOne({ documentNumber: user.documentNumber });
             if (!dbUser) {
-                console.log('[offerIssuance] => No se encontró dbUser con documentNumber=', user.documentNumber);
+                console.log('[offerIssuance] No user found in DB with documentNumber:', user.documentNumber);
             } else {
                 dbUser.altaCredentialJti = revocationId;
                 dbUser.altaCredentialData = altaCredential;
-                console.log('[offerIssuance] => dbUser, set altaCredentialJti y altaCredentialData');
+                console.log('[offerIssuance] Updated dbUser with credential data');
                 await dbUser.save();
             }
 
-            // Llamada de issuance
+            // Build the callback URL for the issuance status callback
             const callbackUrl = `${VERIFIER_COORD_PUBLIC_URL}/issuance/statusCallback/${stateId}`;
-            console.log('[offerIssuance] => callbackUrl =', callbackUrl);
+            console.log('[offerIssuance] Callback URL:', callbackUrl);
 
-            const issuerDid = "did:web:5a4b7b0ff4db.ngrok.app";
+            // Prepare issuer data and the issuance request body
+            const issuerDid = 'did:web:5a4b7b0ff4db.ngrok.app';
             const issuerKey = {
                 "type": "jwk",
                 "jwk": {
@@ -157,8 +179,9 @@ module.exports = {
                 authenticationMethod: "PRE_AUTHORIZED"
             };
 
-            console.log('[offerIssuance] => issuanceRequestBody:', issuanceRequestBody);
+            console.log('[offerIssuance] Issuance request body:', issuanceRequestBody);
 
+            // Call the external issuance service (WaltID Issuer)
             const issueResponse = await axios.post(
                 `${WALTID_ISSUER_URL}/openid4vc/jwt/issue`,
                 issuanceRequestBody,
@@ -169,127 +192,162 @@ module.exports = {
                     }
                 }
             );
-            console.log('[offerIssuance] => issueResponse.data =', issueResponse.data);
+            console.log('[offerIssuance] Issuance response data:', issueResponse.data);
 
-            // Guardamos en la sesión
-            sessions[stateId].user = dbUser || user; // por si dbUser no existe
+            // Update the session with issuance offer data and status
+            sessions[stateId].user = dbUser || user; // fallback if dbUser is not found
             sessions[stateId].issuanceOfferUrl = issueResponse.data;
             sessions[stateId].issuanceStatus = 'offered';
 
-            console.log('[offerIssuance] => sessions[stateId] después de guardar =>', sessions[stateId]);
+            console.log('[offerIssuance] Session after update:', sessions[stateId]);
 
-            // Responder al front
+            // Respond with the issuance offer URL and session state
             return res.status(200).json({ issuanceOfferUrl: issueResponse.data, state: stateId });
         } catch (err) {
-            console.error('[offerIssuance] => Error:', err);
+            console.error('[offerIssuance] Error:', err);
             next(err);
         }
     },
 
+    /**
+     * Processes the issuance status callback.
+     *
+     * This endpoint is called by the external issuance service when the issuance is accepted.
+     * It updates the session status to "accepted".
+     *
+     * @async
+     * @function issuanceStatusCallback
+     * @param {import('express').Request} req - Express request object containing stateId in params.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a success message upon updating the session.
+     */
     async issuanceStatusCallback(req, res, next) {
         try {
-            console.log('[issuanceStatusCallback] => params:', req.params);
+            console.log('[issuanceStatusCallback] Params:', req.params);
             const { stateId } = req.params;
 
             if (!sessions[stateId]) {
-                console.log('[issuanceStatusCallback] => Sesión no encontrada para stateId=', stateId);
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                console.log('[issuanceStatusCallback] No session found for stateId:', stateId);
+                return res.status(404).json({ error: 'Session not found' });
             }
 
-            // Asumimos que si llegó aquí, la issuance fue aceptada
+            // Mark issuance as accepted in the session
             sessions[stateId].issuanceStatus = 'accepted';
-            console.log('[issuanceStatusCallback] => issuanceStatus se marcó como accepted');
+            console.log('[issuanceStatusCallback] Issuance status set to accepted');
 
             res.status(200).json({ message: 'Issuance callback processed successfully' });
         } catch (err) {
-            console.error('[issuanceStatusCallback] => Error:', err);
+            console.error('[issuanceStatusCallback] Error:', err);
             next(err);
         }
     },
 
+    /**
+     * Retrieves the current issuance session status.
+     *
+     * This endpoint returns the status of the issuance process stored in the session.
+     *
+     * @async
+     * @function getIssuanceSessionStatus
+     * @param {import('express').Request} req - Express request object containing stateId in params.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing the issuance status.
+     */
     async getIssuanceSessionStatus(req, res, next) {
         try {
-            console.log('[getIssuanceSessionStatus] => params:', req.params);
+            console.log('[getIssuanceSessionStatus] Params:', req.params);
             const { stateId } = req.params;
 
             if (!sessions[stateId]) {
-                console.log('[getIssuanceSessionStatus] => No existe la sesión para stateId=', stateId);
-                return res.status(404).json({ error: 'Sesión no encontrada' });
+                console.log('[getIssuanceSessionStatus] No session exists for stateId:', stateId);
+                return res.status(404).json({ error: 'Session not found' });
             }
 
             const { issuanceStatus } = sessions[stateId];
-            console.log('[getIssuanceSessionStatus] => issuanceStatus=', issuanceStatus);
+            console.log('[getIssuanceSessionStatus] Issuance status:', issuanceStatus);
 
             res.status(200).json({ issuanceStatus: issuanceStatus || 'unknown' });
         } catch (err) {
-            console.error('[getIssuanceSessionStatus] => Error:', err);
+            console.error('[getIssuanceSessionStatus] Error:', err);
             next(err);
         }
     },
 
+    /**
+     * Claims the credential (Alta Credential) from the wallet.
+     *
+     * This function retrieves the issuance offer URL from the session and then calls the wallet API endpoint
+     * to claim the credential. It requires the wallet token and wallet ID, selects a DID from the wallet,
+     * and sends the claim request with a plain text payload. Upon successful claim, the session status is updated.
+     *
+     * @async
+     * @function claimAltaCredential
+     * @param {import('express').Request} req - Express request object containing stateId in its body.
+     * @param {import('express').Response} res - Express response object.
+     * @param {import('express').NextFunction} next - Express next middleware function.
+     * @returns {Promise<void>} Responds with a JSON object containing a success message and claimed credentials.
+     */
     async claimAltaCredential(req, res, next) {
         try {
-            console.log('[claimAltaCredential] => BODY:', req.body);
+            console.log('[claimAltaCredential] Request body:', req.body);
             const { stateId } = req.body;
-            console.log('[claimAltaCredential] => stateId recibido:', stateId);
+            console.log('[claimAltaCredential] Received stateId:', stateId);
 
             if (!stateId || !sessions[stateId]) {
-                console.log('[claimAltaCredential] => stateId inválido o no existe la sesión');
-                return res.status(400).json({ error: 'stateId inválido o no existe la sesión' });
+                console.log('[claimAltaCredential] Invalid stateId or session not found');
+                return res.status(400).json({ error: 'Invalid stateId or session does not exist' });
             }
 
             const issuanceOfferUrl = sessions[stateId].issuanceOfferUrl;
-            console.log('[claimAltaCredential] => issuanceOfferUrl en sesión=', issuanceOfferUrl);
+            console.log('[claimAltaCredential] issuanceOfferUrl from session:', issuanceOfferUrl);
 
             if (!issuanceOfferUrl) {
-                return res.status(400).json({ error: 'No hay issuanceOfferUrl en la sesión' });
+                return res.status(400).json({ error: 'No issuanceOfferUrl in session' });
             }
 
-            // Obtenemos token y walletId de la wallet
+            // Retrieve token and wallet ID from HolderSessionManager
             const token = await HolderSessionManager.getToken();
-            const walletId = HolderSessionManager.getWalletId();
-            console.log('[claimAltaCredential] => token?', !!token, ' walletId=', walletId);
+            const walletId = await HolderSessionManager.getWalletId();
+            console.log('[claimAltaCredential] Token available:', !!token, 'Wallet ID:', walletId);
 
             if (!token || !walletId) {
-                return res
-                    .status(500)
-                    .json({ error: 'No se encontró sesión de la wallet (token o walletId)' });
+                return res.status(500).json({ error: 'Wallet session not found (missing token or walletId)' });
             }
 
-            // DID del holder
+            // Retrieve DID from the wallet
             const dids = await listDIDs(token, walletId);
-            console.log('[claimAltaCredential] => dids =', dids);
+            console.log('[claimAltaCredential] Retrieved DIDs:', dids);
             if (!dids || !dids.length) {
-                return res.status(400).json({ error: 'No se encontraron DIDs en la wallet' });
+                return res.status(400).json({ error: 'No DIDs found in the wallet' });
             }
             const did = dids[0].did;
-            console.log('[claimAltaCredential] => selected did=', did);
+            console.log('[claimAltaCredential] Selected DID:', did);
 
-            // URL del endpoint de waltid para reclamar la cred
+            // Construct the URL for claiming the credential
             const useOfferUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/exchange/useOfferRequest?did=${encodeURIComponent(did)}&requireUserInput=false`;
-            console.log('[claimAltaCredential] => POST ->', useOfferUrl);
-            console.log('[claimAltaCredential] => Body (issuanceOfferUrl)=', issuanceOfferUrl);
+            console.log('[claimAltaCredential] Claim URL:', useOfferUrl);
+            console.log('[claimAltaCredential] Payload (issuanceOfferUrl):', issuanceOfferUrl);
 
-            // Aqui el cambio esencial: 'Content-Type': 'text/plain'
-            // y enviamos `issuanceOfferUrl` tal cual (sin JSON.stringify).
+            // Send the claim request with Content-Type 'text/plain'
             const resp = await axios.post(useOfferUrl, issuanceOfferUrl, {
                 headers: {
                     'Content-Type': 'text/plain',
                     Authorization: `Bearer ${token}`
                 }
             });
+            console.log('[claimAltaCredential] Wallet response:', resp.data);
 
-            console.log('[claimAltaCredential] => wallet response =>', resp.data);
-
-            // Marcamos como 'claimed'
+            // Update the session status to 'claimed'
             sessions[stateId].issuanceStatus = 'claimed';
 
             return res.status(200).json({
-                message: 'Credencial de Alta reclamada con éxito',
+                message: 'Credential claimed successfully',
                 claimedCredentials: resp.data
             });
         } catch (err) {
-            console.error('[claimAltaCredential] => Error:', err);
+            console.error('[claimAltaCredential] Error:', err);
             next(err);
         }
     }

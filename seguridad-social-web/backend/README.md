@@ -1,16 +1,7 @@
+
 # Verifier Backend
 
-This **Verifier Backend** is a Node.js/Express application that facilitates the verification of **Verifiable Credentials** (VCs) in a **Social Security** context. It also provides credential issuance, revocation, and user management functionalities. The project communicates with a **Wallet** (for example, a walt.id wallet or similar) and an **Issuer** API to complete credential-oriented flows such as:
-
-1. **Credential Verification**: Receiving offers for proof requests (OID4VC flows) and validating them.
-2. **Credential Issuance**: Issuing JWT-based credentials and sending them to a holder’s wallet.
-3. **Credential Revocation**: Marking credentials as revoked so that they become invalid for future verifications.
-4. **User Management**: Registering and updating user data (with sensitive fields encrypted in the database).
-5. **Authentication**: Generating and refreshing JWT access and refresh tokens for user sessions.
-
-Below is a detailed overview of how to set up, run, and develop this project.
-
----
+This **Verifier Backend** is a Node.js/Express application that facilitates the verification of **Verifiable Credentials (VCs)** in a **Social Security** context. In addition to credential verification, it provides functionalities for credential issuance, revocation, and user management. The project communicates with a **Wallet** (such as a walt.id wallet or similar) and an **Issuer** API to complete credential-oriented flows.
 
 ## Table of Contents
 
@@ -30,74 +21,77 @@ Below is a detailed overview of how to set up, run, and develop this project.
 ## Key Features
 
 - **Verification of Verifiable Credentials**  
-  Uses an **OID4VC** flow to receive verification requests, decode and validate the credentials provided by the holder, and determine whether they are valid and not revoked.
+  Uses an **OID4VC** flow to receive proof requests, decode and validate the provided credentials, and determine if they are valid and not revoked.
 
 - **Issuance of Verifiable Credentials**  
-  Generates and sends credential offers (in JWT format) to the holder’s wallet. Includes callback endpoints to track issuance status.
+  Generates and sends credential offers (in JWT format) to the holder’s wallet, with callback endpoints for tracking issuance status.
 
 - **Credential Revocation**  
-  Maintains a local revocation list (via a MongoDB collection) for revoked credentials. A revoked credential will fail subsequent verifications.
+  Maintains a revocation list (using a MongoDB collection) for revoked credentials. Revoked credentials will fail subsequent verifications.
 
 - **User Management**  
-  Stores user data (including personal information) in MongoDB, encrypting sensitive fields (e.g., `nss`) with **mongoose-encryption**. Provides a REST endpoint to retrieve user information by a national ID (DNI).
+  Registers and updates user data in MongoDB, with sensitive fields (e.g., Social Security Number) encrypted via **mongoose-encryption**. Provides REST endpoints to retrieve user information by document number (DNI).
 
 - **Authentication**  
-  Implements an authentication flow with **JWT** (access tokens and refresh tokens). Allows refreshing tokens, invalidating old tokens, and checking user sessions.
+  Implements a JWT-based authentication flow with access tokens (15 minutes expiration) and refresh tokens (7 days expiration). Supports token refresh and session management.
 
 - **Logging**  
-  Uses **Winston** (`logger.js`) for structured logging with custom formatting, allowing different log levels (debug, info, etc.).
+  Uses **Winston** for structured logging with customizable log levels and formatting.
+
+- **Rate Limiting**  
+  Protects endpoints (e.g., `/auth/wallet-login`) against brute-force and DoS attacks using **express-rate-limit**.
 
 ---
 
 ## Technologies and Dependencies
 
-Key dependencies (versions may vary, see `package.json` for the exact versions):
+Key dependencies (exact versions in `package.json`):
 
-- [**Node.js**](https://nodejs.org/) (16+)
+- [**Node.js**](https://nodejs.org/) (v16+)
 - [**Express**](https://expressjs.com/)
 - [**Mongoose**](https://mongoosejs.com/) (MongoDB ORM)
 - [**mongoose-encryption**](https://github.com/joegoldbeck/mongoose-encryption) for field-level encryption
-- [**jsonwebtoken**](https://www.npmjs.com/package/jsonwebtoken) for JWT token generation and verification
-- [**dotenv**](https://github.com/motdotla/dotenv) for loading environment variables
-- [**axios**](https://axios-http.com/)
-- [**uuid**](https://www.npmjs.com/package/uuid) for unique state IDs
+- [**jsonwebtoken**](https://www.npmjs.com/package/jsonwebtoken) for JWT handling
+- [**dotenv**](https://github.com/motdotla/dotenv) for managing environment variables
+- [**axios**](https://axios-http.com/) for HTTP requests
+- [**uuid**](https://www.npmjs.com/package/uuid) for generating unique identifiers
 - [**winston**](https://www.npmjs.com/package/winston) for logging
 - [**cors**](https://www.npmjs.com/package/cors) for Cross-Origin Resource Sharing
+- [**express-rate-limit**](https://www.npmjs.com/package/express-rate-limit) for rate limiting
 
 ---
 
 ## Project Structure
 
-A brief overview of the directory layout:
-
 ```
 backend/
-├── app.js                 # Main entry point (Express server configuration)
-├── package.json           # Project metadata and scripts
-├── Dockerfile             # Docker build configuration
-├── .env                   # Environment variables (should be kept secret)
+├── app.js                     # Main entry point (Express server configuration)
+├── package.json               # Project metadata and scripts
+├── Dockerfile                 # Docker build configuration
+├── .env                       # Environment variables (should be kept secure)
 ├── src/
-│   ├── controllers/       # Controllers containing request/response logic
-│   ├── middleware/        # Express middlewares (e.g., error handling, CORS, logging)
-│   ├── models/            # Mongoose schema definitions
-│   ├── routes/            # Route definitions, mapping endpoints to controllers
-│   ├── services/          # Reusable services for business logic (API calls, sessions, etc.)
-│   └── utils/             # Utility functions (JWT, validations, session store, etc.)
-├── logger.js              # Winston logger configuration
-├── signing_key_base64.txt # Example file containing a signing key
-├── encryption_key_base64.txt
-└── README.md              # Project documentation
+│   ├── controllers/           # Controllers containing request/response logic
+│   ├── middleware/            # Express middlewares (error handling, CORS, logging, rate limiting)
+│   ├── models/                # Mongoose schema definitions (User, RevokedCredential, etc.)
+│   ├── routes/                # Route definitions mapping endpoints to controllers
+│   ├── services/              # Reusable business logic (wallet sessions, presentation, authentication, etc.)
+│   └── utils/                 # Utility functions (JWT utilities, validations, session store, etc.)
+├── logger.js                  # Winston logger configuration
+├── signing_key_base64.txt     # Example file containing a signing key
+├── encryption_key_base64.txt  # Example file containing an encryption key
+└── README.md                  # Project documentation
 ```
 
-Key folders and files:
+**Key Components:**
 
-- **`app.js`**: Orchestrates database connection, middleware, route registration, and starts the Express server.  
-- **`src/routes/`**: Organizes routes by domain (e.g., `authRoutes.js`, `issuanceRoutes.js`, `verificationRoutes.js`).  
-- **`src/controllers/`**: Contains the logic for each route endpoint, calling on services as needed.  
-- **`src/services/`**: Implements business logic that can be reused (e.g., handling wallet sessions, presenting credentials, verifying tokens).  
-- **`src/models/`**: Mongoose data models (e.g. `User.js`, `RevokedCredential.js`).  
-- **`logger.js`**: Configures Winston to output timestamps, levels, etc.  
-- **`Dockerfile`**: Docker instructions to build and run this project inside a container.
+- **`app.js`**: Bootstraps the application by connecting to the database, configuring middlewares, registering routes, and starting the server.
+- **`src/routes/`**: Organizes application routes by domain (e.g., authentication, verification, issuance, revocation, wallet operations, etc.).
+- **`src/controllers/`**: Contains the request handling logic that interacts with the services.
+- **`src/services/`**: Implements reusable business logic (e.g., wallet session management, presentation handling, authentication flows).
+- **`src/models/`**: Defines data models (e.g., User, RevokedCredential) for MongoDB using Mongoose.
+- **`src/middleware/`**: Contains Express middlewares (error handling, CORS configuration, request logging, rate limiting).
+- **`src/utils/`**: Utility functions for JWT handling, validations, and session storage.
+- **`logger.js`**: Configures Winston for structured logging.
 
 ---
 
@@ -126,11 +120,11 @@ Key folders and files:
 
 4. **Set Up Environment Variables**
 
-   Create a `.env` file in the `backend` folder (or rename the provided example) to configure:
+   Create a `.env` file in the `backend` directory (or copy the provided example) with the following configuration:
 
    ```bash
-   WALTID_VERIFIER_URL=http://verifier-api:7003
-   WALTID_ISSUER_URL=http://issuer-api:7002
+   WALTID_VERIFIER_URL=http://caddy:7003
+   WALTID_ISSUER_URL=http://caddy:7002
    VERIFIER_COORD_PUBLIC_URL=http://backend:3001
    MONGO_URI=mongodb://mongo-backend:27017/seguridadSocial
    PORT=3001
@@ -142,10 +136,14 @@ Key folders and files:
    ENCRYPTION_KEY='your-encryption-key'
    SIGNING_KEY='your-signing-key'
    CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
+
+   HOLDER_EMAIL=holder@example.com
+   HOLDER_PASSWORD=holderpassword
+   HOLDER_TYPE=email
+   HOLDER_NAME='Holder User'
    ```
 
-   - Make sure the above values match your environment (e.g., container names, ports).
-   - Keep this file **out of version control** for security reasons.
+   **Important:** Ensure that the environment variable values match your environment settings (container names, ports, etc.). Do not commit your `.env` file to version control.
 
 5. **Start the Server**
 
@@ -153,79 +151,117 @@ Key folders and files:
    npm start
    ```
 
-   The application listens on port `3001` by default (or as specified in `.env`).
+   The application will listen on the port specified (default is 3001).
 
 ---
 
 ## Configuration
 
-- **`PORT`**: Defines the port on which the server listens (default `3001`).  
-- **`MONGO_URI`**: Connection string for the MongoDB instance.  
-- **`JWT_SECRET`** & **`JWT_REFRESH_SECRET`**: Secrets used to sign and verify JWT access and refresh tokens.  
-- **`ENCRYPTION_KEY`** & **`SIGNING_KEY`**: Used by `mongoose-encryption` to encrypt certain fields in MongoDB and sign the encrypted data.  
-- **`WALTID_VERIFIER_URL`** & **`WALTID_ISSUER_URL`**: Used for external OID4VC flows.  
-- **`WALLET_COORD_URL`**: URL of the Wallet Coordinator service to communicate with a holder’s wallet (e.g., walt.id).  
+The following environment variables are used to configure the application:
 
-Adjust these variables in the `.env` file to suit your environment.
+- **PORT**: Defines the port on which the server listens (default: 3001).
+- **MONGO_URI**: MongoDB connection string.
+- **JWT_SECRET** & **JWT_REFRESH_SECRET**: Secrets for signing and verifying JWT access and refresh tokens.
+- **ENCRYPTION_KEY** & **SIGNING_KEY**: Keys for field-level encryption in MongoDB.
+- **WALTID_VERIFIER_URL** & **WALTID_ISSUER_URL**: URLs for external verification and issuance flows.
+- **VERIFIER_COORD_PUBLIC_URL**: Public URL for the verifier coordinator, used in callback endpoints.
+- **WALLET_COORD_URL**: URL for the Wallet Coordinator service.
+- **ISS_COORD_URL**: URL for the Issuer Coordinator service.
+- **CREDENTIAL_CONFIGURATION_ID**: Credential configuration identifier used during credential issuance.
+- **HOLDER_EMAIL**, **HOLDER_PASSWORD**, **HOLDER_TYPE**, **HOLDER_NAME**: Default holder credentials for testing or fallback purposes.
+
+Adjust these settings in your `.env` file to match your deployment environment.
 
 ---
 
 ## Usage
 
-Once the server is up, it exposes several REST endpoints:
+Once the server is running, the backend exposes several REST endpoints. Here is a brief overview:
 
 ### 1. Verification Routes
 
 - **POST `/verification/offer`**  
-  Creates a verification offer (OID4VC) for a single credential type.
+  Initiates a verification offer for a single credential (OID4VC flow).
 
 - **POST `/verification/offer3creds`**  
-  Creates a verification offer requesting exactly three credentials.  
-  Used for more complex flows (e.g., checking an Identity, a Passport, and an Employer registration credential).
+  Initiates a manual verification offer requiring exactly 3 credentials.
+
+- **POST `/verification/offer3credsAuto`**  
+  Initiates an automatic verification offer for exactly 3 credentials.
 
 - **POST `/verification/statusCallback/:stateId`**  
-  Callback invoked by the walt.id Verifier service upon completion of a verification. Stores results in memory sessions.
+  Receives a callback from the verifier service after a verification flow is completed.
+
+- **POST `/verification/statusCallbackAlta/:stateId`**  
+  Receives a callback specifically for 3-credential (Alta) verification flows.
+
+- **POST `/verification/statusCallbackWalletLogin/:stateId`**  
+  Receives a callback for wallet login verification flows.
 
 - **GET `/verification/session/:stateId`**  
-  Fetches the status of the verification session. Returns `verified`, `failed`, `expired`, or `pending`, along with any user data or tokens.
+  Retrieves the status of a verification session (e.g., pending, verified, failed, expired).
 
 ### 2. Issuance Routes
 
 - **POST `/issuance/offerIssuance`**  
-  Creates a credential issuance offer, usually after a successful verification.
+  Initiates a credential issuance offer.
 
 - **POST `/issuance/statusCallback/:stateId`**  
-  Callback invoked after the issuance flow completes on the Issuer side.
+  Receives a callback from the issuer service after the issuance flow completes.
 
 - **GET `/issuance/session/:stateId`**  
-  Retrieves the current issuance session status (`offered`, `accepted`, `claimed`, etc.).
+  Retrieves the current issuance session status (e.g., offered, accepted, claimed).
 
 - **POST `/issuance/claimAltaCredential`**  
-  Claims and stores the credential in the holder’s wallet.
+  Claims a credential and stores it in the holder’s wallet.
 
 ### 3. User Management
 
 - **GET `/user/:dni`**  
-  Retrieves user data (first name, family name, birth date, etc.) by document number (DNI).
+  Retrieves user information (e.g., first name, family name, birth date) by document number (DNI).
 
 ### 4. Credential Revocation
 
 - **POST `/revocar/credencial`**  
-  Revokes a credential by marking it in a MongoDB `RevokedCredential` collection and (optionally) deleting it from the holder’s wallet.
+  Revokes a credential by marking it in the MongoDB `RevokedCredential` collection and optionally deleting it from the wallet.
 
 ### 5. Authentication
 
 - **POST `/auth/wallet-login`**  
-  Logs in to the user’s wallet (with email/password) and attempts an automatic verification flow for an identity credential.
+  Authenticates the user’s wallet using email/password and initiates an automatic verification flow for an identity credential.
 
 - **POST `/auth/refresh`**  
-  Exchanges a valid refresh token for new access and refresh tokens.
+  Refreshes the JWT tokens by exchanging a valid refresh token for new access and refresh tokens.
+
+### 6. Wallet Routes
+
+- **GET `/wallet-api/ping`**  
+  A simple health-check endpoint.
+
+- **GET `/wallet-api/user-info`**  
+  Retrieves the authenticated holder’s user information from the wallet.
+
+- **Credential Operations**:  
+  Endpoints for listing, retrieving, deleting, accepting, rejecting, and checking the status of credentials.  
+  - **GET `/wallet-api/credentials`**  
+  - **GET `/wallet-api/credentials/:id`**  
+  - **DELETE `/wallet-api/credentials/:id`**  
+  - **POST `/wallet-api/credential-offer`**  
+  - **POST `/wallet-api/credentials/:id/accept`**  
+  - **POST `/wallet-api/credentials/:id/reject`**  
+  - **GET `/wallet-api/credentials/:id/status`**
+
+- **Presentation Operations**:  
+  Endpoints for resolving a presentation request, matching credentials for a presentation, and using a presentation request.  
+  - **POST `/wallet-api/resolve-presentation-request`**  
+  - **POST `/wallet-api/match-credentials`**  
+  - **POST `/wallet-api/use-presentation-request`**
 
 ---
 
 ## Docker Support
 
-A basic Docker setup is included:
+A basic Docker setup is included for containerization:
 
 1. **Build the Image**
 
@@ -239,49 +275,57 @@ A basic Docker setup is included:
    docker run -p 3001:3001 --env-file .env verifier-backend
    ```
 
-   This will start the container, exposing port **3001**. Environment variables will be loaded from the specified `.env` file.
-
-**Note**: Make sure you have MongoDB accessible from inside the container, or link it with Docker Compose so that `MONGO_URI` points to a valid host.
+   This will start the container, exposing port **3001**. Ensure that your MongoDB instance is accessible from within the container, or use Docker Compose to link services appropriately.
 
 ---
 
 ## Security Considerations
 
 1. **Environment Variables**  
-   Never commit secrets (JWT keys, encryption keys, etc.) to version control. Keep `.env` files secure or use a secret manager (e.g., HashiCorp Vault, AWS Parameter Store).
+   Never commit secrets (JWT keys, encryption keys, etc.) to version control. Use a secure method (e.g., secret managers) to handle sensitive configurations.
 
 2. **Field-Level Encryption**  
-   Sensitive data (`nss`) is encrypted in MongoDB via **mongoose-encryption**. Evaluate whether additional fields (e.g., `birthDate`, `documentNumber`, etc.) also need encryption for compliance with local regulations (GDPR, etc.).
+   Sensitive fields (e.g., `nss`) are encrypted in MongoDB using **mongoose-encryption**. Review which fields require encryption based on compliance requirements (e.g., GDPR).
 
 3. **JWT Handling**  
-   - Access tokens expire relatively quickly (default 15 minutes in `jwtUtils.js`), and refresh tokens last 7 days.  
-   - Validate tokens on protected routes if you expand functionality.  
-   - Properly store and rotate refresh tokens in the database to invalidate them if needed.
+   - Access tokens have a short lifespan (default 15 minutes) and refresh tokens last 7 days.
+   - Always validate tokens on protected routes.
+   - Implement token rotation and proper storage of refresh tokens.
 
 4. **Logging**  
-   - Winston is set to `level: 'debug'` by default. In production, consider changing to `'info'` or `'warn'`.  
-   - Avoid logging sensitive info (tokens, personal data) at high detail in production.
+   - Logging is handled using Winston with a default log level of `debug`. In production, consider increasing the log level to `info` or `warn` to avoid logging sensitive information.
+   - Ensure that sensitive data is not logged.
 
 5. **CORS**  
-   - The `corsConfig.js` restricts origins based on `NODE_ENV`. Update the production domain to match your actual site.  
-   - Consider using `helmet` to set secure HTTP headers.
+   - The CORS configuration restricts origins based on the `NODE_ENV`. Update the production settings to match your domain.
+   - Consider using additional security headers (e.g., via the `helmet` package).
 
 6. **Rate Limiting**  
-   - If you expect open endpoints for external requests, consider `express-rate-limit` to mitigate brute-force or DoS attacks on `/auth` routes.
+   - Rate limiting is applied to sensitive endpoints (e.g., `/auth/wallet-login`) using **express-rate-limit**.
+   - Adjust rate limits according to expected traffic and threat models.
 
 ---
 
 ## Contributing
 
-We welcome contributions! Here’s how you can help:
+Contributions are welcome! To contribute:
 
-1. **Fork** the repository.  
-2. **Create** a new branch for your feature: `git checkout -b feature/my-feature`.  
-3. **Commit** your changes: `git commit -m 'Add my new feature'`.  
-4. **Push** to the branch: `git push origin feature/my-feature`.  
+1. **Fork** the repository.
+2. **Create** a new branch for your feature:
+   ```bash
+   git checkout -b feature/my-feature
+   ```
+3. **Commit** your changes:
+   ```bash
+   git commit -m 'Add my new feature'
+   ```
+4. **Push** the branch:
+   ```bash
+   git push origin feature/my-feature
+   ```
 5. **Open** a pull request in this repository.
 
-We will review and merge your changes if they align with the project goals.
+We will review your changes and merge them if they align with the project goals.
 
 ---
 
@@ -292,4 +336,6 @@ This project is licensed under the **MIT License**. See the [LICENSE](../LICENSE
 ---
 
 **Thank you for using Verifier Backend!**  
-Feel free to open issues or pull requests for improvements, bug fixes, or suggestions.
+Feel free to open issues or submit pull requests for improvements, bug fixes, or feature suggestions.
+
+---

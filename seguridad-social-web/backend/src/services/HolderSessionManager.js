@@ -1,138 +1,200 @@
+/**
+ * @file HolderSessionManager.js
+ * @description Manages the session for the holder by handling login, token renewal, and wallet information retrieval.
+ * Stores relevant data in Redis.
+ * @module services/HolderSessionManager
+ */
+
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const logger = require('../../logger');
+const { redisClient } = require('../config/redis');
+
+// Redis keys for storing session information.
+const TOKEN_KEY = 'holder:token';
+const TOKEN_EXPIRY_KEY = 'holder:token_expiry';
+const WALLET_ID_KEY = 'holder:wallet_id';
+const ACCOUNT_ID_KEY = 'holder:account_id';
+const EMAIL_KEY = 'holder:email';
+const PASSWORD_KEY = 'holder:password';
 
 class HolderSessionManager {
-    static instance;
-    token = null;
-    tokenExpiry = null;
-    isRefreshing = false;
-    refreshPromise = null;
-
-    accountId = null;
-    walletId = null;
-
-    email = null;
-    password = null;
-
-    static getInstance() {
-        if (!HolderSessionManager.instance) {
-            HolderSessionManager.instance = new HolderSessionManager();
+    /**
+     * Creates an instance of HolderSessionManager.
+     * Implements a singleton pattern.
+     */
+    constructor() {
+        if (HolderSessionManager.instance) {
+            return HolderSessionManager.instance;
         }
-        return HolderSessionManager.instance;
+        HolderSessionManager.instance = this;
     }
 
+    /**
+     * Logs in to the wallet using email and password.
+     * Sends a login request to the wallet, stores the token and login metadata in Redis,
+     * and loads wallet information.
+     *
+     * @async
+     * @function loginHolderWithCredentials
+     * @param {string} email - The user's email address.
+     * @param {string} password - The user's password.
+     * @returns {Promise<void>}
+     * @throws {Error} If the login fails or no token is received.
+     */
     async loginHolderWithCredentials(email, password) {
-        this.email = email;
-        this.password = password;
+        logger.debug('[HolderSessionManager] loginHolderWithCredentials', { email });
 
-        logger.debug('HolderSessionManager: loginHolderWithCredentials - Datos de login:', { email });
-
-        const loginData = {
-            type: 'email',
-            email: email,
-            password: password,
-        };
-
-        const WALLET_COORD_URL = process.env.WALLET_COORD_URL;
         try {
+            // 1) Send login request to the wallet.
+            const loginData = { type: 'email', email, password };
+            const WALLET_COORD_URL = process.env.WALLET_COORD_URL;
             const response = await axios.post(
                 `${WALLET_COORD_URL}/wallet-api/auth/login`,
                 loginData,
                 { headers: { 'Content-Type': 'application/json' } }
             );
 
-            if (response.data && response.data.token) {
-                this.token = response.data.token;
-                this.setTokenExpiry(this.token);
-                logger.info('User logged in successfully with WaltId.');
-                await this.loadWalletInfo();
-            } else {
-                logger.error('No token received in login response.');
+            if (!response.data?.token) {
                 throw new Error('No token in login response.');
             }
-        } catch (error) {
-            logger.error('Error loginHolderWithCredentials:', error.message);
-            throw error;
+
+            const token = response.data.token;
+            // Store token in Redis.
+            await redisClient.set(TOKEN_KEY, token);
+
+            // Also store email and password for future token renewal.
+            await redisClient.set(EMAIL_KEY, email);
+            await redisClient.set(PASSWORD_KEY, password);
+
+            // Calculate token expiration (exp in seconds -> convert to ms).
+            const decoded = jwt.decode(token);
+            if (decoded?.exp) {
+                const expiryMs = decoded.exp * 1000;
+                await redisClient.set(TOKEN_EXPIRY_KEY, expiryMs.toString());
+            } else {
+                // If no expiration, remove the expiry key.
+                await redisClient.del(TOKEN_EXPIRY_KEY);
+            }
+
+            // 2) Load wallet information (accountId and walletId).
+            await this.loadWalletInfo();
+
+            logger.info('[HolderSessionManager] User logged in successfully. Token stored in Redis.');
+        } catch (err) {
+            logger.error('[HolderSessionManager] Error loginHolderWithCredentials:', err.message);
+            throw err;
         }
     }
 
+    /**
+     * Loads wallet information (accountId and walletId) after login.
+     *
+     * Retrieves wallet account details from the wallet API and stores the accountId and walletId in Redis.
+     *
+     * @async
+     * @function loadWalletInfo
+     * @returns {Promise<void>}
+     * @throws {Error} If no wallets are found for the account.
+     */
     async loadWalletInfo() {
         const token = await this.getToken();
-        const WALLET_COORD_URL = process.env.WALLET_COORD_URL || 'http://localhost:7001';
+        const WALLET_COORD_URL = process.env.WALLET_COORD_URL;
+
         const config = {
             headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/json'
             }
         };
-        const response = await axios.get(`${WALLET_COORD_URL}/wallet-api/wallet/accounts/wallets`, config);
+        const resp = await axios.get(`${WALLET_COORD_URL}/wallet-api/wallet/accounts/wallets`, config);
 
-        this.accountId = response.data.account;
-        if (response.data.wallets && response.data.wallets.length > 0) {
-            this.walletId = response.data.wallets[0].id;
-        } else {
+        const { account, wallets } = resp.data;
+        if (!wallets?.length) {
             throw new Error('No wallets found for this account.');
         }
-        logger.info(`Loaded accountId: ${this.accountId}, walletId: ${this.walletId}`);
+
+        // Store accountId and walletId in Redis.
+        await redisClient.set(ACCOUNT_ID_KEY, account);
+        await redisClient.set(WALLET_ID_KEY, wallets[0].id);
+
+        logger.info(`[HolderSessionManager] loadWalletInfo => accountId=${account}, walletId=${wallets[0].id}`);
     }
 
-    setTokenExpiry(token) {
-        try {
-            const decoded = jwt.decode(token);
-            if (decoded && decoded.exp) {
-                this.tokenExpiry = decoded.exp * 1000;
-            } else {
-                logger.warn('Unable to determine expiry from token.');
-                this.tokenExpiry = null;
-            }
-        } catch (error) {
-            logger.error('Error parsing JWT:', error.message);
-            this.tokenExpiry = null;
-        }
-    }
-
+    /**
+     * Retrieves the current token from Redis.
+     * Renews the token if it is about to expire (within a 1-minute buffer).
+     *
+     * @async
+     * @function getToken
+     * @returns {Promise<string>} The current valid token.
+     * @throws {Error} If no token is found in Redis.
+     */
     async getToken() {
-        if (!this.token) {
-            logger.warn('No token available. User not logged in.');
-            throw new Error('User not logged in.');
+        const token = await redisClient.get(TOKEN_KEY);
+        if (!token) {
+            throw new Error('[HolderSessionManager] No token in Redis. Not logged in.');
         }
 
-        const currentTime = Date.now();
-        const bufferTime = 60 * 1000;
+        // Check token expiration.
+        const expiryString = await redisClient.get(TOKEN_EXPIRY_KEY);
+        const expiryMs = expiryString ? parseInt(expiryString, 10) : null;
 
-        if (this.tokenExpiry && currentTime > this.tokenExpiry - bufferTime) {
-            logger.warn('Token about to expire. Renewing token.');
-            if (this.isRefreshing) {
-                await this.refreshPromise;
-                return this.token;
+        if (expiryMs) {
+            const now = Date.now();
+            const bufferTime = 60_000; // 1 minute buffer
+
+            if (now > expiryMs - bufferTime) {
+                logger.warn('[HolderSessionManager] Token about to expire. Renewing...');
+                await this.renewToken();
+                return redisClient.get(TOKEN_KEY); // Return the new token
             }
-
-            this.isRefreshing = true;
-            this.refreshPromise = this.loginHolderWithCredentials(this.email, this.password)
-                .then(() => {
-                    this.isRefreshing = false;
-                })
-                .catch((error) => {
-                    this.isRefreshing = false;
-                    logger.error('Error renewing token:', error.message);
-                    throw error;
-                });
-
-            await this.refreshPromise;
-            return this.token;
         }
 
-        return this.token;
+        // Return current token if not expiring soon.
+        return token;
     }
 
-    getAccountId() {
-        return this.accountId;
+    /**
+     * Renews the token by logging in again using the stored email and password.
+     *
+     * @async
+     * @function renewToken
+     * @returns {Promise<void>}
+     * @throws {Error} If email or password is missing in Redis.
+     */
+    async renewToken() {
+        const email = await redisClient.get(EMAIL_KEY);
+        const password = await redisClient.get(PASSWORD_KEY);
+
+        if (!email || !password) {
+            throw new Error('[HolderSessionManager] Missing email/password in Redis, cannot renew token.');
+        }
+
+        await this.loginHolderWithCredentials(email, password);
     }
 
-    getWalletId() {
-        return this.walletId;
+    /**
+     * Retrieves the wallet ID from Redis.
+     *
+     * @async
+     * @function getWalletId
+     * @returns {Promise<string>} The wallet ID.
+     */
+    async getWalletId() {
+        return redisClient.get(WALLET_ID_KEY);
+    }
+
+    /**
+     * Retrieves the account ID from Redis.
+     *
+     * @async
+     * @function getAccountId
+     * @returns {Promise<string>} The account ID.
+     */
+    async getAccountId() {
+        return redisClient.get(ACCOUNT_ID_KEY);
     }
 }
 
-module.exports = HolderSessionManager.getInstance();
+module.exports = new HolderSessionManager();
