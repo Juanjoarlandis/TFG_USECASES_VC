@@ -2,6 +2,8 @@
 require('dotenv').config();
 
 const express = require('express');
+const helmet = require('helmet');
+const compression = require('compression');
 const { connectDB } = require('./src/config/db');
 const { connectRedis } = require('./src/config/redis');
 
@@ -28,7 +30,10 @@ async function main() {
         // 4) Middlewares
         app.use(corsConfig);
         app.use(express.json());
+        app.use(compression());
         app.use(requestLogger);
+        app.use(helmet());
+        app.disable('x-powered-by');
 
         // 5) Rutas
         app.use(routes);
