@@ -1,9 +1,9 @@
 // src/routes/didRoutes.js
-const express = require('express');
-const { listDIDs } = require('../controllers/didController');
+const express = require("express");
+const { listDIDs } = require("../controllers/didController");
 
 const router = express.Router();
 
-router.get('/dids', listDIDs);
+router.get("/dids", listDIDs);
 
 module.exports = router;

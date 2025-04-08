@@ -1,8 +1,8 @@
 // src/routes/revocationRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { revokeCredential } = require('../controllers/revocationController');
+const { revokeCredential } = require("../controllers/revocationController");
 
-router.post('/credencial', revokeCredential);
+router.post("/credencial", revokeCredential);
 
 module.exports = router;
