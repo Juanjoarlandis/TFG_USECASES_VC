@@ -13,6 +13,11 @@ a {
   text-decoration: none;
 }
 
+/* Pequeño reset para botones */
+button {
+  @apply transition-colors duration-200 ease-in-out;
+}
+
 h1, h2, h3, h4 {
   @apply font-headings text-neutralDark font-bold;
 }
