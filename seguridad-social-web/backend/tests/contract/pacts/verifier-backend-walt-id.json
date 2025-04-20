@@ -1,0 +1,91 @@
+{
+  "consumer": {
+    "name": "verifier-backend"
+  },
+  "interactions": [
+    {
+      "description": "solicitud de verify",
+      "providerState": "walt.id disponible",
+      "request": {
+        "body": {
+          "request_credentials": [
+            {
+              "format": "jwt_vc_json",
+              "type": "CustomIdentityCredential"
+            }
+          ]
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "method": "POST",
+        "path": "/openid4vc/verify"
+      },
+      "response": {
+        "body": "http://walt.id/verify?state=abc123",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body": {
+            "match": "regex",
+            "regex": "^https?://.*"
+          }
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "solicitud de jwt issue",
+      "providerState": "walt.id issuer disponible",
+      "request": {
+        "body": {
+          "authenticationMethod": "PRE_AUTHORIZED",
+          "credentialConfigurationId": "id",
+          "credentialData": {},
+          "issuerDid": "did:web:test",
+          "issuerKey": {},
+          "mapping": {}
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body": {
+            "match": "type"
+          }
+        },
+        "method": "POST",
+        "path": "/openid4vc/jwt/issue"
+      },
+      "response": {
+        "body": "http://walt.id/issue?offer=xyz",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "matchingRules": {
+          "$.body": {
+            "match": "regex",
+            "regex": "^https?://.*"
+          }
+        },
+        "status": 200
+      }
+    }
+  ],
+  "metadata": {
+    "pact-js": {
+      "version": "11.0.2"
+    },
+    "pactRust": {
+      "ffi": "0.4.0",
+      "models": "1.0.4"
+    },
+    "pactSpecification": {
+      "version": "2.0.0"
+    }
+  },
+  "provider": {
+    "name": "walt-id"
+  }
+}

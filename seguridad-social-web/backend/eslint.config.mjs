@@ -1,14 +1,19 @@
 import { defineConfig } from "eslint/config";
 import globals from "globals";
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
-import pluginReact from "eslint-plugin-react";
-
 
 export default defineConfig([
-  { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
-  { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], languageOptions: { globals: globals.browser } },
-  { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"], plugins: { js }, extends: ["js/recommended"] },
-  tseslint.configs.recommended,
-  pluginReact.configs.flat.recommended,
+  {
+    files: ["**/*.{js,cjs}"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: { ...globals.node }      // <- gives 'require', 'module', 'process', …
+    },
+    plugins: { js },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off", // allow CommonJS
+      "no-undef": "off"
+    }
+  },
+  // keep the rest of your presets afterwards…
 ]);
