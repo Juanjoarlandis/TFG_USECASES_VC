@@ -1,3 +1,4 @@
 backend/node_modules/
 # al final de .gitignore
 **/node_modules/
+copiar.py
