@@ -1,0 +1,8 @@
+old                                      new                                      ref
+1888b988218e4fef7d920b6464a48bfc444998c9 51f51bf63b786612d3d2066f14f7ad0be9e3dddd refs/heads/desarrollo
+8d735988912cd25b0f059dc13aaede07cebfb0c6 01bf31bccf9bf1efe82b62191b6ca8cfc8996a71 refs/heads/feature/loginAuto
+a1413de9b4b6289cc10c9fe29ecb5be5581401c9 a1413de9b4b6289cc10c9fe29ecb5be5581401c9 refs/heads/main
+1c073958abb6293da26b04823659ccc0dfa68bfa 1c073958abb6293da26b04823659ccc0dfa68bfa refs/pull/1/head
+7b55097056ed3d73b3a9feb33a071ebd3a765864 72b14680fa80069ec803962eb689bc4b97eb7d11 refs/pull/2/head
+8d735988912cd25b0f059dc13aaede07cebfb0c6 01bf31bccf9bf1efe82b62191b6ca8cfc8996a71 refs/pull/3/head
+076cc7eab3da0d09b1b26a377846f8cf161d48fa 5377261983295e4b9624daa31e14606e8cf001b6 refs/pull/4/head
