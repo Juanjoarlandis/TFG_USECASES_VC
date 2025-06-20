@@ -21,20 +21,41 @@ const LoginWithWallet = () => {
     };
 
     const pollVerificationStatus = (stateId) => {
-        // Hacemos polling cada 3-5 segundos...
+        // Hacemos polling cada 3 s
         const intervalId = setInterval(async () => {
             try {
                 const BASE_URL = process.env.REACT_APP_BACKEND_URL;
                 const resp = await fetch(`${BASE_URL}/verification/session/${stateId}`);
+
+                /* ─── Manejo de respuestas con error ───────────────────────────── */
+                if (!resp.ok) {
+                    const errData = await resp.json().catch(() => ({}));
+
+                    if (errData.code === 'IDENTITY_CRED_MISSING') {
+                        toast.warn(
+                            'Tu wallet no contiene la Credencial de Identidad. ' +
+                            'Añádela e intenta de nuevo.'
+                        );
+                    } else if (resp.status === 404) {
+                        toast.error('Sesión no encontrada o expirada.');
+                    } else {
+                        toast.error('Error consultando verificación.');
+                    }
+
+                    clearInterval(intervalId);
+                    setIsLoading(false);
+                    return;
+                }
+
+                /* ─── Si la respuesta es exitosa ──────────────────────────────── */
                 const sessionData = await resp.json();
-                // sessionData podría ser { status, token, refreshToken, user } etc.
 
                 if (sessionData.status === 'verified') {
                     toast.success('Verificación completada');
                     clearInterval(intervalId);
 
                     if (sessionData.token && sessionData.user && sessionData.refreshToken) {
-                        // Guardar
+                        // Guardar tokens y datos
                         localStorage.setItem('token', sessionData.token);
                         localStorage.setItem('refreshToken', sessionData.refreshToken);
                         localStorage.setItem('user', JSON.stringify(sessionData.user));
@@ -42,66 +63,98 @@ const LoginWithWallet = () => {
                         setIsLoading(false);
                         navigate('/dashboard');
                     } else {
-                        toast.error('Falta token/usuario tras verificación.');
+                        toast.error('Falta token o usuario tras verificación.');
+                        setIsLoading(false);
                     }
                 } else if (sessionData.status === 'failed') {
                     toast.error('Verificación fallida.');
                     clearInterval(intervalId);
+                    setIsLoading(false);
                 } else if (sessionData.status === 'expired') {
                     toast.warn('La verificación ha expirado.');
                     clearInterval(intervalId);
+                    setIsLoading(false);
                 }
-                // else => status=pending, no hacer nada, seguimos
+                // status === 'pending' → no hacemos nada, seguimos poll
             } catch (err) {
                 console.error(err);
                 clearInterval(intervalId);
                 toast.error('Error consultando verificación.');
+                setIsLoading(false);
             }
         }, 3000);
     };
 
+
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     const dispatch = useDispatch();
-    const handleSubmit = async (e) => {
+    const handleSubmit = async e => {
         e.preventDefault();
         setIsLoading(true);
+
         try {
             await sleep(2000);
             const data = await walletLogin(email, password);
 
-            // 1) Si tu backend devuelve algo como:
-            //   { message: 'Login automático iniciado...', state: 'xxxxx', verificationUrl: '...' }
-            //   significa que la verificación NO ha terminado.
-            if (data.state && data.message) {
-                // Ponemos un toast informativo
-                toast.info(`Verificación en curso. ID: ${data.state}. Esperando callback...`);
-
-                // Guardamos en localStorage, y pasamos a poll...
-                localStorage.setItem('loginState', data.state);
-
-                // Llamamos a una función de “poll”:
-                pollVerificationStatus(data.state);
-
-                // Podríamos quedar en un spinner, o permitir un "Cancelar"
-                setIsLoading(true);
-                return; // Finaliza la función. Aún no hay tokens
+            // 1) Falta Credencial de Identidad en la wallet
+            if (data.status === 404 && data.code === 'IDENTITY_CRED_MISSING') {
+                toast.warn(
+                    <div>
+                        <strong>¡Credencial no encontrada!</strong>
+                        <div style={{ marginTop: 4, fontSize: '0.9em' }}>
+                            No hemos detectado tu credencial de identidad (DNI) en la wallet.<br />
+                            Por favor:
+                            <ol style={{ paddingLeft: 16, margin: '4px 0' }}>
+                                <li>Añade tu DNI en la sección “Credenciales” de tu wallet.</li>
+                                <li>Vuelve aquí y vuelve a intentarlo.</li>
+                            </ol>
+                        </div>
+                    </div>,
+                    {
+                        autoClose: 10000,      // 10 segundos
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                    }
+                );
+                setIsLoading(false);
+                return;
             }
 
-            // 2) En caso de que tu backend SÍ devuelva status=verified, token, etc. (si se definiera):
-            if (data.status === 'verified' && data.token && data.user && data.refreshToken) {
-                // Guardar en localStorage y dispatch
+            // 2) Flujo de verificación pendiente
+            if (data.status === 200 && data.state && data.message) {
+                toast.info(`Verificación en curso. ID: ${data.state}. Esperando callback…`);
+                localStorage.setItem('loginState', data.state);
+                pollVerificationStatus(data.state);
+                return;
+            }
+
+            // 3) Verificación completada inmediatamente
+            if (
+                data.status === 200 &&
+                data.status === 'verified' &&
+                data.token &&
+                data.refreshToken &&
+                data.user
+            ) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('refreshToken', data.refreshToken);
                 localStorage.setItem('user', JSON.stringify(data.user));
                 localStorage.setItem('flow', data.flow);
                 dispatch(verifyUser({ user: data.user, token: data.token }));
                 navigate('/dashboard');
-            } else {
-                toast.error('Error iniciando sesión o verificación no completada.');
+                return;
             }
-        } catch (error) {
-            console.error(error);
-            toast.error('Error iniciando sesión.');
+
+            // 4) Otros casos inesperados
+            toast.error('Verificación no completada o respuesta inesperada.');
+            setIsLoading(false);
+
+        } catch (err) {
+            console.error(err);
+            toast.error('Error de servidor. Intenta de nuevo más tarde.');
+            setIsLoading(false);
         }
     };
 

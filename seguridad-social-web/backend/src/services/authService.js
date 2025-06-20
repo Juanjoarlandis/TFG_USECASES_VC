@@ -77,9 +77,16 @@ module.exports = {
         Array.isArray(c.parsedDocument.type) &&
         c.parsedDocument.type.includes("CustomIdentityCredential"),
     );
+
     if (!identityCred) {
-      logger.error("[authService] No CustomIdentityCredential found in wallet");
-      throw new Error("No CustomIdentityCredential found");
+      logger.warn("[authService] Identity credential missing in holder wallet");
+
+      const err = new Error(
+        "Holder wallet does not contain a CustomIdentityCredential",
+      );
+      err.status = 404;          // usa 400 o 404 según tu criterio
+      err.code = "IDENTITY_CRED_MISSING";
+      throw err;
     }
     logger.debug(`[authService] Found identityCred => ${identityCred.id}`);
 
@@ -143,11 +150,16 @@ module.exports = {
       presentationDefinition,
     );
     if (!matchedCreds || !matchedCreds.length) {
-      logger.error(
-        "[authService] No matched creds for CustomIdentityCredential",
+      logger.warn("[authService] No matching identity credential in wallet");
+
+      const err = new Error(
+        "Holder wallet does not contain a matching CustomIdentityCredential",
       );
-      throw new Error("No matching credentials found in the wallet");
+      err.status = 404;          // usa 400 o 404 según tu criterio
+      err.code = "IDENTITY_CRED_MISSING";
+      throw err;
     }
+
     logger.debug(
       `[authService] matchedCreds => ${JSON.stringify(matchedCreds, null, 2)}`,
     );

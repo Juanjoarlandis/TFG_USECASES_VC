@@ -2,13 +2,14 @@
 const rateLimit = require("express-rate-limit");
 
 const authRateLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minuto
-  max: 10, // máximo de 10 peticiones en ese minuto
+  windowMs: 1 * 60 * 1000,      // 1 minuto
+  max: 10,                      // 10 peticiones por ventana
   message: {
     error: "Too many requests, please try again later.",
   },
-  standardHeaders: true, // retorna las cabeceras RateLimit
+  standardHeaders: true,        // cabeceras RateLimit
   legacyHeaders: false,
+  trustProxy: true              // ← estamos detrás de Nginx / proxy
 });
 
 module.exports = { authRateLimiter };

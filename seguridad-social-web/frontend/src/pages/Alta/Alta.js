@@ -92,8 +92,20 @@ const Alta = () => {
             setTimeLeft(180);
             setQrExpired(false);
         } catch (error) {
-            console.error(error);
-            toast.error('Error iniciando verificación para el alta.');
+            console.error('[Alta] => Error iniciando verificación:', error);
+
+            if (error.response?.data?.code === 'IDENTITY_CRED_MISSING') {
+                toast.warn(
+                    'No tienes la Credencial de Identidad en tu wallet. ' +
+                    'Añádela antes de continuar con el proceso de alta.'
+                );
+            } else {
+                toast.error('Error iniciando verificación para el alta.');
+            }
+
+            /* Cancelamos la animación del QR, si la hubiera arrancado */
+            setQrVisible(false);
+
         }
     };
 

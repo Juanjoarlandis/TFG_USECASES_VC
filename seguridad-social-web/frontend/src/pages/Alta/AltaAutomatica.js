@@ -47,7 +47,18 @@ const AltaAutomatica = () => {
                 }
             } catch (err) {
                 console.error('[AltaAutomatica] => Error llamando a /offer3credsAuto:', err);
-                toast.error('Ocurrió un error en la verificación automática');
+
+                // —► Falta la CustomIdentityCredential en la wallet
+                if (err.response?.data?.code === 'IDENTITY_CRED_MISSING') {
+                    toast.warn(
+                        'Tu wallet no contiene la Credencial de Identidad requerida. ' +
+                        'Añádela y vuelve a intentar el alta.'
+                    );
+                } else {
+                    toast.error('Ocurrió un error en la verificación automática.');
+                }
+
+                /* Cortamos inmediatamente la animación/overlay */
                 setShowOverlay(false);
             } finally {
                 setLoading(false);

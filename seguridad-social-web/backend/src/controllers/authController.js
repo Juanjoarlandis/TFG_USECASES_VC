@@ -25,12 +25,20 @@ module.exports = {
     } catch (error) {
       logger.error("[authController] Error en walletLogin:", error.message);
 
-      // Si el error ya trae un status (por ej. error.status = 401, 403, etc.), podemos responder directamente
+      // ↳ Ausencia de CustomIdentityCredential en la wallet
+      if (error.code === "IDENTITY_CRED_MISSING") {
+        return res.status(error.status || 404).json({
+          message: error.message,   // "Holder wallet does not contain …"
+          code: error.code          // "IDENTITY_CRED_MISSING"
+        });
+      }
+
+      // ↳ Otros errores que ya traen status propio
       if (error.status) {
         return res.status(error.status).json({ error: error.message });
       }
 
-      // Sino, delegamos al middleware global
+      // ↳ Todo lo demás lo maneja el middleware global
       next(error);
     }
   },

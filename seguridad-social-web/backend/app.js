@@ -26,7 +26,7 @@ async function main() {
 
         // 3) Creamos la app de Express
         const app = express();
-
+        app.set('trust proxy', 1);
         // 4) Middlewares
         app.use(corsConfig);
         app.use(express.json());
