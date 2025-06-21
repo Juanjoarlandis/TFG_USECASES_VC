@@ -1,288 +1,225 @@
-# Social Security Web (Frontend)
+# Social Security Web – Front‑End
 
-This **React** application serves as the user-facing portal for managing **Social Security** procedures. It allows users to:
-
-1. **Verify Identity** using Verifiable Credentials (VCs) via manual QR scanning or an automated wallet-based flow.
-2. **Perform Credential-Based Flows** such as registering for Social Security (alta), revoking credentials (baja), and viewing user dashboards.
-3. **Access Personalized Services** such as viewing personal data, credentials, and active benefits.
-
-The frontend is built using **Create React App (CRA)**, enhanced with **TailwindCSS**, **Redux Toolkit**, **React Router**, **Axios**, **i18next** for internationalization, and other tools.
+> **Status:** Proof‑of‑concept – not an official government service.  
+> **Stack:** React 18 • Redux Toolkit • TailwindCSS • Walt.id VC flows • Docker multi‑stage
 
 ---
 
 ## Table of Contents
-
-1. [Key Features](#key-features)  
-2. [Technologies & Dependencies](#technologies--dependencies)  
-3. [Project Structure](#project-structure)  
-4. [Installation](#installation)  
-5. [Configuration](#configuration)  
-6. [Scripts & Usage](#scripts--usage)  
-7. [Docker Support](#docker-support)  
-8. [Internationalization (i18n)](#internationalization-i18n)  
-9. [Environment Variables](#environment-variables)  
-10. [Deployment Notes](#deployment-notes)  
-11. [Contributing](#contributing)  
-12. [License](#license)
-
----
-
-## Key Features
-
-- **Credential Verification**  
-  - Manual (QR-based) verification with walt.id wallet.  
-  - Automatic wallet-based verification (no need to scan QR codes).  
-  - Session polling to check verification status (pending, verified, failed, expired).
-
-- **Credential Issuance & Revocation**  
-  - Guided process to issue “Alta” (Social Security Registration) credentials after successful verification.  
-  - Button to revoke or “Baja” a credential, marking it as invalid in the backend.
-
-- **User Dashboard**  
-  - Displays personal data, credentials, social security data (e.g., historical records, benefits).  
-  - Offers additional services such as downloading official documents and scheduling appointments.
-
-- **State Management**  
-  - **Redux Toolkit** for storing authentication state (token, user, etc.) and controlling “verified” status.
-
-- **Internationalization**  
-  - **i18next** for multi-language support (English, Spanish, etc.).
-
-- **Responsive UI & Animations**  
-  - **TailwindCSS** for responsive styling.  
-  - **Framer Motion** for smooth animations/transitions.
-
-- **Security Measures**  
-  - Uses environment variable `REACT_APP_BACKEND_URL` to communicate with a secure backend.  
-  - Minimal local storage usage for tokens (access token, refresh token) with Redux state management.
+1. [Project Purpose](#project-purpose)  
+2. [Main Features](#main-features)  
+3. [Technology Stack](#technology-stack)  
+4. [Folder Layout](#folder-layout)  
+5. [Prerequisites](#prerequisites)  
+6. [Local Installation](#local-installation)  
+7. [Environment Variables](#environment-variables)  
+8. [NPM Scripts](#npm-scripts)  
+9. [Testing & Coverage](#testing--coverage)  
+10. [Docker Usage](#docker-usage)  
+11. [Internationalisation](#internationalisation)  
+12. [Accessibility](#accessibility)  
+13. [Security Notes](#security-notes)  
+14. [Troubleshooting FAQ](#troubleshooting-faq)  
+15. [Contributing](#contributing)  
+16. [License](#license)
 
 ---
 
-## Technologies & Dependencies
+## Project Purpose
+This single‑page application is the **public portal** used in the *Social Security* demo
+ecosystem.  It enables citizens to:
 
-Key dependencies from `package.json`:
+* **Verify their identity** using Verifiable Credentials (VCs) issued to a Walt.id wallet.  
+* **Obtain / revoke Social‑Security credentials** ( *Alta* and *Baja*).  
+* **Consult personal information** such as contribution history or active benefits via
+  an intuitive dashboard.
 
-- **React** & **React DOM** (v18)  
-- **Redux Toolkit** + **React Redux**  
-- **TailwindCSS** + **PostCSS** + **Autoprefixer**  
-- **Axios** for API requests  
-- **React Router DOM** for routing  
-- **i18next** & **react-i18next** for translations  
-- **Framer Motion** for animations  
-- **Zod** for validation schemas  
-- **QRcode.react** for rendering QR codes  
-- **React Icons** (e.g., FontAwesome icons)
-
-Dev dependencies include Babel plugins and Tailwind-related packages.
+The repo demonstrates how modern web tooling, decentralised identity and container
+orchestration can be combined to build secure e‑government services.
 
 ---
 
-## Project Structure
+## Main Features
+| Area | Highlights |
+|------|------------|
+| **Credential Flows** | • Wallet login (no QR)  • Manual QR verification  • 3‑credential verification with polling |
+| **Issuance** | Automated issuance of the *Alta_Seguridad_Social* credential after successful verification |
+| **Dashboard** | Personal profile, credentials viewer, contribution history, benefits, document downloads |
+| **UX** | Tailwind 3.x design system, dark‑mode toggle, animations via Framer Motion & Anime.js |
+| **i18n** | `react‑i18next` with English & Spanish resources – fully extensible |
+| **State Management** | Redux Toolkit slice for auth / verification state (tokens stored in memory + localStorage fallback) |
+| **Testing** | Jest + React‑Testing‑Library  • MSW for API mocking  • Cypress for E2E |
+| **Dev Ops** | Multi‑stage Dockerfile, Nginx reverse‑proxy sample, GitHub‑friendly workflows |
 
-A simplified view of the folder layout:
+---
 
+## Technology Stack
+| Layer | Libraries / Tools |
+|-------|-------------------|
+| UI | React 18, React‑Router 6, Framer‑Motion, Anime.js, React‑Icons, React‑Toastify |
+| Styling | TailwindCSS 3, PostCSS, Autoprefixer |
+| State | Redux Toolkit, React‑Redux |
+| Data fetch | Axios (with custom instance & interceptors) |
+| Forms / Validation | Zod schemas |
+| Internationalisation | i18next, react‑i18next |
+| Testing | Jest, Testing‑Library, MSW, Cypress, jest‑axe (a11y) |
+| Tooling | Babel, ESLint, Prettier |
+| Containerisation | Node 18 build stage → Node 16‑alpine runtime • Nginx TLS reverse proxy |
+
+---
+
+## Folder Layout
 ```
 frontend/
-├── public/
-│   ├── index.html
-│   ├── robots.txt
-│   ├── manifest.json
-│   └── (favicon.ico, logo files, etc.)
+├── public/            # Static assets served by CRA
 ├── src/
-│   ├── components/
-│   │   ├── Header/
-│   │   └── Footer/
-│   ├── pages/
-│   │   ├── Home/
-│   │   ├── Register/
-│   │   ├── Alta/
-│   │   ├── Dashboard/
-│   │   ├── LoginWithWallet/
-│   │   ├── VerificationMethodSelect/
-│   │   └── ...
-│   ├── store/
-│   │   ├── authSlice.js
-│   │   └── store.js
-│   ├── services/
-│   │   └── api.js
-│   ├── utils/
-│   │   └── validation.js
-│   ├── i18n.js
-│   ├── App.js
-│   ├── index.js
-│   ├── index.css
-│   └── ...
-├── .env
-├── package.json
-├── Dockerfile
-├── tailwind.config.js
-├── postcss.config.js
-├── nginx.conf (example for SSL & proxy)
-└── README.md
+│   ├── pages/         # Top‑level routes (Home, Dashboard, Alta…)
+│   ├── components/    # Reusable UI widgets (Header, Footer…)
+│   ├── store/         # Redux Toolkit store & slices
+│   ├── services/      # API wrappers that hit the backend
+│   ├── utils/         # Helpers (validation, constants…)
+│   ├── i18n.js        # i18next configuration
+│   └── …              # Tests, mocks, CSS
+├── certs/             # Self‑signed TLS certificates for local Nginx
+├── Dockerfile         # Multi‑stage build / runtime image
+├── nginx.conf         # Example reverse proxy for TLS + API gateway
+└── README.md          # You are here
 ```
 
-### Notable Folders
+---
 
-- **`pages/`**: Each directory under `pages` represents a major route or view in the application (e.g., `Home`, `Dashboard`, `Alta`).  
-- **`components/`**: Reusable UI components like `Header`, `Footer`, and other shared elements.  
-- **`store/`**: Redux Toolkit configuration (`store.js`) and slices (e.g., `authSlice`).  
-- **`services/`**: Contains functions (`api.js`) for calling backend endpoints (`/verification`, `/issuance`, etc.).  
-- **`utils/`**: General utility code, e.g., data validation using Zod.  
-- **`i18n.js`**: Manages language resources and initialization of i18next.
+## Prerequisites
+* **Node ≥ 18.17** & **npm ≥ 10**  
+  (`nvm install 18 && nvm use 18` is recommended)  
+* A running instance of the **backend** service exposed at `https://localhost/backend`.  
+  > The gateway path can be re‑pointed via `REACT_APP_BACKEND_URL`.
 
 ---
 
-## Installation
-
-1. **Clone the Repository**
-
-   ```bash
-   git clone <repository-url>
-   cd social-security-web
-   ```
-
-2. **Install Dependencies**
-
-   ```bash
-   npm install
-   ```
-
-3. **Set up Environment Variables**
-
-   Create or edit the `.env` file to point to your backend:
-
-   ```bash
-   REACT_APP_BACKEND_URL=https://localhost/backend
-   ```
-
-   This `REACT_APP_BACKEND_URL` is used by the frontend to make API calls to the backend.  
-   **Note**: CRA (Create React App) requires environment variables to be prefixed with `REACT_APP_`.
-
-4. **Run the Development Server**
-
-   ```bash
-   npm start
-   ```
-
-   By default, the app is served at [http://localhost:3000](http://localhost:3000).
-
----
-
-## Configuration
-
-### TailwindCSS
-- The project uses **TailwindCSS** for styling.  
-- Key files:
-  - `tailwind.config.js`: Configures paths to `.js/.jsx/.ts/.tsx` for purge and custom theme settings (colors, fonts, etc.).  
-  - `postcss.config.js`: Contains Tailwind and Autoprefixer as PostCSS plugins.  
-- The main entry is `index.css`, which imports Tailwind’s base, components, and utilities.
-
-### Redux
-- The **Redux Toolkit** store is set up in `src/store/store.js`.  
-- `authSlice.js` manages user authentication status, tokens, verification flags, etc.
-
-### i18next
-- Internationalization config is in `src/i18n.js` with Spanish (`es`) and English (`en`) strings as examples.
-
----
-
-## Scripts & Usage
-
-Once in the project directory, you can use:
-
-- **`npm start`**  
-  Launches the development server at [http://localhost:3000](http://localhost:3000). It automatically rebuilds on file changes.
-
-- **`npm run build`**  
-  Builds the production-ready static files into `build/`. This includes code minification and bundling for best performance.
-
-- **`npm test`**  
-  Runs tests in interactive watch mode using **React Testing Library** and **Jest**.
-
-- **`npm run eject`**  
-  Ejects from Create React App configuration. **Warning**: This is irreversible.
-
----
-
-## Docker Support
-
-A **multi-stage Dockerfile** is included:
-
-1. **Build Stage**  
-   - Uses `node:16` to install dependencies and run `npm run build`.  
-   - Produces optimized static files in `/app/build`.
-
-2. **Runtime Stage**  
-   - Uses `node:16-alpine`, installs `serve` globally.  
-   - Copies the `build` folder from the first stage.  
-   - Exposes port `3000` and serves the static files with `serve`.
-
-### Build & Run with Docker
-
+## Local Installation
 ```bash
-# 1) Build image
-docker build -t social-security-web:latest .
+# clone & enter
+git clone https://github.com/your‑org/social‑security‑web.git
+cd social‑security‑web/frontend
 
-# 2) Run container
-docker run -d -p 3000:3000 social-security-web:latest
+# install deps
+npm install
+
+# start dev server
+npm start
+# => http://localhost:3000 (auto‑reload enabled)
 ```
-
-Open [http://localhost:3000](http://localhost:3000) to access the app.
-
----
-
-## Internationalization (i18n)
-
-- **Languages**: Spanish (`es`) and English (`en`) are provided as examples in `i18n.js`.  
-- To add more languages, extend the `resources` object and specify translations.  
-- The default language is set to Spanish (`lng: "es"`). Switch languages by changing `i18n` config or hooking up a language selector component.
 
 ---
 
 ## Environment Variables
+| Variable | Purpose | Example |
+|----------|---------|---------|
+| `REACT_APP_BACKEND_URL` | Base URL for all API calls (must include `/backend` prefix) | `https://localhost/backend` |
 
-In the **`.env`** file (at the project root):
-
-- **`REACT_APP_BACKEND_URL`**  
-  Backend endpoint for all API calls. By default: `https://localhost/backend`.
-
-**Important**: Any new environment variables must be prefixed with `REACT_APP_` for Create React App to include them in the build process.
+Create a `.env` file in `/frontend` – *remember: CRA only injects vars prefixed with `REACT_APP_*`.*
 
 ---
 
-## Deployment Notes
+## NPM Scripts
+| Script | What it does |
+|--------|--------------|
+| `npm start` | Runs CRA dev server with hot reload |
+| `npm run build` | Produces an optimised production bundle in `/build` |
+| `npm test` | Executes Jest in watch mode |
+| `npm run cypress` | Launches the Cypress UI runner |
+| `npm run eject` | **Irreversible** – exposes CRA configuration |
+| `npm run lint` | Lints the codebase (if you add ESLint) |
 
-1. **Production Build**:  
-   Run `npm run build`, which outputs static files in the `build` folder.
+---
 
-2. **Serve Static Files**:  
-   - The included **Dockerfile** uses `serve -s build -l 3000`.  
-   - Alternatively, you could deploy on **Nginx** or **Apache**. An example `nginx.conf` is provided, which can handle SSL on port 443, proxying to the frontend container at port 3000, and rewriting paths for the backend at port 3001.
+## Testing & Coverage
+### Unit / Integration  
+* **Jest** with React‑Testing‑Library (`jest.setup.js` mocks axios & i18next).  
+* Sample slice tests in `src/store/*.test.js`.
 
-3. **HTTPS & Certificates**  
-   - If using Docker + Nginx in production, you can mount your certificates in `nginx.conf` paths.  
-   - For local development with HTTPS, you can set up self-signed certificates or use a certificate authority.
+### End‑to‑End  
+* **Cypress 14** with `cypress-axe` for automated accessibility checks.
 
-4. **Integration with Backend**:  
-   - The **backend** expects to receive calls at `/verification/*`, `/issuance/*`, `/auth/*`, etc.  
-   - In production, ensure your reverse proxy (e.g., Nginx) points `location /backend` to the correct container/port.
+Run all tests:
+```bash
+npm test -- --watchAll=false && npx cypress run
+```
+
+---
+
+## Docker Usage
+Build a self‑contained image (static files served by `serve`):
+
+```bash
+# build
+docker build -t ss‑web:latest .
+
+# run
+docker run -p 3000:3000 ss‑web:latest
+```
+
+### Full stack with Nginx reverse proxy  
+The `nginx.conf` bundled at the repo root proxies:
+
+* `/`               → `frontend:3000`  
+* `/backend/**`     → `backend:3001`  
+* `/wallet/**`      → `waltid-demo-wallet:7101`
+
+Mount your TLS certificates under `/etc/nginx/certs` or generate dev certs with `mkcert`.
+
+---
+
+## Internationalisation
+Translation resources live in `src/i18n.js`.  
+Add a new language:
+
+```js
+resources.fr = { translation: { welcome: "Bienvenue", … } };
+```
+
+Switch language at runtime with:
+
+```js
+const { i18n } = useTranslation();
+i18n.changeLanguage("fr");
+```
+
+---
+
+## Accessibility
+* Semantic HTML & **Tailwind** colour‑contrast utilities.  
+* CI step with **jest‑axe** + Cypress‑axe to catch a11y regressions.  
+* All interactive components are keyboard‑navigable and ARIA‑labelled.
+
+---
+
+## Security Notes
+* JWT access & refresh tokens are kept in **memory** and mirrored to **localStorage**
+  only for rehydration – mitigate XSS accordingly.
+* TLS termination, CSP & HSTS are enforced by Nginx (sample config included).
+* No secrets are baked into the front‑end image – everything is driven by env vars.
+
+---
+
+## Troubleshooting FAQ
+| Symptom | Fix |
+|---------|-----|
+| _API 404 when running locally_ | Ensure `REACT_APP_BACKEND_URL` matches the backend container hostname & port inside Docker‑compose |
+| _QR expires immediately_ | System clock mismatch – check that host & container clocks are in sync |
+| _Dark‑mode toggle doesn’t work_ | The `dark` class is toggled on `<html>` – ensure Tailwind’s `darkMode:'class'` is present |
 
 ---
 
 ## Contributing
+1. Fork the repo & create a feature branch  
+2. Follow the existing ESLint/Prettier rules (`npm run lint -- --fix`)  
+3. Provide tests where applicable  
+4. Open a pull request – we use **Conventional Commits** for commit messages
 
-We welcome contributions and improvements to this frontend. To get started:
-
-1. **Fork** the repository.  
-2. **Create** a new branch: `git checkout -b feature/my-feature`.  
-3. **Commit** your changes: `git commit -m "Add new feature"`.  
-4. **Push** the branch: `git push origin feature/my-feature`.  
-5. Open a **Pull Request** and we’ll review your changes!
+All constructive feedback is welcome 🎉
 
 ---
 
 ## License
-
-This project is licensed under the **MIT License**. See the [LICENSE](../LICENSE) file for details.
-
----
+[MIT](../LICENSE) © 2024 Social Security Demo – created for educational purposes only.
