@@ -57,7 +57,7 @@ services:
 
   waltid-demo-wallet:
     container_name: waltid-demo-wallet
-    image: docker.io/juanjoarlandis/waltid-demo-wallet:latest
+    image: docker.io/juanjoarlandis/waltid-demo-wallet:0.1.0
     build:
       context: ../
       dockerfile: waltid-applications/waltid-web-wallet/apps/waltid-demo-wallet/Dockerfile

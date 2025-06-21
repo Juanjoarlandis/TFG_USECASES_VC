@@ -1,295 +1,187 @@
+
 # Verifier Backend
 
-This **Verifier Backend** is a Node.js/Express application that facilitates the verification of **Verifiable Credentials** (VCs) in a **Social Security** context. It also provides credential issuance, revocation, and user management functionalities. The project communicates with a **Wallet** (for example, a walt.id wallet or similar) and an **Issuer** API to complete credential-oriented flows such as:
-
-1. **Credential Verification**: Receiving offers for proof requests (OID4VC flows) and validating them.
-2. **Credential Issuance**: Issuing JWT-based credentials and sending them to a holder’s wallet.
-3. **Credential Revocation**: Marking credentials as revoked so that they become invalid for future verifications.
-4. **User Management**: Registering and updating user data (with sensitive fields encrypted in the database).
-5. **Authentication**: Generating and refreshing JWT access and refresh tokens for user sessions.
-
-Below is a detailed overview of how to set up, run, and develop this project.
+**Verifier Backend** is a production‑grade Node.js + Express service that drives the **verification, issuance and revocation** of **Verifiable Credentials (VCs)** for the Spanish *Seguridad Social* (Social Security) proof‑of‑concept.  
+It acts as the *Verifier Coordinator* in an OpenID4VC flow, talks to the Walt.id **Wallet**, **Issuer** and **Verifier** micro‑services, and keeps user / session state in MongoDB & Redis.
 
 ---
 
-## Table of Contents
-
+## Table of Contents
 1. [Key Features](#key-features)  
-2. [Technologies and Dependencies](#technologies-and-dependencies)  
-3. [Project Structure](#project-structure)  
-4. [Installation](#installation)  
+2. [Technology Stack](#technology-stack)  
+3. [Project Layout](#project-layout)  
+4. [Getting Started](#getting-started)  
 5. [Configuration](#configuration)  
-6. [Usage](#usage)  
-7. [Docker Support](#docker-support)  
-8. [Security Considerations](#security-considerations)  
+6. [Running the Test‑Suite](#running-the-test-suite)  
+7. [Docker & Docker Compose](#docker--docker-compose)  
+8. [Security & Hardening](#security--hardening)  
 9. [Contributing](#contributing)  
 10. [License](#license)
 
 ---
 
-## Key Features
+## Key Features
 
-- **Verification of Verifiable Credentials**  
-  Uses an **OID4VC** flow to receive verification requests, decode and validate the credentials provided by the holder, and determine whether they are valid and not revoked.
-
-- **Issuance of Verifiable Credentials**  
-  Generates and sends credential offers (in JWT format) to the holder’s wallet. Includes callback endpoints to track issuance status.
-
-- **Credential Revocation**  
-  Maintains a local revocation list (via a MongoDB collection) for revoked credentials. A revoked credential will fail subsequent verifications.
-
-- **User Management**  
-  Stores user data (including personal information) in MongoDB, encrypting sensitive fields (e.g., `nss`) with **mongoose-encryption**. Provides a REST endpoint to retrieve user information by a national ID (DNI).
-
-- **Authentication**  
-  Implements an authentication flow with **JWT** (access tokens and refresh tokens). Allows refreshing tokens, invalidating old tokens, and checking user sessions.
-
-- **Logging**  
-  Uses **Winston** (`logger.js`) for structured logging with custom formatting, allowing different log levels (debug, info, etc.).
+| Domain | What it does |
+| ------ | ------------ |
+| **Verification** | Generates OID4VC presentation requests (1‑credential flows & 3‑credential “Alta” flows), receives direct‑post callbacks, validates signatures, expiration and *revocation status* and stores the session in Redis. |
+| **Issuance** | Issues a JWT‑VC “Alta” (Social‑Security registration credential) via Walt.id *Issuer API* and lets the holder claim it with a single click. |
+| **Revocation** | Black‑lists a credential by JTI in MongoDB, flips it to *revoked* on the user object, and (optionally) deletes the credential from the holder’s wallet. |
+| **Authentication** | Email + password login directly against Walt.id **Wallet**, fully automatic credential presentation (no QR). Issues access / refresh JWTs for your front‑end. |
+| **User Management** | Stores personal data in MongoDB with **field‑level AES‑256 encryption** (using `mongoose‑encryption`). |
+| **Observability** | Structured logs with **Winston** (level `debug` by default), request logging middleware, integration & contract tests, E2E Playwright scenario. |
 
 ---
 
-## Technologies and Dependencies
+## Technology Stack
 
-Key dependencies (versions may vary, see `package.json` for the exact versions):
+* **Node 16** / **Express 4**
+* **MongoDB 6** via **Mongoose 8**
+* **Redis 7** (mocked in tests with `ioredis‑mock`)
+* **JWT** authentication (`jsonwebtoken`)
+* **OpenID for Verifiable Presentations** (OID4VC)
+* **Walt.id** Wallet / Issuer / Verifier services
+* **Jest**, **Supertest**, **Pact**, **Playwright** for testing
+* **Docker** & **Docker Compose** for reproducible environments
 
-- [**Node.js**](https://nodejs.org/) (16+)
-- [**Express**](https://expressjs.com/)
-- [**Mongoose**](https://mongoosejs.com/) (MongoDB ORM)
-- [**mongoose-encryption**](https://github.com/joegoldbeck/mongoose-encryption) for field-level encryption
-- [**jsonwebtoken**](https://www.npmjs.com/package/jsonwebtoken) for JWT token generation and verification
-- [**dotenv**](https://github.com/motdotla/dotenv) for loading environment variables
-- [**axios**](https://axios-http.com/)
-- [**uuid**](https://www.npmjs.com/package/uuid) for unique state IDs
-- [**winston**](https://www.npmjs.com/package/winston) for logging
-- [**cors**](https://www.npmjs.com/package/cors) for Cross-Origin Resource Sharing
+> The exact package versions are locked in `package.json`.
 
 ---
 
-## Project Structure
-
-A brief overview of the directory layout:
+## Project Layout
 
 ```
 backend/
-├── app.js                 # Main entry point (Express server configuration)
-├── package.json           # Project metadata and scripts
-├── Dockerfile             # Docker build configuration
-├── .env                   # Environment variables (should be kept secret)
+├── app.js                 # Express bootstrap (single entry‑point)
+├── Dockerfile
+├── .env.example           # template for secrets & runtime config
 ├── src/
-│   ├── controllers/       # Controllers containing request/response logic
-│   ├── middleware/        # Express middlewares (e.g., error handling, CORS, logging)
-│   ├── models/            # Mongoose schema definitions
-│   ├── routes/            # Route definitions, mapping endpoints to controllers
-│   ├── services/          # Reusable services for business logic (API calls, sessions, etc.)
-│   └── utils/             # Utility functions (JWT, validations, session store, etc.)
-├── logger.js              # Winston logger configuration
-├── signing_key_base64.txt # Example file containing a signing key
-├── encryption_key_base64.txt
-└── README.md              # Project documentation
+│   ├── controllers/       # REST controllers – thin, pure IO
+│   ├── services/          # Business logic – no Express concerns
+│   ├── models/            # Mongoose schemas (`User`, `RevokedCredential`)
+│   ├── routes/            # Express routers, grouped by domain
+│   ├── middleware/        # CORS, rate‑limit, auth & error handlers
+│   └── utils/             # Stateless helpers (JWT, validation, …)
+├── tests/                 # unit, integration, contract & E2E tests
+│   └── fixtures/ …        # sample JWTs & JSON responses
+└── README.md              # you are here 🚀
 ```
-
-Key folders and files:
-
-- **`app.js`**: Orchestrates database connection, middleware, route registration, and starts the Express server.  
-- **`src/routes/`**: Organizes routes by domain (e.g., `authRoutes.js`, `issuanceRoutes.js`, `verificationRoutes.js`).  
-- **`src/controllers/`**: Contains the logic for each route endpoint, calling on services as needed.  
-- **`src/services/`**: Implements business logic that can be reused (e.g., handling wallet sessions, presenting credentials, verifying tokens).  
-- **`src/models/`**: Mongoose data models (e.g. `User.js`, `RevokedCredential.js`).  
-- **`logger.js`**: Configures Winston to output timestamps, levels, etc.  
-- **`Dockerfile`**: Docker instructions to build and run this project inside a container.
 
 ---
 
-## Installation
+## Getting Started
 
-1. **Clone the Repository**
+```bash
+# 1) clone the mono‑repo and go to backend
+git clone https://github.com/your‑org/seguridad-social-web.git
+cd seguridad-social-web/backend
 
-   ```bash
-   git clone https://github.com/your-repository/verifier-backend.git
-   cd verifier-backend/backend
-   ```
+# 2) install dependencies
+npm ci         # or `npm install`
 
-2. **Install Dependencies**
+# 3) spin up Mongo & Redis (Docker)
+docker compose up -d mongo-backend redis
 
-   ```bash
-   npm install
-   ```
+# 4) copy env template and adjust values
+cp .env.example .env
+vi .env
 
-3. **Ensure MongoDB is Running**
-
-   You can run a local MongoDB instance or use Docker. For example, to run MongoDB locally with Docker:
-
-   ```bash
-   docker run -d --name mongo-backend -p 27017:27017 mongo:4.0
-   ```
-
-4. **Set Up Environment Variables**
-
-   Create a `.env` file in the `backend` folder (or rename the provided example) to configure:
-
-   ```bash
-   WALTID_VERIFIER_URL=http://verifier-api:7003
-   WALTID_ISSUER_URL=http://issuer-api:7002
-   VERIFIER_COORD_PUBLIC_URL=http://backend:3001
-   MONGO_URI=mongodb://mongo-backend:27017/seguridadSocial
-   PORT=3001
-   ISS_COORD_URL=http://issuer_coord:5500
-   NODE_ENV=production
-   WALLET_COORD_URL=http://caddy:7001
-   JWT_SECRET='your-jwt-secret'
-   JWT_REFRESH_SECRET='your-refresh-jwt-secret'
-   ENCRYPTION_KEY='your-encryption-key'
-   SIGNING_KEY='your-signing-key'
-   CREDENTIAL_CONFIGURATION_ID=CustomIdentityCredential_jwt_vc_json
-   ```
-
-   - Make sure the above values match your environment (e.g., container names, ports).
-   - Keep this file **out of version control** for security reasons.
-
-5. **Start the Server**
-
-   ```bash
-   npm start
-   ```
-
-   The application listens on port `3001` by default (or as specified in `.env`).
+# 5) run the service
+npm start
+# → http://localhost:3001/health   (JSON OK)
+```
 
 ---
 
 ## Configuration
 
-- **`PORT`**: Defines the port on which the server listens (default `3001`).  
-- **`MONGO_URI`**: Connection string for the MongoDB instance.  
-- **`JWT_SECRET`** & **`JWT_REFRESH_SECRET`**: Secrets used to sign and verify JWT access and refresh tokens.  
-- **`ENCRYPTION_KEY`** & **`SIGNING_KEY`**: Used by `mongoose-encryption` to encrypt certain fields in MongoDB and sign the encrypted data.  
-- **`WALTID_VERIFIER_URL`** & **`WALTID_ISSUER_URL`**: Used for external OID4VC flows.  
-- **`WALLET_COORD_URL`**: URL of the Wallet Coordinator service to communicate with a holder’s wallet (e.g., walt.id).  
+Environment variables are loaded with **dotenv**.  
+Below is the minimal set for local development:
 
-Adjust these variables in the `.env` file to suit your environment.
+| Variable | Example | Description |
+| -------- | ------- | ----------- |
+| `PORT` | `3001` | Express HTTP port |
+| `MONGO_URI` | `mongodb://mongo-backend:27017/seguridadSocial` | Mongo connection URI |
+| `REDIS_HOST / PORT / DB` | `redis / 6379 / 0` | Redis connection |
+| `WALTID_VERIFIER_URL` | `http://caddy:7003` | Walt.id Verifier gateway |
+| `WALTID_ISSUER_URL` | `http://caddy:7002` | Walt.id Issuer gateway |
+| `VERIFIER_COORD_PUBLIC_URL` | `http://localhost:3001` | Public callback base that Walt.id will call |
+| `JWT_SECRET` | _(base64)_ | access‑token secret |
+| `JWT_REFRESH_SECRET` | _(base64)_ | refresh‑token secret |
+| `ENCRYPTION_KEY` | _(base64 32 bytes)_ | AES‑key for `mongoose‑encryption` |
+| `SIGNING_KEY` | _(base64 64 bytes)_ | HMAC key to sign the ciphertext |
 
----
-
-## Usage
-
-Once the server is up, it exposes several REST endpoints:
-
-### 1. Verification Routes
-
-- **POST `/verification/offer`**  
-  Creates a verification offer (OID4VC) for a single credential type.
-
-- **POST `/verification/offer3creds`**  
-  Creates a verification offer requesting exactly three credentials.  
-  Used for more complex flows (e.g., checking an Identity, a Passport, and an Employer registration credential).
-
-- **POST `/verification/statusCallback/:stateId`**  
-  Callback invoked by the walt.id Verifier service upon completion of a verification. Stores results in memory sessions.
-
-- **GET `/verification/session/:stateId`**  
-  Fetches the status of the verification session. Returns `verified`, `failed`, `expired`, or `pending`, along with any user data or tokens.
-
-### 2. Issuance Routes
-
-- **POST `/issuance/offerIssuance`**  
-  Creates a credential issuance offer, usually after a successful verification.
-
-- **POST `/issuance/statusCallback/:stateId`**  
-  Callback invoked after the issuance flow completes on the Issuer side.
-
-- **GET `/issuance/session/:stateId`**  
-  Retrieves the current issuance session status (`offered`, `accepted`, `claimed`, etc.).
-
-- **POST `/issuance/claimAltaCredential`**  
-  Claims and stores the credential in the holder’s wallet.
-
-### 3. User Management
-
-- **GET `/user/:dni`**  
-  Retrieves user data (first name, family name, birth date, etc.) by document number (DNI).
-
-### 4. Credential Revocation
-
-- **POST `/revocar/credencial`**  
-  Revokes a credential by marking it in a MongoDB `RevokedCredential` collection and (optionally) deleting it from the holder’s wallet.
-
-### 5. Authentication
-
-- **POST `/auth/wallet-login`**  
-  Logs in to the user’s wallet (with email/password) and attempts an automatic verification flow for an identity credential.
-
-- **POST `/auth/refresh`**  
-  Exchanges a valid refresh token for new access and refresh tokens.
+> **Secrets** should never be committed. Use Docker secrets, Kubernetes
+> `Secrets`, AWS SSM, Vault, or any secret manager for production.
 
 ---
 
-## Docker Support
+## Running the Test‑Suite
 
-A basic Docker setup is included:
+```bash
+# lint & prettier
+npm run lint      # eslint
+npm run format    # prettier --write
 
-1. **Build the Image**
+# unit + integration + contract
+npm test
 
-   ```bash
-   docker build -t verifier-backend .
-   ```
+# Playwright E2E (needs front‑end running)
+npm run test:e2e
+```
 
-2. **Run the Container**
-
-   ```bash
-   docker run -p 3001:3001 --env-file .env verifier-backend
-   ```
-
-   This will start the container, exposing port **3001**. Environment variables will be loaded from the specified `.env` file.
-
-**Note**: Make sure you have MongoDB accessible from inside the container, or link it with Docker Compose so that `MONGO_URI` points to a valid host.
+Coverage thresholds (80 %) are enforced via Jest.
 
 ---
 
-## Security Considerations
+## Docker & Docker Compose
 
-1. **Environment Variables**  
-   Never commit secrets (JWT keys, encryption keys, etc.) to version control. Keep `.env` files secure or use a secret manager (e.g., HashiCorp Vault, AWS Parameter Store).
+### Build standalone image
 
-2. **Field-Level Encryption**  
-   Sensitive data (`nss`) is encrypted in MongoDB via **mongoose-encryption**. Evaluate whether additional fields (e.g., `birthDate`, `documentNumber`, etc.) also need encryption for compliance with local regulations (GDPR, etc.).
+```bash
+docker build -t verifier-backend:latest .
+docker run --env-file .env -p 3001:3001 verifier-backend:latest
+```
 
-3. **JWT Handling**  
-   - Access tokens expire relatively quickly (default 15 minutes in `jwtUtils.js`), and refresh tokens last 7 days.  
-   - Validate tokens on protected routes if you expand functionality.  
-   - Properly store and rotate refresh tokens in the database to invalidate them if needed.
+### Complete stack
 
-4. **Logging**  
-   - Winston is set to `level: 'debug'` by default. In production, consider changing to `'info'` or `'warn'`.  
-   - Avoid logging sensitive info (tokens, personal data) at high detail in production.
+A full Compose file that wires **MongoDB**, **Redis**, Walt.id micro‑services,
+Caddy reverse proxy and the **verifier-backend** lives at
+`deploy/docker-compose.yaml` (see repository root).
 
-5. **CORS**  
-   - The `corsConfig.js` restricts origins based on `NODE_ENV`. Update the production domain to match your actual site.  
-   - Consider using `helmet` to set secure HTTP headers.
+Start only the backend layer:
 
-6. **Rate Limiting**  
-   - If you expect open endpoints for external requests, consider `express-rate-limit` to mitigate brute-force or DoS attacks on `/auth` routes.
+```bash
+docker compose up -d backend
+```
+
+Health‑check: `docker compose exec backend curl -s http://localhost:3001/health`.
+
+---
+
+## Security & Hardening
+
+* **HTTPS** is terminated by Caddy / Nginx (backend runs behind a proxy).
+* CORS is locked down in production (`src/middleware/corsConfig.js`).
+* Rate‑limit of **10 req/min** on `/auth/*` endpoints.
+* Sensitive Mongo fields (`nss`) are AES‑256‑GCM encrypted at rest.
+* JWT access tokens expire after **15 min**, refresh tokens after **7 days**.
+* Secrets **must** be rotated & mounted via secret management in production.
+* Logs default to `debug` – switch to `info` in prod (`LOGGER_LEVEL`).
 
 ---
 
 ## Contributing
 
-We welcome contributions! Here’s how you can help:
-
-1. **Fork** the repository.  
-2. **Create** a new branch for your feature: `git checkout -b feature/my-feature`.  
-3. **Commit** your changes: `git commit -m 'Add my new feature'`.  
-4. **Push** to the branch: `git push origin feature/my-feature`.  
-5. **Open** a pull request in this repository.
-
-We will review and merge your changes if they align with the project goals.
+1. Fork ➜ `git checkout -b feat/<name>`  
+2. Keep commits small & atomic.  
+3. Add/adjust unit tests – CI must stay green.  
+4. Open a Pull‑Request – template will guide you.  
+5. One approving review from the maintainers team is required.
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License**. See the [LICENSE](../LICENSE) file for details.
+Released under the **MIT License** – see `LICENSE` file for full text.
 
----
-
-**Thank you for using Verifier Backend!**  
-Feel free to open issues or pull requests for improvements, bug fixes, or suggestions.
