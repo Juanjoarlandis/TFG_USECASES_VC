@@ -1,14 +1,8 @@
-// test‑utils.js
-import { render as rtlRender } from '@testing-library/react'
-import { Provider } from 'react-redux'
-import { store } from './store'
-import { MemoryRouter } from 'react-router'
+/**
+ * Alias de compatibilidad: muchos tests importaban "../test-utils".
+ * Exportamos el mismo API pero apuntando a customRender.
+ */
 
-export function render(ui, options) {
-    return rtlRender(
-        <Provider store={store}>
-            <MemoryRouter>{ui}</MemoryRouter>
-        </Provider>,
-        options
-    )
-}
+export * from './testUtils';
+import { customRender } from './testUtils';
+export const render = customRender;
