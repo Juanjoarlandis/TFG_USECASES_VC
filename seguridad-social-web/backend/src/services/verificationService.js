@@ -1,19 +1,39 @@
-// src/services/verificationService.js
-/* eslint-disable max-lines */
+/**
+ * @module src/services/verificationService
+ * @description Servicio que gestiona el flujo de verificación de credenciales con Walt.id:
+ *              - Creación de ofertas de verificación (1 y 3 credenciales, manual y automático)
+ *              - Procesamiento de callbacks de estado (alta, genérico, walletLogin)
+ *              - Consulta del estado de la sesión de verificación
+ *
+ * @requires uuid~v4
+ * @requires axios
+ * @requires jsonwebtoken
+ * @requires ../../logger
+ * @requires ../utils/validations~findOrCreateOrUpdateUser
+ * @requires ../utils/validations~checkCredentialsRevocation
+ * @requires ../utils/validations~extractUserDataFromDecodedCredentialSubject
+ * @requires ../utils/sessionStore
+ * @requires ../models/User
+ * @requires ../utils/jwtUtils~generateTokens
+ * @requires ./presentationService~resolvePresentationRequest
+ * @requires ./presentationService~matchCredentialsForPresentation
+ * @requires ./presentationService~usePresentationRequest
+ * @requires ./presentationService~getOrSelectDidSomewhere
+ * @requires ../utils/presentationUtils~extractPresentationDefinition
+ */
+
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const logger = require('../../logger');
-
 const {
   findOrCreateOrUpdateUser,
   checkCredentialsRevocation,
   extractUserDataFromDecodedCredentialSubject,
 } = require('../utils/validations');
-const sessionStore = require('../utils/sessionStore');          // Redis wrapper
+const sessionStore = require('../utils/sessionStore');
 const User = require('../models/User');
 const { generateTokens } = require('../utils/jwtUtils');
-
 const {
   resolvePresentationRequest,
   matchCredentialsForPresentation,
@@ -22,38 +42,30 @@ const {
 } = require('./presentationService');
 const { extractPresentationDefinition } = require('../utils/presentationUtils');
 
-// ────────────────────────────────────────────────────────────────────────────
-// ⚠️  ¡IMPORTANTE!  NO hagas destructuring de process.env aquí arriba:         │
-//     — si los tests cambian process.env en caliente ya no se propaga.         │
-//     — leeremos las vars justo cuando las usemos.                             │
-// ────────────────────────────────────────────────────────────────────────────
-const OFFER_EXPIRATION_MS = 60 * 1000;       // 1 min
-
-/* ════════════════════════════════════════════════════════════════════════ */
-/*                                  HELPERS                                */
-/* ════════════════════════════════════════════════════════════════════════ */
+const OFFER_EXPIRATION_MS = 60 * 1000; // 1 minuto
 
 /**
- * Genera la “offer” OID4VC en Walt.id, guarda el estado ‘pending’ en Redis
- * y devuelve { stateId, verificationUrl }.
+ * Crea una oferta OID4VC en Walt.id, almacena estado `'pending'` en Redis
+ * y devuelve el identificador de sesión y la URL de verificación.
+ *
+ * @async
+ * @function createOid4vcVerificationOffer
+ * @param {object} requestBody - Cuerpo JSON de la solicitud de verificación.
+ * @param {string} callbackPath - Path del callback (sin stateId) que usará Walt.id.
+ * @throws {Error} Propaga errores de red o de configuración.
+ * @returns {Promise<{stateId: string, verificationUrl: string}>}
  */
 async function createOid4vcVerificationOffer(requestBody, callbackPath) {
-  // (1) stateId único
   const stateId = uuidv4();
-
-  // (2) Headers con callback dinámico
   const headers = {
     'Content-Type': 'application/json',
     authorizeBaseUrl: 'openid4vp://authorize',
     responseMode: 'direct_post',
     statusCallbackUri: `${process.env.VERIFIER_COORD_PUBLIC_URL}${callbackPath}/${stateId}`,
   };
-
-  // (3) Call a Walt.id
   const verifierUrl = `${process.env.WALTID_VERIFIER_URL}/openid4vc/verify`;
   const { data: verificationUrl } = await axios.post(verifierUrl, requestBody, { headers });
 
-  // (4) Persistimos sesión
   await sessionStore.setSession(stateId, {
     status: 'pending',
     verificationUrl,
@@ -65,12 +77,16 @@ async function createOid4vcVerificationOffer(requestBody, callbackPath) {
 }
 
 /**
- * Lógica común a TODOS los callbacks de Walt.id:
- *   – valida que la sesión exista
- *   – marca success/failure
- *   – decodifica credenciales & comprueba revocación
+ * Procesa lógicamente cualquier callback de Walt.id:
+ * - Valida y actualiza sesión en Redis
+ * - Decodifica y valida revocación de credenciales presentadas
  *
- * Devuelve { sessionData, decodedCreds }.
+ * @async
+ * @function processCommonCallback
+ * @param {string} stateId - Identificador de sesión en Redis.
+ * @param {{verificationResult: boolean, tokenResponse?: object}} param1
+ * @throws {Error} Si la sesión no existe, falta vp_token o credenciales revocadas.
+ * @returns {Promise<{sessionData: object, decodedCreds: object[]|null}>}
  */
 async function processCommonCallback(stateId, { verificationResult, tokenResponse }) {
   const sessionData = await sessionStore.getSession(stateId);
@@ -82,7 +98,6 @@ async function processCommonCallback(stateId, { verificationResult, tokenRespons
 
   sessionData.verificationResult = verificationResult;
   sessionData.status = verificationResult ? 'verified' : 'failed';
-
   if (!verificationResult) {
     await sessionStore.setSession(stateId, sessionData);
     return { sessionData, decodedCreds: null };
@@ -115,16 +130,20 @@ async function processCommonCallback(stateId, { verificationResult, tokenRespons
     throw err;
   }
 
-  const decodedCreds = credentialsJwt.map((c) => jwt.decode(c));
+  const decodedCreds = credentialsJwt.map(c => jwt.decode(c));
   return { sessionData, decodedCreds };
 }
 
-/* ════════════════════════════════════════════════════════════════════════ */
-/*                                API PUBLICA                              */
-/* ════════════════════════════════════════════════════════════════════════ */
-
 module.exports = {
-  /* ─────────────────────── 1 CRED ─────────────────────── */
+  /**
+   * Crea una oferta de verificación para una sola credencial.
+   *
+   * @async
+   * @function offerVerificationOneCred
+   * @param {object} requestBody - Parámetros de la verificación (tipo de credencial).
+   * @throws {Error} Si faltan variables de entorno o falla la llamada a Walt.id.
+   * @returns {Promise<{stateId: string, verificationUrl: string}>}
+   */
   async offerVerificationOneCred(requestBody) {
     if (!process.env.WALTID_VERIFIER_URL || !process.env.VERIFIER_COORD_PUBLIC_URL) {
       throw new Error('Faltan variables de entorno WALTID_VERIFIER_URL o VERIFIER_COORD_PUBLIC_URL');
@@ -132,17 +151,21 @@ module.exports = {
     return createOid4vcVerificationOffer(requestBody, '/verification/statusCallback');
   },
 
-  /* ───────────────────── MANUAL 3 CREDS ────────────────── */
+  /**
+   * Crea una oferta manual de verificación para tres credenciales.
+   *
+   * @async
+   * @function offerVerification3CredsManual
+   * @throws {Error} Si faltan variables de entorno o no se obtienen 3 issuers.
+   * @returns {Promise<{stateId: string, verificationUrl: string}>}
+   */
   async offerVerification3CredsManual() {
     if (!process.env.WALTID_VERIFIER_URL || !process.env.VERIFIER_COORD_PUBLIC_URL || !process.env.ISS_COORD_URL) {
       throw new Error('Faltan variables de entorno requeridas');
     }
-
-    // (1) pedimos los DIDs al issuer‑coord
     const { data: { issuers } } = await axios.get(`${process.env.ISS_COORD_URL}/did/issuers`);
     if (!issuers || issuers.length < 3) throw new Error('No se pudieron obtener los 3 DIDs de los issuers');
 
-    // (2) cuerpo para Walt.id
     const requestBody = {
       vp_policies: [
         { policy: 'minimum-credentials', args: 3 },
@@ -166,8 +189,6 @@ module.exports = {
       requestBody,
       '/verification/statusCallbackAlta',
     );
-
-    // Marcamos tipo de sesión
     const session = await sessionStore.getSession(stateId);
     session.type = 'alta';
     await sessionStore.setSession(stateId, session);
@@ -175,13 +196,19 @@ module.exports = {
     return { stateId, verificationUrl };
   },
 
-  /* ────────────────────── AUTO 3 CREDS ─────────────────── */
+  /**
+   * Crea una oferta automática de verificación para tres credenciales
+   * y procesa internamente sin requerir QR.
+   *
+   * @async
+   * @function offerVerification3CredsAutomatic
+   * @throws {Error} Si faltan variables de entorno o no se emparejan 3 credenciales.
+   * @returns {Promise<{message: string, state: string, verificationUrl: string}>}
+   */
   async offerVerification3CredsAutomatic() {
     if (!process.env.WALTID_VERIFIER_URL || !process.env.VERIFIER_COORD_PUBLIC_URL || !process.env.ISS_COORD_URL) {
       throw new Error('Faltan variables de entorno requeridas');
     }
-
-    /* Paso 1: mismos preparativos que en el flujo manual … */
     const { data: { issuers } } = await axios.get(`${process.env.ISS_COORD_URL}/did/issuers`);
     if (!issuers || issuers.length < 3) throw new Error('No se pudieron obtener los 3 issuers');
 
@@ -208,14 +235,11 @@ module.exports = {
       requestBody,
       '/verification/statusCallbackAlta',
     );
-
-    /* Paso 2: ajustamos la sesión */
     const session = await sessionStore.getSession(stateId);
     session.type = 'alta';
-    session.expiresAt = Date.now() + 60_000;               // 1 min
+    session.expiresAt = Date.now() + OFFER_EXPIRATION_MS;
     await sessionStore.setSession(stateId, session);
 
-    /* Paso 3: ejecutamos sin QR */
     const resolved = await resolvePresentationRequest(verificationUrl);
     const presDef = extractPresentationDefinition(resolved);
     const matchedCreds = await matchCredentialsForPresentation(presDef);
@@ -228,12 +252,7 @@ module.exports = {
     }
 
     const did = await getOrSelectDidSomewhere();
-    await usePresentationRequest(
-      did,
-      resolved,
-      matchedCreds.map((c) => c.id),
-      null,
-    );
+    await usePresentationRequest(did, resolved, matchedCreds.map(c => c.id), null);
 
     return {
       message: 'Verificación de 3 credenciales (alta automática) iniciada. Revisa callback.',
@@ -242,12 +261,20 @@ module.exports = {
     };
   },
 
-  /* ────────────────────────── CALLBACKS ───────────────────────── */
+  /**
+   * Maneja el callback de estado para la verificación de alta.
+   *
+   * @async
+   * @function handleStatusCallbackAlta
+   * @param {string} stateId - Identificador de sesión en Redis.
+   * @param {object} verificationData - Datos del callback de Walt.id.
+   * @throws {Error} Si faltan credenciales de identidad.
+   */
   async handleStatusCallbackAlta(stateId, verificationData) {
     const { sessionData, decodedCreds } = await processCommonCallback(stateId, verificationData);
     if (sessionData.status === 'failed') return;
 
-    const identityCred = decodedCreds.find((c) => c?.vc?.type?.includes('CustomIdentityCredential'));
+    const identityCred = decodedCreds.find(c => c?.vc?.type?.includes('CustomIdentityCredential'));
     if (!identityCred) {
       sessionData.status = 'failed';
       await sessionStore.setSession(stateId, sessionData);
@@ -263,10 +290,18 @@ module.exports = {
     await user.save();
 
     sessionData.user = user;
-    sessionData.token = 'token‑alta‑ejemplo';
+    sessionData.token = 'token-alta-ejemplo';
     await sessionStore.setSession(stateId, sessionData);
   },
 
+  /**
+   * Maneja el callback genérico de verificación de una credencial.
+   *
+   * @async
+   * @function handleStatusCallbackGeneric
+   * @param {string} stateId - Identificador de sesión en Redis.
+   * @param {object} verificationData - Datos del callback de Walt.id.
+   */
   async handleStatusCallbackGeneric(stateId, verificationData) {
     const { sessionData, decodedCreds } = await processCommonCallback(stateId, verificationData);
     if (sessionData.status === 'failed') return;
@@ -285,6 +320,14 @@ module.exports = {
     await sessionStore.setSession(stateId, sessionData);
   },
 
+  /**
+   * Maneja el callback de verificación tras wallet login.
+   *
+   * @async
+   * @function handleStatusCallbackWalletLogin
+   * @param {string} stateId - Identificador de sesión en Redis.
+   * @param {object} verificationData - Datos del callback de Walt.id.
+   */
   async handleStatusCallbackWalletLogin(stateId, verificationData) {
     const { sessionData, decodedCreds } = await processCommonCallback(stateId, verificationData);
     if (sessionData.status === 'failed') return;
@@ -303,7 +346,15 @@ module.exports = {
     await sessionStore.setSession(stateId, sessionData);
   },
 
-  /* ─────────────────────── CONSULTAR SESIÓN ────────────────────── */
+  /**
+   * Recupera el estado completo de la sesión de verificación.
+   *
+   * @async
+   * @function getVerificationSession
+   * @param {string} stateId - Identificador de sesión en Redis.
+   * @throws {Error} Si la sesión no existe.
+   * @returns {Promise<{status: string, token: string|null, refreshToken: string|null, user: object|null}>}
+   */
   async getVerificationSession(stateId) {
     const sessionData = await sessionStore.getSession(stateId);
     if (!sessionData) {
@@ -312,7 +363,6 @@ module.exports = {
       throw err;
     }
 
-    // expiración automática
     if (sessionData.expiresAt && Date.now() > sessionData.expiresAt && sessionData.status === 'pending') {
       sessionData.status = 'expired';
       await sessionStore.setSession(stateId, sessionData);

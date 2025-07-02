@@ -1,4 +1,14 @@
-// src/App.js
+/**
+ * @module src/App
+ * @description
+ * Main application component that sets up routing and global layout
+ * (Header/Footer). Defines public, guest-only and protected routes
+ * for the verification, issuance and dashboard flows.
+ *
+ * Uses React Router v6 with custom <ProtectedRoute> and <GuestRoute>
+ * wrappers to guard routes based on authentication state.
+ */
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home/Home';
@@ -13,24 +23,29 @@ import AltaEmission from './pages/Alta/AltaEmission';
 import VerificationMethodSelect from './pages/VerificationMethodSelect/VerificationMethodSelect';
 import LoginWithWallet from './pages/LoginWithWallet/LoginWithWallet';
 import VerificationTutorial from './pages/VerificationTutorial/VerificationTutorial';
-
-// Rutas protegidas y de invitado
 import ProtectedRoute from './ProtectedRoute';
 import GuestRoute from './GuestRoute';
-
 import './App.css';
 
+/**
+ * Application root component.
+ *
+ * @component
+ * @returns {JSX.Element} The application layout with header, footer, and routed pages.
+ */
 function App() {
   return (
     <Router>
+      {/* Global header displayed on all pages */}
       <Header />
+
+      {/* Main content area where routed components will render */}
       <div className="app-content">
         <Routes>
-          {/* Rutas de acceso público */}
+          {/** Public route: Home page */}
           <Route path="/" element={<Home />} />
 
-          {/* Rutas protegidas para “invitados” (GuestRoute):
-              Estas solo se pueden visitar si NO estás logueado */}
+          {/** Guest-only routes: accessible only when not authenticated */}
           <Route
             path="/verification-mode"
             element={
@@ -39,7 +54,6 @@ function App() {
               </GuestRoute>
             }
           />
-
           <Route
             path="/login-with-wallet"
             element={
@@ -48,7 +62,6 @@ function App() {
               </GuestRoute>
             }
           />
-
           <Route
             path="/verification-tutorial"
             element={
@@ -57,7 +70,6 @@ function App() {
               </GuestRoute>
             }
           />
-
           <Route
             path="/register"
             element={
@@ -67,7 +79,7 @@ function App() {
             }
           />
 
-          {/* Rutas protegidas (solo para usuarios verificados) */}
+          {/** Protected routes: accessible only when authenticated */}
           <Route
             path="/dashboard"
             element={
@@ -76,7 +88,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/alta"
             element={
@@ -85,7 +96,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/alta-automatica-info"
             element={
@@ -94,7 +104,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/alta-automatica"
             element={
@@ -103,7 +112,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/alta-emision"
             element={
@@ -114,6 +122,8 @@ function App() {
           />
         </Routes>
       </div>
+
+      {/* Global footer displayed on all pages */}
       <Footer />
     </Router>
   );

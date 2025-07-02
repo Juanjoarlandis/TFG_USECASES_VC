@@ -1,187 +1,211 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]
 
 # Verifier Backend
 
-**Verifier Backend** is a production‑grade Node.js + Express service that drives the **verification, issuance and revocation** of **Verifiable Credentials (VCs)** for the Spanish *Seguridad Social* (Social Security) proof‑of‑concept.  
-It acts as the *Verifier Coordinator* in an OpenID4VC flow, talks to the Walt.id **Wallet**, **Issuer** and **Verifier** micro‑services, and keeps user / session state in MongoDB & Redis.
+**Verifier Backend** is a production-grade Node.js + Express service driving the **verification**, **issuance** and **revocation** of **Verifiable Credentials (VCs)** for the Spanish *Seguridad Social* proof-of-concept. It acts as the *Verifier Coordinator* in an OpenID4VC flow, communicates with Walt.id **Wallet**, **Issuer** and **Verifier** micro-services, and persists session state in Redis and user data in MongoDB.
 
 ---
 
-## Table of Contents
-1. [Key Features](#key-features)  
-2. [Technology Stack](#technology-stack)  
-3. [Project Layout](#project-layout)  
-4. [Getting Started](#getting-started)  
-5. [Configuration](#configuration)  
-6. [Running the Test‑Suite](#running-the-test-suite)  
-7. [Docker & Docker Compose](#docker--docker-compose)  
-8. [Security & Hardening](#security--hardening)  
-9. [Contributing](#contributing)  
-10. [License](#license)
+## Table of Contents
+
+- [Key Features](#key-features)  
+- [Technology Stack](#technology-stack)  
+- [Project Layout](#project-layout)  
+- [Getting Started](#getting-started)  
+- [Configuration](#configuration)  
+- [Testing](#testing)  
+- [Docker & Docker Compose](#docker--docker-compose)  
+- [Security & Hardening](#security--hardening)  
+- [Contributing](#contributing)  
+- [License](#license)  
 
 ---
 
-## Key Features
+## Key Features
 
-| Domain | What it does |
-| ------ | ------------ |
-| **Verification** | Generates OID4VC presentation requests (1‑credential flows & 3‑credential “Alta” flows), receives direct‑post callbacks, validates signatures, expiration and *revocation status* and stores the session in Redis. |
-| **Issuance** | Issues a JWT‑VC “Alta” (Social‑Security registration credential) via Walt.id *Issuer API* and lets the holder claim it with a single click. |
-| **Revocation** | Black‑lists a credential by JTI in MongoDB, flips it to *revoked* on the user object, and (optionally) deletes the credential from the holder’s wallet. |
-| **Authentication** | Email + password login directly against Walt.id **Wallet**, fully automatic credential presentation (no QR). Issues access / refresh JWTs for your front‑end. |
-| **User Management** | Stores personal data in MongoDB with **field‑level AES‑256 encryption** (using `mongoose‑encryption`). |
-| **Observability** | Structured logs with **Winston** (level `debug` by default), request logging middleware, integration & contract tests, E2E Playwright scenario. |
+- **Verification**  
+  - OID4VC presentation requests (1-credential & 3-credential “Alta” flows)  
+  - Direct-POST callbacks with signature, expiration & revocation checks  
+  - Session state stored in Redis  
+
+- **Issuance**  
+  - JWT-VC “Alta” issuance via Walt.id Issuer API  
+  - Single-click credential claim  
+
+- **Revocation**  
+  - JTI black-listing in MongoDB  
+  - User status update and optional wallet deletion  
+
+- **Authentication**  
+  - Email + password login against Walt.id Wallet  
+  - Fully automatic credential presentation (no QR)  
+  - Access & refresh JWT issuance  
+
+- **User Management**  
+  - Personal data stored in MongoDB  
+  - Field-level AES-256-GCM encryption (via `mongoose-encryption`)  
+
+- **Observability**  
+  - Structured logging with Winston (default `debug` level)  
+  - Request-logging middleware  
+  - Comprehensive unit, integration, contract & E2E testing  
 
 ---
 
-## Technology Stack
+## Technology Stack
 
-* **Node 16** / **Express 4**
-* **MongoDB 6** via **Mongoose 8**
-* **Redis 7** (mocked in tests with `ioredis‑mock`)
-* **JWT** authentication (`jsonwebtoken`)
-* **OpenID for Verifiable Presentations** (OID4VC)
-* **Walt.id** Wallet / Issuer / Verifier services
-* **Jest**, **Supertest**, **Pact**, **Playwright** for testing
-* **Docker** & **Docker Compose** for reproducible environments
+- **Node.js 16** / **Express 4**  
+- **MongoDB 6** via **Mongoose 8**  
+- **Redis 7** (mocked in tests with `ioredis-mock`)  
+- **JWT** authentication (`jsonwebtoken`)  
+- **OpenID for Verifiable Presentations** (OID4VC)  
+- **Walt.id** Wallet / Issuer / Verifier micro-services  
+- **Jest**, **Supertest**, **Pact**, **Playwright** for testing  
+- **Docker** & **Docker Compose** for environment orchestration  
 
-> The exact package versions are locked in `package.json`.
+> Exact package versions are pinned in `package.json`.  
 
 ---
 
-## Project Layout
+## Project Layout
 
 ```
 backend/
-├── app.js                 # Express bootstrap (single entry‑point)
+├── app.js                 # Express bootstrap (entry point)
 ├── Dockerfile
-├── .env.example           # template for secrets & runtime config
+├── .env.example           # Template for secrets & runtime config
 ├── src/
-│   ├── controllers/       # REST controllers – thin, pure IO
-│   ├── services/          # Business logic – no Express concerns
-│   ├── models/            # Mongoose schemas (`User`, `RevokedCredential`)
-│   ├── routes/            # Express routers, grouped by domain
-│   ├── middleware/        # CORS, rate‑limit, auth & error handlers
-│   └── utils/             # Stateless helpers (JWT, validation, …)
+│   ├── controllers/       # REST controllers (thin, pure I/O)
+│   ├── services/          # Business logic (no Express concerns)
+│   ├── models/            # Mongoose schemas (User, RevokedCredential…)
+│   ├── routes/            # Express routers
+│   ├── middleware/        # CORS, rate-limit, auth, error handlers
+│   └── utils/             # Stateless helpers (JWT, validation, sessionStore)
 ├── tests/                 # unit, integration, contract & E2E tests
-│   └── fixtures/ …        # sample JWTs & JSON responses
-└── README.md              # you are here 🚀
+│   └── fixtures/          # sample JWTs & JSON responses
+├── deploy/                # Docker Compose and deployment manifests
+└── README.md              # ← You are here
 ```
 
 ---
 
-## Getting Started
+## Getting Started
 
 ```bash
-# 1) clone the mono‑repo and go to backend
-git clone https://github.com/your‑org/seguridad-social-web.git
+# 1) Clone the repo and enter backend
+git clone https://github.com/your-org/seguridad-social-web.git
 cd seguridad-social-web/backend
 
-# 2) install dependencies
-npm ci         # or `npm install`
+# 2) Install dependencies
+npm ci
 
-# 3) spin up Mongo & Redis (Docker)
+# 3) Launch MongoDB & Redis
 docker compose up -d mongo-backend redis
 
-# 4) copy env template and adjust values
+# 4) Copy and configure environment variables
 cp .env.example .env
-vi .env
+# Edit `.env` with your values
 
-# 5) run the service
+# 5) Start the service
 npm start
-# → http://localhost:3001/health   (JSON OK)
+# → Health check: http://localhost:3001/health (returns `{ status: 'ok' }`)
 ```
 
 ---
 
 ## Configuration
 
-Environment variables are loaded with **dotenv**.  
-Below is the minimal set for local development:
+Environment variables are loaded via **dotenv**. Below is a minimal set for local development:
 
-| Variable | Example | Description |
-| -------- | ------- | ----------- |
-| `PORT` | `3001` | Express HTTP port |
-| `MONGO_URI` | `mongodb://mongo-backend:27017/seguridadSocial` | Mongo connection URI |
-| `REDIS_HOST / PORT / DB` | `redis / 6379 / 0` | Redis connection |
-| `WALTID_VERIFIER_URL` | `http://caddy:7003` | Walt.id Verifier gateway |
-| `WALTID_ISSUER_URL` | `http://caddy:7002` | Walt.id Issuer gateway |
-| `VERIFIER_COORD_PUBLIC_URL` | `http://localhost:3001` | Public callback base that Walt.id will call |
-| `JWT_SECRET` | _(base64)_ | access‑token secret |
-| `JWT_REFRESH_SECRET` | _(base64)_ | refresh‑token secret |
-| `ENCRYPTION_KEY` | _(base64 32 bytes)_ | AES‑key for `mongoose‑encryption` |
-| `SIGNING_KEY` | _(base64 64 bytes)_ | HMAC key to sign the ciphertext |
+| Category              | Variable                      | Example                                                  | Description                                           |
+|-----------------------|-------------------------------|----------------------------------------------------------|-------------------------------------------------------|
+| **Server**            | `PORT`                        | `3001`                                                   | HTTP port for Express                                 |
+| **Database & Cache**  | `MONGO_URI`                   | `mongodb://mongo-backend:27017/seguridadSocial`          | MongoDB connection URI                                |
+|                       | `REDIS_HOST` / `REDIS_PORT`   | `redis` / `6379`                                         | Redis connection parameters                           |
+|                       | `REDIS_DB`                    | `0`                                                      | Redis database index                                  |
+| **Walt.id Services**  | `WALTID_VERIFIER_URL`         | `http://caddy:7003`                                      | Walt.id Verifier gateway                              |
+|                       | `WALTID_ISSUER_URL`           | `http://caddy:7002`                                      | Walt.id Issuer gateway                                |
+|                       | `VERIFIER_COORD_PUBLIC_URL`   | `http://localhost:3001`                                  | Public base URL for callbacks                         |
+| **JWT & Encryption**  | `JWT_SECRET`                  | (base64 string)                                          | Secret for signing access tokens                      |
+|                       | `JWT_REFRESH_SECRET`          | (base64 string)                                          | Secret for signing refresh tokens                     |
+|                       | `ENCRYPTION_KEY`              | (base64 32 bytes)                                        | AES key for `mongoose-encryption`                     |
+|                       | `SIGNING_KEY`                 | (base64 64 bytes)                                        | HMAC key to sign encrypted fields                     |
 
-> **Secrets** should never be committed. Use Docker secrets, Kubernetes
-> `Secrets`, AWS SSM, Vault, or any secret manager for production.
+> **IMPORTANT**: Never commit secrets. Use Docker secrets, Kubernetes Secrets, AWS SSM, Vault, or similar in production.
 
 ---
 
-## Running the Test‑Suite
+## Testing
 
 ```bash
-# lint & prettier
-npm run lint      # eslint
-npm run format    # prettier --write
+# Linting & formatting
+npm run lint
+npm run format
 
-# unit + integration + contract
+# Unit, integration & contract tests
 npm test
 
-# Playwright E2E (needs front‑end running)
+# E2E tests (Playwright)
 npm run test:e2e
 ```
 
-Coverage thresholds (80 %) are enforced via Jest.
-
 ---
 
-## Docker & Docker Compose
+## Docker & Docker Compose
 
-### Build standalone image
+### Build & Run Standalone Image
 
 ```bash
 docker build -t verifier-backend:latest .
 docker run --env-file .env -p 3001:3001 verifier-backend:latest
 ```
 
-### Complete stack
+### Complete Stack with Docker Compose
 
-A full Compose file that wires **MongoDB**, **Redis**, Walt.id micro‑services,
-Caddy reverse proxy and the **verifier-backend** lives at
-`deploy/docker-compose.yaml` (see repository root).
+A full stack (MongoDB, Redis, Walt.id services, Caddy proxy, backend) is defined in `deploy/docker-compose.yaml` at the repository root:
 
-Start only the backend layer:
+```bash
+docker compose -f deploy/docker-compose.yaml up -d
+```
+
+Or start only the backend layer:
 
 ```bash
 docker compose up -d backend
 ```
 
-Health‑check: `docker compose exec backend curl -s http://localhost:3001/health`.
+Health check:
+
+```bash
+docker compose exec backend curl -s http://localhost:3001/health
+```
 
 ---
 
-## Security & Hardening
+## Security & Hardening
 
-* **HTTPS** is terminated by Caddy / Nginx (backend runs behind a proxy).
-* CORS is locked down in production (`src/middleware/corsConfig.js`).
-* Rate‑limit of **10 req/min** on `/auth/*` endpoints.
-* Sensitive Mongo fields (`nss`) are AES‑256‑GCM encrypted at rest.
-* JWT access tokens expire after **15 min**, refresh tokens after **7 days**.
-* Secrets **must** be rotated & mounted via secret management in production.
-* Logs default to `debug` – switch to `info` in prod (`LOGGER_LEVEL`).
+- **HTTPS** terminated by Caddy/Nginx (run behind a reverse proxy)  
+- **CORS** locked down in production (`src/middleware/corsConfig.js`)  
+- **Rate limiting**: 10 req/min on `/auth/*` endpoints  
+- **Field-level encryption**: AES-256-GCM for sensitive fields (`nss`)  
+- **JWT tokens**: access tokens expire in 15 min; refresh tokens in 7 days  
+- **Secrets** must be rotated and managed via a secure secret store  
+- **Logging**: default `debug` level; switch to `info` in production using `LOGGER_LEVEL`  
 
 ---
 
 ## Contributing
 
-1. Fork ➜ `git checkout -b feat/<name>`  
-2. Keep commits small & atomic.  
-3. Add/adjust unit tests – CI must stay green.  
-4. Open a Pull‑Request – template will guide you.  
-5. One approving review from the maintainers team is required.
+1. Fork the repository → `git checkout -b feat/your-feature`  
+2. Keep commits focused & atomic  
+3. Add or update tests as needed  
+4. Open a Pull Request (PR template will guide you)  
+5. One approval from the maintainers is required before merging  
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
 ---
 
 ## License
 
-Released under the **MIT License** – see `LICENSE` file for full text.
-
+Released under the **MIT License**. See [LICENSE](LICENSE) for full text.  

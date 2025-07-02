@@ -1,22 +1,30 @@
-// src/services/credentialsService.js
+/**
+ * @module src/services/credentialsService
+ * @description Servicio que encapsula la lógica de interacción con la Wallet API
+ *              para gestionar credenciales: listado, obtención por ID, eliminación,
+ *              aceptación, rechazo y consulta de estado.
+ *
+ * @requires axios
+ * @requires ./HolderSessionManager
+ * @requires ../../logger
+ */
+
 const axios = require("axios");
 const HolderSessionManager = require("./HolderSessionManager");
 const logger = require("../../logger");
 
 /**
- * credentialsService.js
- * ---------------------
- * Encapsula la lógica de llamadas al wallet-api para gestionar credenciales
- * (listar, obtener, eliminar, aceptar, rechazar, etc.).
+ * Lista todas las credenciales disponibles en la wallet del Holder.
+ *
+ * @async
+ * @function listCredentials
+ * @returns {Promise<any[]>} Array de objetos de credenciales tal como los devuelve la Wallet API.
+ * @throws {Error} Propaga cualquier error de red o autenticación.
  */
-
 async function listCredentials() {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Configurar petición
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -24,146 +32,177 @@ async function listCredentials() {
       },
     };
     const credsUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials`;
-
-    // 3. Llamar al endpoint
     const response = await axios.get(credsUrl, config);
     logger.info("[credentialsService] Credentials listed successfully");
     return response.data;
   } catch (error) {
-    logger.error(
-      "[credentialsService] Error listing credentials:",
-      error.message,
-    );
+    logger.error("[credentialsService] Error listing credentials:", error.message);
     throw error;
   }
 }
 
+/**
+ * Obtiene una credencial concreta por su identificador.
+ *
+ * @async
+ * @function getCredentialById
+ * @param {string} credentialId - Identificador de la credencial a recuperar.
+ * @returns {Promise<any>} Objeto de la credencial según la respuesta de la Wallet API.
+ * @throws {Error} Propaga cualquier error de red, autenticación o parámetro incorrecto.
+ */
 async function getCredentialById(credentialId) {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Petición a la wallet
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
-    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+      credentialId
+    )}`;
     const response = await axios.get(url, config);
     return response.data;
   } catch (error) {
     logger.error(
       "[credentialsService] Error getting credential by ID:",
-      error.message,
+      error.message
     );
     throw error;
   }
 }
 
+/**
+ * Elimina una credencial de la wallet.
+ *
+ * @async
+ * @function deleteCredential
+ * @param {string} credentialId - Identificador de la credencial a eliminar.
+ * @returns {Promise<void>} Se resuelve cuando la eliminación ha sido exitosa.
+ * @throws {Error} Propaga cualquier error de red, autenticación o parámetro incorrecto.
+ */
 async function deleteCredential(credentialId) {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Petición DELETE
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
-    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+      credentialId
+    )}`;
     await axios.delete(url, config);
     logger.info(
-      `[credentialsService] Credential ${credentialId} deleted successfully`,
+      `[credentialsService] Credential ${credentialId} deleted successfully`
     );
   } catch (error) {
     logger.error(
       "[credentialsService] Error deleting credential:",
-      error.message,
+      error.message
     );
     throw error;
   }
 }
 
+/**
+ * Acepta (aprueba) una credencial pendiente en la wallet.
+ *
+ * @async
+ * @function acceptCredential
+ * @param {string} credentialId - Identificador de la credencial a aceptar.
+ * @returns {Promise<any>} Datos devueltos por la Wallet API tras aceptar la credencial.
+ * @throws {Error} Propaga cualquier error de red, autenticación o parámetro incorrecto.
+ */
 async function acceptCredential(credentialId) {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Petición POST -> /accept
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
-    const acceptUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/accept`;
+    const acceptUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+      credentialId
+    )}/accept`;
     const response = await axios.post(acceptUrl, {}, config);
-
-    return response.data; // Devuelve la data para que el controlador la envíe al cliente
+    return response.data;
   } catch (error) {
     logger.error(
       "[credentialsService] Error accepting credential:",
-      error.message,
+      error.message
     );
     throw error;
   }
 }
 
+/**
+ * Rechaza (niega) una credencial pendiente en la wallet.
+ *
+ * @async
+ * @function rejectCredential
+ * @param {string} credentialId - Identificador de la credencial a rechazar.
+ * @returns {Promise<any>} Datos devueltos por la Wallet API tras rechazar la credencial.
+ * @throws {Error} Propaga cualquier error de red, autenticación o parámetro incorrecto.
+ */
 async function rejectCredential(credentialId) {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Petición POST -> /reject
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
-    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}/reject`;
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+      credentialId
+    )}/reject`;
     const response = await axios.post(url, {}, config);
-
     return response.data;
   } catch (error) {
     logger.error(
       "[credentialsService] Error rejecting credential:",
-      error.message,
+      error.message
     );
     throw error;
   }
 }
 
+/**
+ * Consulta el estado de una credencial (pendiente o emitida).
+ *
+ * @async
+ * @function getCredentialStatus
+ * @param {string} credentialId - Identificador de la credencial a consultar.
+ * @returns {Promise<{status: "pending"|"issued"}>} Objeto con la propiedad `status`.
+ * @throws {Error} Propaga cualquier error de red, autenticación o parámetro incorrecto.
+ */
 async function getCredentialStatus(credentialId) {
   try {
-    // 1. Obtener token y walletId
     const token = await HolderSessionManager.getToken();
     const walletId = HolderSessionManager.getWalletId();
-
-    // 2. Petición GET
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
     };
-    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(credentialId)}`;
+    const url = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+      credentialId
+    )}`;
     const response = await axios.get(url, config);
-
-    // Asumimos que la respuesta indica si está 'pending' o 'issued'
     return { status: response.data.pending ? "pending" : "issued" };
   } catch (error) {
     logger.error(
       "[credentialsService] Error getting credential status:",
-      error.message,
+      error.message
     );
     throw error;
   }

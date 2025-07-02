@@ -1,15 +1,34 @@
-// src/services/revocationService.js
+/**
+ * @module src/services/revocationService
+ * @description Servicio que gestiona la revocación de credenciales de alta en la Seguridad Social:
+ *              - Marca al usuario como no dado de alta.
+ *              - Añade el JTI de la credencial a una lista negra (MongoDB).
+ *              - Elimina permanentemente la credencial de la wallet del Holder.
+ *              - Devuelve un objeto con mensaje de éxito y el usuario actualizado.
+ *
+ * @requires ../models/User
+ * @requires ../models/RevokedCredential
+ * @requires axios
+ * @requires ./HolderSessionManager
+ * @requires ../../logger
+ */
+
 const User = require("../models/User");
 const RevokedCredential = require("../models/RevokedCredential");
 const axios = require("axios");
-const HolderSessionManager = require("./HolderSessionManager"); // Asumiendo uso del Singleton
+const HolderSessionManager = require("./HolderSessionManager");
 const logger = require("../../logger");
 
 /**
- * Lógica principal para revocar una credencial.
- * @param {string} dni - documento del usuario a revocar
- * @returns {object} - Devuelve un objeto con { message, user }
- *                     o lanza errores en caso de problemas.
+ * Revoca la credencial de alta para el usuario identificado por DNI.
+ *
+ * @async
+ * @function revokeCredential
+ * @param {string} dni - Número de documento del usuario cuya credencial se revoca.
+ * @throws {Error} Si no se encuentra el usuario (status 404).
+ * @returns {Promise<{message: string, user: import('../models/User')}>}
+ *   - message: Mensaje indicando que la revocación y eliminación fueron exitosas.
+ *   - user:    Documento de usuario tras actualizar su estado.
  */
 async function revokeCredential(dni) {
   logger.debug(`[revocationService] revokeCredential start - dni=${dni}`);
@@ -24,32 +43,31 @@ async function revokeCredential(dni) {
 
   logger.debug(
     "[revocationService] user.hasAltaCredential:",
-    user.hasAltaCredential,
+    user.hasAltaCredential
   );
   logger.debug("[revocationService] user.altaIssueDate:", user.altaIssueDate);
   logger.debug(
     "[revocationService] user.altaCredentialData:",
-    user.altaCredentialData,
+    user.altaCredentialData
   );
   logger.debug(
     "[revocationService] user.altaCredentialJti:",
-    user.altaCredentialJti,
+    user.altaCredentialJti
   );
 
-  // 2) Marcar en BBDD como revocado
+  // 2) Marcar en BBDD como no dado de alta
   user.hasAltaCredential = false;
   user.altaIssueDate = null;
 
-  // 3) Obtenemos la credencial en la wallet
+  // 3) Extraer el ID de la credencial en la wallet
   let walletCredentialId = null;
-  if (user.altaCredentialData && user.altaCredentialData.id) {
+  if (user.altaCredentialData?.id) {
     walletCredentialId = user.altaCredentialData.id;
   }
-
   user.altaCredentialData = null;
   await user.save();
 
-  // 4) Añadir a lista negra (RevokedCredential)
+  // 4) Añadir a lista negra de JTI
   if (user.altaCredentialJti) {
     try {
       await RevokedCredential.create({ credentialId: user.altaCredentialJti });
@@ -57,31 +75,33 @@ async function revokeCredential(dni) {
       if (err.code === 11000) {
         logger.warn(
           "[revocationService] Credencial ya existía en la lista negra:",
-          user.altaCredentialJti,
+          user.altaCredentialJti
         );
       } else {
         logger.error(
           "[revocationService] Error añadiendo a la lista negra:",
-          err,
+          err
         );
       }
     }
   } else {
     logger.warn(
-      "[revocationService] No se encontró altaCredentialJti en el usuario.",
+      "[revocationService] No se encontró altaCredentialJti en el usuario."
     );
   }
 
-  // 5) Eliminar credencial de la wallet (opcional si `walletCredentialId` existe)
+  // 5) Eliminar credencial de la wallet si existe
   if (walletCredentialId) {
     logger.debug(
       "[revocationService] Eliminando credencial de la wallet:",
-      walletCredentialId,
+      walletCredentialId
     );
     try {
       const token = await HolderSessionManager.getToken();
       const walletId = HolderSessionManager.getWalletId();
-      const deleteUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${walletCredentialId}?permanent=true`;
+      const deleteUrl = `${process.env.WALLET_COORD_URL}/wallet-api/wallet/${walletId}/credentials/${encodeURIComponent(
+        walletCredentialId
+      )}?permanent=true`;
 
       await axios.delete(deleteUrl, {
         headers: {
@@ -90,19 +110,18 @@ async function revokeCredential(dni) {
         },
       });
       logger.debug(
-        "[revocationService] Credencial eliminada permanentemente de la wallet",
+        "[revocationService] Credencial eliminada permanentemente de la wallet"
       );
     } catch (err) {
       logger.error(
         "[revocationService] Error eliminando la credencial de la wallet:",
-        err.message,
+        err.message
       );
-      // Se podría decidir si lanzar error o no.
-      // Por ahora solo se registra, sin abortar.
+      // No abortamos el proceso de revocación por fallo en la wallet
     }
   } else {
     logger.debug(
-      "[revocationService] No existe walletCredentialId, no se envía DELETE a la wallet.",
+      "[revocationService] No existe walletCredentialId, no se envía DELETE a la wallet."
     );
   }
 

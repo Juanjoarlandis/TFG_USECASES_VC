@@ -3,7 +3,7 @@ import logger from '../../logger';
 import { DIDService } from '../services/DIDService';
 import { CredentialService } from '../services/CredentialService';
 import { FileRepository } from '../repositories/FileRepository';
-import { DIDRepository } from '../repositories/DIDRepository'; 
+import { DIDRepository } from '../repositories/DIDRepository';
 import { MissingParameterError } from '../errors/errors';
 
 const didRepository = new DIDRepository();
@@ -12,32 +12,41 @@ const fileRepository = new FileRepository();
 const credentialService = new CredentialService(fileRepository);
 
 /**
- * Responde con 'pong' para verificar que el servicio está vivo.
- * @route GET /ping
+ * @module Controllers
  */
-export const ping = (_req: Request, res: Response) => {
+
+/**
+ * Health-check endpoint.
+ * @route GET /ping
+ * @param {Request} _req - Express request (unused).
+ * @param {Response} res - Express response.
+ * @returns {void} Sends "pong" on success.
+ */
+export const ping = (_req: Request, res: Response): void => {
   logger.info('Ping received');
   res.send('pong');
 };
 
 /**
- * Crea DIDs para tres issuers diferentes usando las credenciales (ROLE_ID, SECRET_ID)
- * obtenidas de entorno. Los guarda en la BBDD.
+ * Creates DIDs for three issuers using environment credentials.
  * @route GET /did
- * @returns Objeto JSON con los DIDs creados.
+ * @param {Request} _req - Express request (unused).
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} JSON object with created DIDs.
+ * @throws {Error} If any ROLE_ID or SECRET_ID env var is missing.
  */
-export const cr_did = async (_req: Request, res: Response) => {
+export const cr_did = async (_req: Request, res: Response): Promise<void> => {
   try {
     const roleIdIssuer1 = process.env.ROLE_ID_ISSUER1;
     const secretIdIssuer1 = process.env.SECRET_ID_ISSUER1;
-
     const roleIdIssuer2 = process.env.ROLE_ID_ISSUER2;
     const secretIdIssuer2 = process.env.SECRET_ID_ISSUER2;
-
     const roleIdIssuer3 = process.env.ROLE_ID_ISSUER3;
     const secretIdIssuer3 = process.env.SECRET_ID_ISSUER3;
 
-    if (!roleIdIssuer1 || !secretIdIssuer1 || !roleIdIssuer2 || !secretIdIssuer2 || !roleIdIssuer3 || !secretIdIssuer3) {
+    if (!roleIdIssuer1 || !secretIdIssuer1 ||
+        !roleIdIssuer2 || !secretIdIssuer2 ||
+        !roleIdIssuer3 || !secretIdIssuer3) {
       throw new Error('Faltan variables de entorno para ROLE_ID y SECRET_ID de los 3 issuers');
     }
 
@@ -57,12 +66,13 @@ export const cr_did = async (_req: Request, res: Response) => {
 };
 
 /**
- * Obtiene el DID Document de un issuer específico.
- * @route GET /.well-known/did.json?issuer=issuer1|issuer2|issuer3
- * @param req query.issuer Identificador del issuer (opcional, por defecto issuer1).
- * @returns Objeto JSON con el DID Document.
+ * Serves the DID Document for a given issuer.
+ * @route GET /.well-known/did.json
+ * @param {Request} req - Express request, expects `issuer` query param.
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} JSON object of the DID Document.
  */
-export const didweb = async (req: Request, res: Response) => {
+export const didweb = async (req: Request, res: Response): Promise<void> => {
   try {
     const issuer = (req.query.issuer as string) || 'issuer1';
     const data = await didService.loadDidDocument(issuer);
@@ -75,11 +85,13 @@ export const didweb = async (req: Request, res: Response) => {
 };
 
 /**
- * Obtiene la lista de todos los issuerDids almacenados en la BBDD.
+ * Retrieves all stored issuer DIDs.
  * @route GET /did/issuers
- * @returns Lista de DIDs y, opcionalmente, una advertencia si hay menos de 3.
+ * @param {Request} _req - Express request (unused).
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} JSON array of issuer DIDs, with warning if less than 3.
  */
-export const getIssuersDidsEndpoint = async (_req: Request, res: Response) => {
+export const getIssuersDidsEndpoint = async (_req: Request, res: Response): Promise<void> => {
   try {
     const dids = await didService.getIssuersDids();
     const response: any = { issuers: dids };
@@ -94,11 +106,13 @@ export const getIssuersDidsEndpoint = async (_req: Request, res: Response) => {
 };
 
 /**
- * Devuelve un esquema JSON de ejemplo para validación.
+ * Returns a JSON schema example for validation.
  * @route GET /schema
- * @returns Objeto JSON con el esquema.
+ * @param {Request} _req - Express request (unused).
+ * @param {Response} res - Express response.
+ * @returns {void} JSON object representing the schema.
  */
-export const schema = (_req: Request, res: Response) => {
+export const schema = (_req: Request, res: Response): void => {
   const schema = {
     $schema: 'http://json-schema.org/draft-07/schema#',
     type: 'object',
@@ -113,31 +127,26 @@ export const schema = (_req: Request, res: Response) => {
 };
 
 /**
- * Emite una credencial del tipo especificado (Identity, Passport o Work).
- * Hace uso del DID y la llave del issuer correspondiente, previamente almacenados en la BBDD.
+ * Issues a credential of the specified type.
  * @route POST /credentials/issue
- * @param req.body.type Tipo de credencial a emitir.
- * @returns URL de emisión o credencial firmada dependiendo del modo (open o direct).
+ * @param {Request} req - Express request containing `type` in the body.
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} JSON payload from CredentialService on success.
+ * @throws {MissingParameterError} If `type` is missing.
  */
-export const issue = async (req: Request, res: Response) => {
+export const issue = async (req: Request, res: Response): Promise<void> => {
   try {
     const credentialType = req.body.type;
     if (!credentialType) {
       throw new MissingParameterError('Missing parameter: type');
     }
 
-    // 1) Vinculamos cada 'type' con un issuerLabel
-    //    'identity2' será tratado de forma parecida a 'identity', pero con cambios en la imagen.
-    const issuerLabel =
-      credentialType.toLowerCase() === 'identity'
-        ? 'issuer1'
-        : credentialType.toLowerCase() === 'identity2'
-        ? 'issuer1'  // Usamos también 'issuer1', pero luego en la construcción de credData cambiaremos la imagen
-        : credentialType.toLowerCase() === 'passport'
-        ? 'issuer2'
-        : credentialType.toLowerCase() === 'work'
-        ? 'issuer3'
-        : null;
+    const issuerLabel = 
+      credentialType.toLowerCase() === 'identity'   ? 'issuer1' :
+      credentialType.toLowerCase() === 'identity2'  ? 'issuer1' :
+      credentialType.toLowerCase() === 'passport'   ? 'issuer2' :
+      credentialType.toLowerCase() === 'work'       ? 'issuer3' :
+      null;
 
     if (!issuerLabel) {
       throw new Error('Tipo de credencial no soportado. Use "identity", "identity2", "passport" o "work".');
@@ -148,38 +157,38 @@ export const issue = async (req: Request, res: Response) => {
       throw new MissingParameterError(`No se encontró el DID para ${issuerLabel}, por favor primero llame a /did`);
     }
 
-    const issuerDid = didRecord.issuerDid;
-    const issuerKey = didRecord.issuerKey;
-
-    // 2) Llamamos al servicio que emite la credencial (CredentialService), 
-    //    pasándole 'identity2' como credentialType si aplica.
-    const responseData = await credentialService.issueCredential(credentialType, issuerDid, issuerKey);
+    const responseData = await credentialService.issueCredential(
+      credentialType,
+      didRecord.issuerDid,
+      didRecord.issuerKey
+    );
     res.status(200).json(responseData);
   } catch (error: any) {
     logger.error('Error emitiendo credencial:', error);
     if (error.response) {
       res.status(error.response.status).json(error.response.data);
-    } else if (error.code && error.code === 400) {
+    } else if (error.code === 400) {
       res.status(400).json({ message: error.message });
     } else {
       res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
   }
 };
+
 /**
- * Procesa una devolución de estado (callback) desde el servicio de emisión,
- * actualizando el estado de la credencial a 'issued'.
+ * Processes issuance status callbacks, updating credential status.
  * @route POST /statusCallback/:sessionId
- * @param req.params.sessionId Identificador de sesión de emisión.
+ * @param {Request} req - Express request with `sessionId` in params and callback body.
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} Sends confirmation string on success.
  */
-export const statusCallback = async (req: Request, res: Response) => {
+export const statusCallback = async (req: Request, res: Response): Promise<void> => {
   try {
     const sessionId = req.params.sessionId;
     if (!sessionId) {
       throw new Error('sessionId not found in the callback URL');
     }
-
-    credentialService.updateCredentialStatusFromCallback(sessionId, req.body);
+    await credentialService.updateCredentialStatusFromCallback(sessionId, req.body);
     res.status(200).send('Status callback processed successfully');
   } catch (error: any) {
     logger.error('Error procesando status callback:', error);
@@ -188,11 +197,13 @@ export const statusCallback = async (req: Request, res: Response) => {
 };
 
 /**
- * Obtiene todas las credenciales almacenadas localmente en el sistema de ficheros.
+ * Retrieves all credentials from local file storage.
  * @route GET /credentials
- * @returns Lista de credenciales emitidas.
+ * @param {Request} _req - Express request (unused).
+ * @param {Response} res - Express response.
+ * @returns {void} JSON array of credentials.
  */
-export const getcred = (_req: Request, res: Response) => {
+export const getcred = (_req: Request, res: Response): void => {
   try {
     const credentials = credentialService.getAllCredentials();
     res.status(200).json(credentials);
@@ -203,12 +214,13 @@ export const getcred = (_req: Request, res: Response) => {
 };
 
 /**
- * Obtiene una credencial específica por su ID numérico.
+ * Retrieves a specific credential by its numeric ID.
  * @route GET /credentials/:id
- * @param req.params.id ID numérico de la credencial (formato integer).
- * @returns La credencial solicitada.
+ * @param {Request} req - Express request with `id` param.
+ * @param {Response} res - Express response.
+ * @returns {void} JSON object of the requested credential.
  */
-export const getscredx = (req: Request, res: Response) => {
+export const getscredx = (req: Request, res: Response): void => {
   try {
     const id = req.params.id;
     const credential = credentialService.getCredentialById(id);
@@ -220,12 +232,13 @@ export const getscredx = (req: Request, res: Response) => {
 };
 
 /**
- * Actualiza el estado de una credencial, almacenándolo en un fichero de estado.
+ * Updates the status of a credential.
  * @route POST /credentials/status
- * @param req.body.credentialId Identificador completo de la credencial.
- * @param req.body.credentialStatus Nuevo estado de la credencial.
+ * @param {Request} req - Express request with `credentialId` and `credentialStatus` in body.
+ * @param {Response} res - Express response.
+ * @returns {void} JSON confirmation string on success.
  */
-export const upstatus = (req: Request, res: Response) => {
+export const upstatus = (req: Request, res: Response): void => {
   try {
     const { credentialId, credentialStatus } = req.body;
     credentialService.updateCredentialStatus(credentialId, credentialStatus);
@@ -238,11 +251,13 @@ export const upstatus = (req: Request, res: Response) => {
 };
 
 /**
- * Elimina una credencial del almacenamiento local de ficheros.
+ * Deletes a credential from local file storage.
  * @route DELETE /credentials/:id
- * @param req.params.id ID numérico de la credencial.
+ * @param {Request} req - Express request with `id` param.
+ * @param {Response} res - Express response.
+ * @returns {void} JSON confirmation string on success.
  */
-export const delcred = (req: Request, res: Response) => {
+export const delcred = (req: Request, res: Response): void => {
   try {
     const id = req.params.id;
     credentialService.deleteCredential(id);
@@ -254,16 +269,16 @@ export const delcred = (req: Request, res: Response) => {
   }
 };
 
-
 /**
- * Devuelve un mensaje aleatorio (Easter Egg).
+ * Easter Egg endpoint returning a random fun message.
  * @route GET /.hidden-easter-egg
- * @returns Mensaje aleatorio con un easter egg.
+ * @param {Request} req - Express request.
+ * @param {Response} res - Express response.
+ * @returns {Promise<void>} JSON object with `message` property.
  */
-export const easterEgg = async (req: Request, res: Response) => {
+export const easterEgg = async (req: Request, res: Response): Promise<void> => {
   try {
     logger.info('Easter Egg accedido por', { ip: req.ip, userAgent: req.headers['user-agent'] });
-
     const messages = [
       "¡Felicidades! Has encontrado el Easter Egg de ISSUER_COORD. 🎉",
       "¿Sabías que los desarrolladores también disfrutan programando en pijama? 🛌💻",
@@ -271,7 +286,6 @@ export const easterEgg = async (req: Request, res: Response) => {
       "¡No te preocupes, este Easter Egg no afecta el rendimiento! 😄",
       "Easter Egg: Si encuentras más, ¡has sido muy observador! 👀"
     ];
-
     const randomMessage = messages[Math.floor(Math.random() * messages.length)];
     res.status(200).json({ message: randomMessage });
   } catch (error: any) {
