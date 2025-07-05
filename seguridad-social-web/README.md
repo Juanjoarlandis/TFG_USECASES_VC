@@ -1,6 +1,8 @@
+Watch the 3‑minute demo on YouTube ▶ https://www.youtube.com/watch?v=GjZqYCDlQhc
+
 # SeguridadSocialWeb Project
 
-This repository contains a full-stack web application with multiple components (front-end, back-end, credential issuer coordination, Vault initialization, and WALT.ID identity services). The goal is to demonstrate credential issuance (like DNI, passport, work registration) using decentralized identities (DIDs) and a secure Vault.
+This repository contains a full‑stack web application with multiple components (front‑end, back‑end, credential issuer coordination, Vault initialization, and WALT.ID identity services). The goal is to demonstrate credential issuance (like DNI, passport, work registration) using decentralized identities (DIDs) and a secure Vault.
 
 ---
 
@@ -43,7 +45,7 @@ This directory includes WALT.ID identity Docker Compose files, running an identi
 
 1. **Initialize Vault** via `vault-init`.
 
-   - Inside the `vault-init` directory, refer to the instructions (e.g. `README.md` there or `setup_all.sh`).  
+   - Inside the `vault-init` directory, refer to the instructions (e.g. `README.md` there or `setup_all.sh`).
    - Run the script to create the Docker network and volume for Vault, spin up the Vault container, build the `vault-init` Docker image, and execute the unseal and policy setup steps.
 
 2. **Launch the main application** (frontend + backend) from the root directory:
@@ -75,7 +77,7 @@ To fully demonstrate the system, you will issue **3 credentials**:
 
 These credentials are issued by the `issuer_coord` module via specific HTTP endpoints.
 
-1. **Obtain Issuer DIDs**  
+1. **Obtain Issuer DIDs**
    Open a terminal (or use an API tool like Postman) and issue:
    ```bash
    curl -X GET http://localhost:5500/did
@@ -90,12 +92,10 @@ These credentials are issued by the `issuer_coord` module via specific HTTP endp
    ```
    This confirms the DIDs for each issuer.
 
-2. **Issue 3 Credentials**  
+2. **Issue 3 Credentials**
    For each credential type, make a **POST** request to:
    ```bash
-   curl -X POST http://localhost:5500/credentials/issue \
-        -H "Content-Type: application/json" \
-        -d '{"type": "<type>"}'
+   curl -X POST http://localhost:5500/credentials/issue         -H "Content-Type: application/json"         -d '{"type": "<type>"}'
    ```
    Where `<type>` can be:
    - `identity` (DNI)
@@ -111,6 +111,8 @@ These credentials are issued by the `issuer_coord` module via specific HTTP endp
    - This `issuanceUrl` is the “offer URL” for retrieving the credential of the specified type.
 
    **Repeat** for each credential type (`identity`, `passport`, `work`).
+
+---
 
 ## 3. Access the Wallet
 
@@ -143,11 +145,13 @@ Credential has been added
 
 You will **present the 3 URLs** (the `issuanceUrl` or `offerUrl`) you received when making the `POST` requests to `http://localhost:5500/credentials/issue`. This will allow you to obtain the three credentials (`work`, `identity`, and `passport`) in your wallet.
 
-4. **Use the Web Application**  
-   - Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
-   - Log in or interact with the front-end features.  
-   - The system will now be aware of your credentials as stored in the wallet.
-   - We have prepared a demo video showing the user flows (https://youtu.be/OttS8KTepNE)
+---
+
+## 4. Use the Web Application
+- Navigate to [https://localhost/](https://localhost/) or the appropriate front-end URL.
+- Log in or interact with the front-end features.
+- The system will now be aware of your credentials as stored in the wallet.
+- We have prepared a demo video showing the user flows: https://www.youtube.com/watch?v=GjZqYCDlQhc
 
 ---
 
@@ -171,5 +175,5 @@ If you have any questions or issues, please refer to logs (`docker logs <contain
 
 ## License
 
-Licensed under the MIT License.  
+Licensed under the MIT License.
 See [LICENSE](LICENSE) for details.
